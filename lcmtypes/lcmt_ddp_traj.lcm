@@ -1,0 +1,16 @@
+package drake;
+
+struct lcmt_ddp_traj {
+    // specify dimensions of matrices
+    int32_t n_time_steps; // number of time steps
+    int32_t dim_torques; // number of torques dimensions
+    int32_t dim_states; // number of states dimensions
+
+    double times_sec[n_time_steps];
+    double states[n_time_steps][dim_states];
+    double torques[n_time_steps][dim_torques];
+    double gripper_width[n_time_steps];
+    double gripper_force[n_time_steps];
+
+    double cost;
+}

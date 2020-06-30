@@ -1,0 +1,18 @@
+package drake;
+
+struct lcmt_motion_plan_query {
+    string name; // name of action
+
+    int32_t dim_q; // dimension of q
+    int32_t level; // the level of search
+
+    double time_horizon; // time duration of trajectory
+    double time_step; // time step size for traj op
+    double wait_time;
+
+    double prev_q[dim_q]; // prev configuration of robot
+    double desired_ee[6]; // x y z r p y
+
+    double prev_gripper_width; // whether gripper is open at the end of previous node
+    double gripper_force; 
+}

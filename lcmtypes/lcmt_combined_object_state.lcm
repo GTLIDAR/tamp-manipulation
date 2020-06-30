@@ -1,0 +1,12 @@
+package drake;
+
+struct lcmt_combined_object_state {
+    int32_t n_objects; // number of n_objects
+    int32_t q_dim; // dimension of pos
+    int32_t v_dim; // dimension of vel
+    int64_t utime; // timestamp in milisecond
+
+    double q[n_objects][q_dim]; // position
+    double v[n_objects][v_dim]; // velocity
+    int64_t ids[n_objects]; // object ids
+}

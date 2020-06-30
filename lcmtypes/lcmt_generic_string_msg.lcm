@@ -1,0 +1,5 @@
+package drake;
+
+struct lcmt_generic_string_msg {
+    string msg;
+}

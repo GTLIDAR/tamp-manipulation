@@ -1,0 +1,122 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+
+drake_cc_library(
+    name = "manipulation_station",
+    srcs = [
+        "manipulation_station.cc",
+    ],
+    hdrs = [
+        "manipulation_station.h",
+    ],
+    data = [
+        ":models",
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/ycb:models",
+        "//manipulation/models/kuka_connector_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:find_resource",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_position_controller",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework",
+        "//systems/sensors:rgbd_sensor",
+        "//conveyor_belt_tamp:object_state_estimator",
+    ],
+)
+
+drake_cc_binary(
+    name = "conveyor_belt_simulation",
+    srcs = [
+        "conveyor_belt_simulation.cc",
+    ],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//conveyor_belt_tamp:models",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        ":manipulation_station",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/analysis",
+        "//systems/lcm:lcm_interface_system",
+        "//systems/lcm:lcm_subscriber_system",
+        "//systems/lcm:lcm_publisher_system",
+        "//geometry:geometry_visualization",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//math:geometric_transform",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:schunk",
+        "//lcmtypes:combined_object_state",
+    ],
+)
+
+drake_cc_binary(
+    name = "kuka_plan_runner",
+    srcs = ["kuka_plan_runner.cc",],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common:find_resource",
+        "//multibody/tree",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:ddp_traj",
+        "//lcmtypes:generic_string_msg",
+        "//lcmtypes:schunk",
+    ]
+)
+
+drake_cc_library(
+    name = "object_state_estimator",
+    srcs = ["object_state_estimator.cc"],
+    hdrs = ["object_state_estimator.h"],
+    deps = [
+        "//systems/framework",
+        "//multibody/plant",
+        "//lcmtypes:combined_object_state",
+    ]
+)
+
+drake_cc_binary(
+    name = "object_state_listener",
+    srcs = ["object_state_listener.cc"],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//lcmtypes:combined_object_state",
+    ]
+)
+
+drake_cc_binary(
+    name = "single_traj_test",
+    srcs = ["single_traj_test.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//lcmtypes:ddp_traj",
+        "//lcmtypes:motion_plan_query",
+    ],
+)

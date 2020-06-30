@@ -32,6 +32,38 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_lcm_cc_library(
+    name = "combined_object_state",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_combined_object_state.lcm",
+    ]
+)
+
+drake_lcm_cc_library(
+    name = "ddp_traj",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_ddp_traj.lcm",
+    ]
+)
+
+drake_lcm_cc_library(
+    name = "generic_string_msg",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_generic_string_msg.lcm",
+    ]
+)
+
+drake_lcm_cc_library(
+    name = "motion_plan_query",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_motion_plan_query.lcm",
+    ]
+)
+
+drake_lcm_cc_library(
     name = "acrobot",
     lcm_package = "drake",
     lcm_srcs = [
@@ -224,7 +256,10 @@ drake_lcm_cc_library(
         "lcmt_planar_gripper_command.lcm",
         "lcmt_planar_gripper_status.lcm",
         "lcmt_planar_gripper_finger_command.lcm",
+        "lcmt_planar_gripper_finger_face_assignment.lcm",
+        "lcmt_planar_gripper_finger_face_assignments.lcm",
         "lcmt_planar_gripper_finger_status.lcm",
+        "lcmt_planar_plant_state.lcm",
         "lcmt_force_torque.lcm",
     ],
 )
@@ -391,6 +426,10 @@ LCMTYPES_CC = [
     ":whole_body_data",
     ":zmp_data",
     ":zmp_com_observer_state",
+    ":ddp_traj",
+    ":generic_string_msg",
+    ":motion_plan_query",
+    ":combined_object_state",
 ]
 
 # This rule should list every LCM type that is known to Drake or its external
