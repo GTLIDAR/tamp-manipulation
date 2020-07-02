@@ -123,7 +123,7 @@ def main():
     else:
         runner_1.run_multi_level_search(n_levels=SEARCH_LEVEL, depth_limit=DEPTH_LIMIT, n_sols=N_SOLS)
 
-    goal_node = runner_1.tree.goals.pop()
+    goal_node = runner_1.tree.goals.peak()
     
     runner_2 = RunPddlManipulationDomain(
         DOMAIN_DIR+DOMAIN_FILE, DOMAIN_DIR+PROBLEM_FILE_2, "astar(lmcut())")

@@ -13,33 +13,33 @@ downward_utils_path = os.path.relpath("../../../pddl_planning/utils", start=file
 sys.path.append(downward_utils_path)
 pddl_graph_path = os.path.relpath("../../../pddl_planning/graph", start=file_dir)
 sys.path.append(pddl_graph_path)
-cg_path=os.path.relpath("../../../pddl_planning/PDDLtoGraph", start=file_dir)
-sys.path.append(cg_path)
-pddl_path = cg_path=os.path.relpath("../../../pddl_planning", start=file_dir)
-sys.path.append(pddl_path)
 
 from downward_utils import (run_search, run_translate, parse_arguments_list,
                             search_from_pddl, read_plan, get_exitcode_msg)
+
 from sas_parser import parse_sas
 
 from pddl_tree import PDDLTree
 from pddl_node import PDDLTreeNode
 
+cg_path=os.path.relpath("../../../pddl_planning/PDDLtoGraph", start=file_dir)
+sys.path.append(cg_path)
+
 from cg_planner import CGPlanner
+
+DOMAIN_FILE = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
+PROBLEM_FILE = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt_multi_grasp_mode/3obj_coupled.pddl"       
+BASE_PROBLEM_FILE = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt_multi_grasp_mode/3obj_coupled_base_problem.pddl"
+SUB_PROBLEM_FILE= "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt_multi_grasp_mode/3obj_coupled_sub_problem.pddl"
+
+FD_SEARCH_METHOD = "astar(lmcut())"
 
 GRIPPER_WIDTH = [100, 20]
 GRIPPER_FORCE = 80
 N_SOLS = 1
 DISCRETE_DEBUG = 0
 DEPTH_LIMIT = -1
-SEARCH_LEVEL = 2
-
-domain_file = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt/domain_coupled.pddl"
-problem_file = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt/3obj_coupled.pddl"       
-base_problem_file = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt/3obj_coupled_base_problem.pddl"
-sub_problem_file = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt/3obj_coupled_sub_problem.pddl"
-
-
+SEARCH_LEVEL = 1
 
 
 class RunPddlManipulationDomain:
@@ -117,30 +117,55 @@ class RunPddlManipulationDomain:
                 
                 with open(file_dir+foldername+filename, "w") as out:
                     json.dump(data, out)
-            
-            return data
     
     def save_tree(self):
         self.tree.save_tree_svg("tree.svg")
 
-def main():
-    runner = RunPddlManipulationDomain(
-        DOMAIN_DIR+DOMAIN_FILE, DOMAIN_DIR+PROBLEM_FILE, "astar(lmcut())")
-    
-    if DISCRETE_DEBUG:
-        runner.run_discrete_search()
-        #runner.save_tree()
-    else:
-        start = time.time()
-        runner.run_multi_level_search(n_levels=SEARCH_LEVEL, depth_limit=DEPTH_LIMIT, n_sols=N_SOLS)
-        print("Search finished. Total time:", time.time()-start, "sec")
 
-    goal_pq = copy.deepcopy(runner.tree.goals)
+def main():
+    # initialize causal graph planner
+    cgplanner = CGPlanner(DOMAIN_FILE, PROBLEM_FILE, BASE_PROBLEM_FILE, SUB_PROBLEM_FILE)
+    cgplanner.prune_causal_graph()
+    goal_list = cgplanner.select_next_subgoal()
+    
+    # initialize TAMP planner
+    runners = []
+    runner_idx = 0
+    # loop through goal_list
+    for subgoals in goal_list:
+        print("Searching subgoal", runner_idx)
+        print(subgoals)
+        cgplanner.write_sub_problem_pddl(subgoals)
+        runners.append(
+            RunPddlManipulationDomain(
+                DOMAIN_FILE, SUB_PROBLEM_FILE, FD_SEARCH_METHOD
+            )
+        )
+
+        if runner_idx > 0:
+            goal_node = runners[0].tree.goals.peak()
+            runners[runner_idx].tree.root.q = goal_node.q
+            runners[runner_idx].tree.root.prev_op = goal_node.prev_op
+            runners[runner_idx].tree.root.time = goal_node.time
+            runners[runner_idx].tree.root.g = goal_node.g
+
+        if DISCRETE_DEBUG:
+            runners[runner_idx].run_discrete_search()
+        else:
+            runners[runner_idx].run_multi_level_search(
+                n_levels=SEARCH_LEVEL, depth_limit=DEPTH_LIMIT, n_sols=N_SOLS)
+        
+        if runner_idx > 0:
+            runners[0].tree.attach_tree(goal_node, runners[runner_idx].tree)
+        
+        runner_idx += 1
+
+    goal_pq = copy.deepcopy(runners[0].tree.goals)
     print("Goal Num:", len(goal_pq))
     i = 0
     while (len(goal_pq)):
         node = goal_pq.pop()
-        actions = runner.tree.get_action_sequence(node)
+        actions = runners[0].tree.get_action_sequence(node)
 
         print("Goal", i)
         print("Cost", node.g)
@@ -148,10 +173,13 @@ def main():
             print(a)
         print("")
         i += 1
-    
+
     if not DISCRETE_DEBUG:
         print("Saving result")
-        runner.save_traj(n_trajs=N_SOLS)
-    
-if __name__ == "__main__":
+        runners[0].save_traj(n_trajs=N_SOLS)
+        
+
+
+
+if __name__=="__main__":
     main()
