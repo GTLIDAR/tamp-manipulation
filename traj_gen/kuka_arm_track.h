@@ -9,6 +9,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/math/rigid_transform.h"
 
 #include <cstdio>
@@ -35,6 +36,7 @@ using namespace Eigen;
 using namespace std;
 
 using drake::multibody::MultibodyPlant;
+using drake::multibody::MultibodyForces;
 using drake::multibody::Parser;
 using drake::math::RigidTransformd;
 

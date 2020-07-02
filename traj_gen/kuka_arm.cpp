@@ -252,8 +252,10 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
         
-        VectorXd bias_term_(plant_->num_velocities());
-        plant_->CalcBiasTerm(*context, &bias_term_);
+        MultibodyForces<double> f_ext(*plant_);
+        VectorXd vdot(plant_->num_velocities());
+        vdot.setZero();
+        VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
         //=============================================
         // Gravity compensation?? - From Yuki 
 
@@ -300,8 +302,10 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_;
         plant_->CalcMassMatrix(*context, &M_);
         
-        VectorXd bias_term_;
-        plant_->CalcBiasTerm(*context, &bias_term_);
+        MultibodyForces<double> f_ext(*plant_);
+        VectorXd vdot(plant_->num_velocities());
+        vdot.setZero();
+        VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
         //=============================================
         // Gravity compensation?? - From Yuki 
 

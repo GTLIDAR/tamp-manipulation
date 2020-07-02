@@ -26,6 +26,7 @@
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -81,6 +82,7 @@ typedef PPType::PolynomialMatrix PPMatrix;
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using multibody::ModelInstanceIndex;
+using multibody::MultibodyForces;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 

@@ -67,8 +67,10 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
 
-        VectorXd gtau_wb(plant_->num_velocities());
-        plant_->CalcBiasTerm(*context, &gtau_wb);
+        MultibodyForces<double> f_ext(*plant_);
+        VectorXd vdot(plant_->num_velocities());
+        vdot.setZero();
+        VectorXd gtau_wb = plant_->CalcInverseDynamics(*context, vdot, f_ext);
 
         cout << "bias total" << endl << gtau_wb << endl;
         commandVecTab_t u_0;

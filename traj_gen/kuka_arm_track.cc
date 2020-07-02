@@ -277,8 +277,10 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         
         // VectorX<double> bias_term_ = robot_thread_->dynamicsBiasTerm(cache_, f_ext);  // Bias term: M * vd + h = tau + J^T * lambda
         
-        VectorXd bias_term_(plant_->num_velocities());
-        plant_->CalcBiasTerm(*context, &bias_term_);
+        MultibodyForces<double> f_ext(*plant_);
+        VectorXd vdot(plant_->num_velocities());
+        vdot.setZero();
+        VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
         
         //gettimeofday(&tend_period,NULL);
         //finalTimeProfile.time_period4 += ((double)(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
@@ -329,8 +331,10 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         MatrixXd M_;
         plant_->CalcMassMatrix(*context, &M_);
         
-        VectorXd bias_term_;
-        plant_->CalcBiasTerm(*context, &bias_term_);
+        MultibodyForces<double> f_ext(*plant_);
+        VectorXd vdot(plant_->num_velocities());
+        vdot.setZero();
+        VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
         //gettimeofday(&tend_period,NULL);
         //finalTimeProfile.time_period4 += ((double)(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
 
