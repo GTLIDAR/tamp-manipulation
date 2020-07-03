@@ -67,10 +67,11 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
 
-        MultibodyForces<double> f_ext(*plant_);
-        VectorXd vdot(plant_->num_velocities());
-        vdot.setZero();
-        VectorXd gtau_wb = plant_->CalcInverseDynamics(*context, vdot, f_ext);
+        // MultibodyForces<double> f_ext(*plant_);
+        // VectorXd vdot(plant_->num_velocities());
+        // vdot.setZero();
+        // VectorXd gtau_wb = plant_->CalcInverseDynamics(*context, vdot, f_ext);
+        VectorXd gtau_wb = plant_->CalcGravityGeneralizedForces(*context);
 
         cout << "bias total" << endl << gtau_wb << endl;
         commandVecTab_t u_0;
@@ -200,135 +201,6 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
     ptr->n_time_steps = N*InterpolationScale; 
     ptr->cost = lastTraj.finalCost;
 
-//****************************************************************************************************************
-//****************************************************************************************************************
-// DOES NOT MATTER FOR POSITION CONTROL -- ALSO JUST FOR DEBUGGING TORQUE, 
-// EVERYTHING RELATED TO THIS SHOULD BE HANDLED IN "kuka_arm.cpp"
-//****************************************************************************************************************
-    // //==========================
-    // // const char* kIiwaUrdf = "drake/manipulation/models/iiwa_description/urdf/iiwa7.urdf";
-    // const char* const kIiwaUrdf = "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-    // const char* schunkPath = "drake/manipulation/models/wsg_50_description/urdf/wsg_50_mesh_collision_no_world_joint.urdf";
-    // const char* connectorPath = "drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf";
-    
-    // std::string urdf_;
-    // RigidBodyTree<double> kukaTree_;
-    // std::unique_ptr<RigidBodyTree<double>> totalTree_;
-    // totalTree_ = std::make_unique<RigidBodyTree<double>>();
-
-    // VectorX<double> states;
-    // Eigen::VectorXd robot_q;
-    // Eigen::VectorXd iiwa_q;
-    // Eigen::VectorXd iiwa_v;
-    // std::unique_ptr<WorldSimTreeBuilder<double>> tree_builder; 
-    // std::unique_ptr<RigidBodyPlant<double>> plant;
-
-    // robot_q = Eigen::VectorXd(9);
-    // iiwa_q = Eigen::VectorXd(7);
-    // iiwa_v = Eigen::VectorXd(7);
-
-    // tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
-    // tree_builder->StoreDrakeModel("iiwa", kIiwaUrdf);
-    // tree_builder->StoreDrakeModel("wsg", schunkPath);
-    // tree_builder->StoreDrakeModel("connector", connectorPath);
-
-
-    // const Eigen::Vector3d kRobotBase(0, 0, 0);
-
-
-    // ModelInstanceInfo<double> iiwa_instance, connector_instance, wsg_instance;
-
-
-    // int id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
-    // iiwa_instance = tree_builder->get_model_info_for_instance(id);
-
-
-    // id = tree_builder->AddModelInstanceToFrame(
-    //     "connector", tree_builder->tree().findFrame("iiwa_frame_ee"),
-    //     drake::multibody::joints::kFixed);
-    // connector_instance = tree_builder->get_model_info_for_instance(id);
-    
-
-    // //The schunk will be 0.09 above the kuka end effector -> change number by going to the urdf of iiwa7
-    // id = tree_builder->AddModelInstanceToFrame(
-    //     "wsg", tree_builder->tree().findFrame("connector_frame"),
-    //     drake::multibody::joints::kFixed);
-    // wsg_instance = tree_builder->get_model_info_for_instance(id);
-
-    // totalTree_ = tree_builder->Build();
-
-    // VectorXd q(9);
-    // VectorXd qd(9);
-    //   // VectorX<double> q = VectorX<double>::Ones(7);
-    //   // VectorX<double> qd = VectorX<double>::Zero(7);
-    // //  q << 0,0.602162,0.00180032,-1.75906,-0.0181392,0.962099,0.0121962;
-    // // q << 1,1,1,1,1,1,1,0,0;
-    // q << 0, 0.6, 0, -1.75, 0, 1.0, 0, 0, 0;
-    // // q << 0,0.5,0,0.5,0,0,0;
-    // qd << 0,0,0,0,0,0,0, 0,0;
-
-    // // std::unique_ptr<RigidBodyTree<double>> robot_thread_;
-    // // robot_thread_ = std::make_unique<RigidBodyTree<double>>();
-    // // const char* const kIiwaUrdf =
-    // //         "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-    // // parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-    // //         FindResourceOrThrow(kIiwaUrdf),
-    // //         multibody::joints::kFixed, robot_thread_.get());
-
-    // KinematicsCache<double> cache_ = totalTree_->CreateKinematicsCache();
-    // cache_.initialize(q,qd);
-    // totalTree_->doKinematics(cache_, true);
-
-    // MatrixX<double> M_ = totalTree_->massMatrix(cache_); // Inertial matrix
-
-    // drake::eigen_aligned_std_unordered_map<RigidBody<double> const*, drake::TwistVector<double>> f_ext;
-
-    // // VectorX<double> bias_term_ = robot_thread_->dynamicsBiasTerm(cache_, f_ext);  // Bias term: M * vd + h = tau + J^T * lambda
-    // VectorX<double> gtau_wb = totalTree_->inverseDynamics(cache_, f_ext, qd, false);
-
-    // cout << "bias total" << endl << gtau_wb << endl;
-
-    // //=======================
-    // // Find Arm Gravity Compensation
-    // VectorXd q_a(7);
-    // VectorXd qd_a(7);
-    // // q_a << 1,1,1,1,1,1,1;
-    // q_a << 0, 0.6, 0, -1.75, 0, 1.0, 0;
-    // qd_a << 0,0,0,0,0,0,0;
-
-    // std::unique_ptr<RigidBodyTree<double>> robot_thread_;
-    // robot_thread_ = std::make_unique<RigidBodyTree<double>>();
-    // const char* const kIiwaUrdf_a =
-    //         "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-    // parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-    //         FindResourceOrThrow(kIiwaUrdf_a),
-    //         multibody::joints::kFixed, robot_thread_.get());
-
-    // KinematicsCache<double> cache_a_ = robot_thread_->CreateKinematicsCache();
-    // cache_a_.initialize(q_a,qd_a);
-    // robot_thread_->doKinematics(cache_a_, true);
-
-    // MatrixX<double> M_a = robot_thread_->massMatrix(cache_a_); // Inertial matrix
-
-    // drake::eigen_aligned_std_unordered_map<RigidBody<double> const*, drake::TwistVector<double>> f_ext_a;
-
-    // // VectorX<double> bias_term_ = robot_thread_->dynamicsBiasTerm(cache_, f_ext);  // Bias term: M * vd + h = tau + J^T * lambda
-    // VectorX<double> gtau = robot_thread_->inverseDynamics(cache_a_, f_ext_a, qd_a, false);
-
-    // cout << "bias arm" << endl << gtau << endl;
-
-    // // subtract biases
-    // for (int k=0; k<7; k++) {
-    //   gtau[k] = gtau_wb[k] - gtau[k];
-    // }
-
-    // cout << "bias subtracted" << endl << gtau << endl;
-
-      //============================================
-//****************************************************************************************************************
-//****************************************************************************************************************
-
-
     for (int32_t i=0; i < ptr->n_time_steps; ++i) {
       // need new, cuz dynamic allocation or pointer
       ptr->times_sec.push_back(static_cast<double>(query->time_step*i/InterpolationScale));
@@ -350,28 +222,6 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
       ptr->states.push_back(*ptr2_st);
     }
 
-    // cout << "check1" << endl;
-
-    // // need this because...?
-    // ddp_traj_ = *ptr;
-
-    // cout << "check2" << endl;
-
-    // cout << ddp_traj_.dim_torques << endl;
-    // cout << ddp_traj_.dim_states << endl;
-    // cout << ddp_traj_.n_time_steps << endl;
-    // cout << ddp_traj_.cost << endl;
-
-    // //sanity check
-  //     for (int32_t i=0; i<ddp_traj_.n_time_steps; ++i) {
-  ////       cout << ddp_traj_.times_sec[i] << endl;
-  //       for (int32_t j=0; j<ddp_traj_.dim_torques; ++j) {
-  //         cout << "torq? " << ddp_traj_.torques[i][j] << endl;
-  //       }
-  //     }
-
-    // lcm_.publish(kLcmQueryResultsChannel, &ddp_traj_);
-    // cout << "-------- DDP Trajectory Published to LCM! --------" << endl;
     return *ptr;
 }
 

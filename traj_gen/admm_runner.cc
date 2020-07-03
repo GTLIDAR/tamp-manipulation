@@ -163,10 +163,11 @@ lcmt_ddp_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
     plant_->CalcMassMatrix(*context, &M_);
 
-    MultibodyForces<double> f_ext(*plant_);
-    VectorXd vdot(plant_->num_velocities());
-    vdot.setZero();
-    VectorXd gtau_wb = plant_->CalcInverseDynamics(*context, vdot, f_ext);
+    // MultibodyForces<double> f_ext(*plant_);
+    // VectorXd vdot(plant_->num_velocities());
+    // vdot.setZero();
+    // VectorXd gtau_wb = plant_->CalcInverseDynamics(*context, vdot, f_ext);
+    VectorXd gtau_wb = plant_->CalcGravityGeneralizedForces(*context);
 
     cout << "bias total" << endl << gtau_wb << endl;
     #if WHOLE_BODY

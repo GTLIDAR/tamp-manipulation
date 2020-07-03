@@ -167,10 +167,10 @@ int main(int argc, char* argv[]) {
 
     query.desired_ee[0] = 0.4;
     query.desired_ee[1] = 0.1;
-    query.desired_ee[2] = 0.3;
+    query.desired_ee[2] = 0.5;
     query.desired_ee[3] = 0;
     query.desired_ee[4] = 0;
-    query.desired_ee[5] = 0;
+    query.desired_ee[5] = -1.57;
     
     runner.Run(&query);
 }
