@@ -67,10 +67,6 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
 
-        // MultibodyForces<double> f_ext(*plant_);
-        // VectorXd vdot(plant_->num_velocities());
-        // vdot.setZero();
-        // VectorXd gtau_wb = plant_->CalcInverseDynamics(*context, vdot, f_ext);
         VectorXd gtau_wb = plant_->CalcGravityGeneralizedForces(*context);
 
         cout << "bias total" << endl << gtau_wb << endl;
@@ -154,21 +150,6 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
     cout << "\tTime of update func (second): " << finalTimeProfile.time_period4 << " (" << 100.0*finalTimeProfile.time_period4/texec << "%)" << endl;
     #endif
 
-    // cout << "\tTime of RBT massMatrix.inverse (second): " << finalTimeProfile.time_period2 << " (" << 100.0*finalTimeProfile.time_period2/texec << "%)" << endl;
-    // cout << "\tTime of RBT f_ext instantiation (second): " << finalTimeProfile.time_period3 << " (" << 100.0*finalTimeProfile.time_period3/texec << "%)" << endl;
-    // cout << "\tTime of RBT dynamicsBiasTerm (second): " << finalTimeProfile.time_period4 << " (" << 100.0*finalTimeProfile.time_period4/texec << "%)" << endl;
-    
-    // // debugging trajectory and control outputs (print func)
-    // cout << "--------- final joint state trajectory ---------" << endl;
-    // for(unsigned int i=0;i<=N;i++){
-    //   cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
-    // }
-    // cout << "--------- final joint torque trajectory ---------" << endl;
-    
-    // for(unsigned int i=0;i<=N;i++){
-    //   cout << "lastTraj.uList[" << i << "]:" << lastTraj.uList[i].transpose() << endl;
-    // }
-
     cout << "lastTraj.xList[" << N << "]:" << lastTraj.xList[N].transpose() << endl;
     cout << "lastTraj.uList[" << N << "]:" << lastTraj.uList[N].transpose() << endl;
 
@@ -192,7 +173,6 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
     cout << "-------- DDP Trajectory Generation Finished! --------" << endl;
     // traj_knot_number_ = 0;
 
-    // Send over points using LCM
     // need this for dynamic memory allocation (push_back)
     auto ptr = std::make_unique<lcmt_ddp_traj>();
     

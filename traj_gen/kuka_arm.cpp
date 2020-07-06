@@ -252,21 +252,9 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
         
-        // MultibodyForces<double> f_ext(*plant_);
-        // VectorXd vdot(plant_->num_velocities());
-        // vdot.setZero();
-        // VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
-        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context);
-        //=============================================
-        // Gravity compensation?? - From Yuki 
-
-        //Set false for doing only gravity comp
-        //     VectorX<double> gtau = robot_thread_->inverseDynamics(cache_, f_ext, qd_0, false);
+        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
         //=============================================
         vd = (M_.inverse()*(tau - bias_term_)).head(stateSize/2);
-        //    vd = M_.inverse()*(tau + bias_term_2 - bias_term_ );
-        //    vd = M_.inverse()*(tau - bias_term_ + gtau);
-        //    vd = M_.inverse()*(tau + gtau);
         Xdot_new << qd, vd;
         
         if(finalTimeProfile.counter0_ == 10){
@@ -274,20 +262,6 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
             finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
         }
         
-        if ((globalcnt%4 == 0) && (globalcnt<40)) {
-            // cout << "=== q ===" << endl << q << endl;
-            // cout << "=== qd ===" << endl << qd << endl;
-            // cout << "=== kinematic cache Q ===" << endl<< cache_.getQ() <<endl;
-            // cout << "===kinematic cache V ===" << endl<< cache_.getV() <<endl;
-            // cout << "=== M ===: " << endl << M_ << endl;
-            // cout << "===Bias ==:" << endl << bias_term_ << endl;
-            // cout << "=== gtau=== : " << endl << gtau << endl;
-            // cout << "=== tau=== : " << endl << tau << endl;
-            // cout << "size::" <<  f_ext.size() << endl;
-            // for (auto& x: f_ext) {
-            //     cout << x.first << ": " << x.second << endl;
-            // }
-        }
         if (globalcnt < 40)
             globalcnt += 1;
 
@@ -303,21 +277,9 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_;
         plant_->CalcMassMatrix(*context, &M_);
         
-        // MultibodyForces<double> f_ext(*plant_);
-        // VectorXd vdot(plant_->num_velocities());
-        // vdot.setZero();
-        // VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
         VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context);
         //=============================================
-        // Gravity compensation?? - From Yuki 
-
-        //Set false for doing only gravity comp
-        //     VectorX<double> gtau = robot_thread_->inverseDynamics(cache_, f_ext, qd_0, false);
-        //=============================================
         vd = (M_.inverse()*(tau - bias_term_));
-        //    vd = M_.inverse()*(tau + bias_term_2 - bias_term_ );
-        //    vd = M_.inverse()*(tau - bias_term_ + gtau);
-        //    vd = M_.inverse()*(tau + gtau);
         Xdot_new << qd, vd;
         
         if(finalTimeProfile.counter0_ == 10){
@@ -325,20 +287,6 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
             finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
         }
         
-        if ((globalcnt%4 == 0) && (globalcnt<40)) {
-            // cout << "=== q ===" << endl << q << endl;
-            // cout << "=== qd ===" << endl << qd << endl;
-            // cout << "=== kinematic cache Q ===" << endl<< cache_.getQ() <<endl;
-            // cout << "===kinematic cache V ===" << endl<< cache_.getV() <<endl;
-            // cout << "=== M ===: " << endl << M_ << endl;
-            // cout << "===Bias ==:" << endl << bias_term_ << endl;
-            // cout << "=== gtau=== : " << endl << gtau << endl;
-            // cout << "=== tau=== : " << endl << tau << endl;
-            // cout << "size::" <<  f_ext.size() << endl;
-            // for (auto& x: f_ext) {
-            //     cout << x.first << ": " << x.second << endl;
-            // }
-        }
         if (globalcnt < 40)
             globalcnt += 1;
 
@@ -436,13 +384,6 @@ void KukaArm::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xLi
         costFunction->getcxx()[Nl-1] = costFunction->getQf();
         costFunction->getcux()[Nl-1].setZero();
         costFunction->getcuu()[Nl-1] = costFunction->getR();
-
-        // for (unsigned int a=0; a<Nl; a++) {
-        //     cout << "cost derivative: " << a << endl;
-        //     cout << costFunction->getcx()[a] << endl;
-        //     cout << "xList: " << a << endl;
-        //     cout << xList[a] << endl;
-        // }
 
         if(debugging_print) TRACE_KUKA_ARM("set unused matrices to zero \n");
 
