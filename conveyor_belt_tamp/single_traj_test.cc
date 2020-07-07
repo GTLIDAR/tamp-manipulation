@@ -12,7 +12,7 @@
 #include "drake/traj_gen/admm_runner.h"
 #include "drake/traj_gen/ddp_runner.h"
 
-#include "drake/lcmt_ddp_traj.hpp"
+#include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
 
 DEFINE_bool(use_admm, true, "whether to use admm or ddp");
@@ -85,7 +85,7 @@ void Run(const lcmt_motion_plan_query* query) {
         return;
     }
 
-    lcmt_ddp_traj traj;
+    lcmt_manipulator_traj traj;
     if (FLAGS_use_admm) {
         traj = GetADMMRes(iiwa_q, q_goal, query);
     } else {
@@ -111,7 +111,7 @@ string model_path_;
 LCM lcm_;
 const lcmt_motion_plan_query* current_query_;
 
-lcmt_ddp_traj GetDDPRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal, 
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to ddp\n";
 
@@ -129,7 +129,7 @@ lcmt_ddp_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     return runner.RunUDP(qv_init, q_goal, query);
 }
 
-lcmt_ddp_traj GetADMMRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal, 
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to admm\n";
 

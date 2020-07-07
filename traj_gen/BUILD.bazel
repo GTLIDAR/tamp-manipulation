@@ -15,7 +15,6 @@ drake_cc_library(
     hdrs = ["cost_function_kuka_arm.h",
             "config.h",],
     visibility = ["//visibility:public"],
-    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "@eigen",
     ]
@@ -40,7 +39,6 @@ drake_cc_library(
             "cost_function_kuka_arm.h",
             ],
     visibility = ["//visibility:public"],
-    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",

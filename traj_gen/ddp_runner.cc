@@ -4,7 +4,7 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal, 
+lcmt_manipulator_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal, 
   const lcmt_motion_plan_query* query) {
     struct timeval tbegin,tend;
     double texec = 0.0;
@@ -174,7 +174,7 @@ lcmt_ddp_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
     // traj_knot_number_ = 0;
 
     // need this for dynamic memory allocation (push_back)
-    auto ptr = std::make_unique<lcmt_ddp_traj>();
+    auto ptr = std::make_unique<lcmt_manipulator_traj>();
     
     ptr->dim_torques = 0;//kNumJoints;
     ptr->dim_states = kNumJoints; //disregard joint velocity

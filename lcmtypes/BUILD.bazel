@@ -40,10 +40,10 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
-    name = "ddp_traj",
+    name = "manipulator_traj",
     lcm_package = "drake",
     lcm_srcs = [
-        "lcmt_ddp_traj.lcm",
+        "lcmt_manipulator_traj.lcm",
     ]
 )
 
@@ -426,7 +426,7 @@ LCMTYPES_CC = [
     ":whole_body_data",
     ":zmp_data",
     ":zmp_com_observer_state",
-    ":ddp_traj",
+    ":manipulator_traj",
     ":generic_string_msg",
     ":motion_plan_query",
     ":combined_object_state",

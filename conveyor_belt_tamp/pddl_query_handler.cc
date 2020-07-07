@@ -11,7 +11,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/lcmt_motion_plan_query.hpp"
-#include "drake/lcmt_ddp_traj.hpp"
+#include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/traj_gen/ddp_runner.h"
 #include "drake/traj_gen/admm_runner.h"
 
@@ -109,7 +109,7 @@ void HandleQuery(
     }
 
     std::cout<<"\n";
-    lcmt_ddp_traj traj;
+    lcmt_manipulator_traj traj;
     if (!ik_feasible) {
         traj = GetInfCost();
         lcm_.publish(FLAGS_result_channel, &traj);
@@ -177,9 +177,9 @@ void HandleQuery(
     std::cout << "--------"<<query->name<<" Trajectory Published to LCM! --------" << endl;
 }
 
-lcmt_ddp_traj GetInfCost() {
+lcmt_manipulator_traj GetInfCost() {
     std::cout<<"IK FAILED, publishing Inf cost\n";
-    auto msg = std::make_unique<lcmt_ddp_traj>();
+    auto msg = std::make_unique<lcmt_manipulator_traj>();
     msg->cost = std::numeric_limits<double>::infinity();
     msg->n_time_steps = 0;
     msg->dim_states = 0;
@@ -188,7 +188,7 @@ lcmt_ddp_traj GetInfCost() {
     return *msg;
 }
 
-lcmt_ddp_traj GetDDPRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal, 
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to ddp\n";
 
@@ -206,7 +206,7 @@ lcmt_ddp_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     return runner.RunUDP(qv_init, q_goal, query);
 }
 
-lcmt_ddp_traj GetADMMRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal, 
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to admm\n";
 

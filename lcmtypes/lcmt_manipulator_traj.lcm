@@ -1,6 +1,6 @@
 package drake;
 
-struct lcmt_ddp_traj {
+struct lcmt_manipulator_traj {
     // specify dimensions of matrices
     int32_t n_time_steps; // number of time steps
     int32_t dim_torques; // number of torques dimensions

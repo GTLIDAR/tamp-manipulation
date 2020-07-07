@@ -9,7 +9,7 @@
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
-#include "drake/lcmt_ddp_traj.hpp"
+#include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_generic_string_msg.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
@@ -58,7 +58,7 @@ class RobotPlanRunner {
     int plan_number_;
     lcmt_iiwa_status iiwa_status_;
     lcmt_iiwa_command iiwa_command_;
-    lcmt_ddp_traj ddp_traj_;
+    lcmt_manipulator_traj manip_traj_;
     bool has_active_plan_;
     int cur_plan_number_;
     int cur_traj_idx_;
@@ -92,16 +92,16 @@ class RobotPlanRunner {
 
             cur_traj_time_sec_ = (iiwa_status_.utime - start_utime_)/1e6;
             if (cur_traj_idx_ % 10 == 0) {
-                std::cout<<"Total length: "<<ddp_traj_.times_sec.size()<<"\n";
+                std::cout<<"Total length: "<<manip_traj_.times_sec.size()<<"\n";
                 std::cout<<"Cur Idx: "<<cur_traj_idx_<<"\n";
                 std::cout<< "Plan Runner Time: "<<cur_traj_time_sec_<<"\n";
-                std::cout<< "Plan Time: "<<ddp_traj_.times_sec[cur_traj_idx_]<<"\n\n";
+                std::cout<< "Plan Time: "<<manip_traj_.times_sec[cur_traj_idx_]<<"\n\n";
             }
             // increment cur_traj_idx until appropriate command is found
-            while (cur_traj_time_sec_ > ddp_traj_.times_sec[cur_traj_idx_]) {
+            while (cur_traj_time_sec_ > manip_traj_.times_sec[cur_traj_idx_]) {
                 cur_traj_idx_++;
                 // check if current traj is finished
-                if (cur_traj_idx_ >= ddp_traj_.n_time_steps) {
+                if (cur_traj_idx_ >= manip_traj_.n_time_steps) {
                     std::cout<<"Current plan completed. Waiting for new plan\n";
                     
                     has_active_plan_ = false;     
@@ -115,28 +115,28 @@ class RobotPlanRunner {
 
             // if new traj time step reached, publish new command
             iiwa_command_.utime = iiwa_status_.utime;
-            iiwa_command_.num_torques = ddp_traj_.dim_torques;
+            iiwa_command_.num_torques = manip_traj_.dim_torques;
             iiwa_command_.joint_position.resize(iiwa_command_.num_joints);
             iiwa_command_.joint_torque.resize(iiwa_command_.num_torques);
 
-            if (ddp_traj_.dim_torques) {
+            if (manip_traj_.dim_torques) {
                 iiwa_command_.joint_position = iiwa_status_.joint_position_measured;
                 for (int i=0; i<kNumIiwaJoints; i++) {
                     iiwa_command_.joint_torque[i] = 
-                        ddp_traj_.torques[cur_traj_idx_][i+kIiwaTorqueStartIdx];
+                        manip_traj_.torques[cur_traj_idx_][i+kIiwaTorqueStartIdx];
                 }
             } else {
                 for (int i=0; i<kNumIiwaJoints; i++) { 
                     iiwa_command_.joint_position[i] = 
-                        ddp_traj_.states[cur_traj_idx_][i+kIiwaTorqueStartIdx];
+                        manip_traj_.states[cur_traj_idx_][i+kIiwaTorqueStartIdx];
                 }
             }
             
             lcm_.publish(kLcmCommandChannel, &iiwa_command_);
 
             wsg_command_.utime = wsg_status_.utime;
-            wsg_command_.target_position_mm = ddp_traj_.gripper_width[cur_traj_idx_];
-            wsg_command_.force = ddp_traj_.gripper_force[cur_traj_idx_];
+            wsg_command_.target_position_mm = manip_traj_.gripper_width[cur_traj_idx_];
+            wsg_command_.force = manip_traj_.gripper_force[cur_traj_idx_];
 
             lcm_.publish(kLcmSchunkWsgCommandChannel, &wsg_command_);
 
@@ -147,7 +147,7 @@ class RobotPlanRunner {
     }
     
     void HandleIiwaTraj(const lcm::ReceiveBuffer*, const std::string&,
-                        const lcmt_ddp_traj* plan) {
+                        const lcmt_manipulator_traj* plan) {
         std::cout<<"Received new plan.\n";
 
         if (iiwa_status_.utime == -1) {
@@ -155,7 +155,7 @@ class RobotPlanRunner {
             return;
         }
 
-        ddp_traj_ = *plan;
+        manip_traj_ = *plan;
         has_active_plan_ = true;
         plan_number_++;
     }

@@ -9,7 +9,7 @@
 #include <list>
 
 #include "lcm/lcm-cpp.hpp"
-#include "drake/lcmt_ddp_traj.hpp"
+#include "drake/lcmt_manipulator_traj.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
@@ -62,7 +62,7 @@ using multibody::MultibodyForces;
 
 class DDPRunner {
 public:
-lcmt_ddp_traj RunUDP(stateVec_t xinit, stateVec_t xgoal, 
+lcmt_manipulator_traj RunUDP(stateVec_t xinit, stateVec_t xgoal, 
     const lcmt_motion_plan_query* query);
 void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);

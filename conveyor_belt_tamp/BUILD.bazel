@@ -78,7 +78,7 @@ drake_cc_binary(
         "//common:find_resource",
         "//multibody/tree",
         "//lcmtypes:iiwa",
-        "//lcmtypes:ddp_traj",
+        "//lcmtypes:manipulator_traj",
         "//lcmtypes:generic_string_msg",
         "//lcmtypes:schunk",
     ]
@@ -116,7 +116,7 @@ drake_cc_binary(
         "//math:geometric_transform",
         "//traj_gen:admm_runner",
         "//traj_gen:ddp_runner",
-        "//lcmtypes:ddp_traj",
+        "//lcmtypes:manipulator_traj",
         "//lcmtypes:motion_plan_query",
     ],
 )
@@ -134,7 +134,7 @@ drake_cc_binary(
         "//manipulation/planner:constraint_relaxing_ik",
         "//math:geometric_transform",
         "//lcmtypes:motion_plan_query",
-        "//lcmtypes:ddp_traj",
+        "//lcmtypes:manipulator_traj",
         "//traj_gen:ddp_runner",
         "//traj_gen:admm_runner",
     ],

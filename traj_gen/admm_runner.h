@@ -16,7 +16,7 @@
 
 #include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
-#include "drake/lcmt_ddp_traj.hpp"
+#include "drake/lcmt_manipulator_traj.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
@@ -88,7 +88,7 @@ using math::RollPitchYaw;
 
 class ADMMRunner {
   public:
-  lcmt_ddp_traj RunADMM(stateVec_t xinit, stateVec_t xgoal, 
+  lcmt_manipulator_traj RunADMM(stateVec_t xinit, stateVec_t xgoal, 
     const lcmt_motion_plan_query* query);
 
   projStateAndCommandTab_t projection(const stateVecTab_t& xnew, 
@@ -103,7 +103,7 @@ class ADMMRunner {
 
  private:
   // lcm::LCM lcm_;
-  // lcmt_ddp_traj ddp_traj_;
+  // lcmt_manipulator_traj ddp_traj_;
 
   //UDP parameters
   stateVecTab_t joint_state_traj;
