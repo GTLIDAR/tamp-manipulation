@@ -86,51 +86,47 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
 
     std::string urdf_;
-    systems::DiagramBuilder<double> builder;
-    multibody::MultibodyPlant<double>* plant_{};
-    geometry::SceneGraph<double>* scene_graph_{};
-    std::tie(plant_, scene_graph_) =
-      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
-    multibody::Parser parser(plant_, scene_graph_);
+    auto plant_ = multibody::MultibodyPlant<double>(0.0);
+    multibody::Parser parser(&plant_);
     
     const ModelInstanceIndex iiwa_model = 
       parser.AddModelFromFile(kIiwaUrdf, "iiwa");
-    const auto& iiwa_base_frame = plant_->GetFrameByName("iiwa_link_0", iiwa_model);
+    const auto& iiwa_base_frame = plant_.GetFrameByName("iiwa_link_0", iiwa_model);
     RigidTransformd X_WI(Eigen::Vector3d(0, 0, 0));
-    plant_->WeldFrames(plant_->world_frame(), iiwa_base_frame, X_WI);
+    plant_.WeldFrames(plant_.world_frame(), iiwa_base_frame, X_WI);
 
     const ModelInstanceIndex conn_model = 
       parser.AddModelFromFile(connectorPath, "connector");
-    const auto& iiwa_ee_frame = plant_->GetFrameByName("iiwa_frame_ee", iiwa_model);
-    const auto& conn_frame = plant_->GetFrameByName("connector_link", conn_model);
+    const auto& iiwa_ee_frame = plant_.GetFrameByName("iiwa_frame_ee", iiwa_model);
+    const auto& conn_frame = plant_.GetFrameByName("connector_link", conn_model);
     RigidTransformd X_EC(Eigen::Vector3d(0, 0, 0));
-    plant_->WeldFrames(iiwa_ee_frame, conn_frame, X_EC);
+    plant_.WeldFrames(iiwa_ee_frame, conn_frame, X_EC);
 
     const ModelInstanceIndex wsg_model = 
       parser.AddModelFromFile(schunkPath, "wsg");
-    const auto& wsg_frame = plant_->GetFrameByName("wsg_50_base_link", wsg_model);
+    const auto& wsg_frame = plant_.GetFrameByName("wsg_50_base_link", wsg_model);
     RigidTransformd X_EG(RollPitchYaw<double>(0, 0, M_PI_2),
                                 Vector3d(0, 0, 0.0175));
-    plant_->WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
+    plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
-    plant_->Finalize();
+    plant_.Finalize();
 
-    auto context_ptr = plant_->CreateDefaultContext();
+    auto context_ptr = plant_.CreateDefaultContext();
     auto context = context_ptr.get();
 
     VectorXd q_v_iiwa(14);
     q_v_iiwa.setZero();
     q_v_iiwa.head(7) = xinit;
-    plant_->SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
+    plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
 
-    MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
-    plant_->CalcMassMatrix(*context, &M_);
+    MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
+    plant_.CalcMassMatrix(*context, &M_);
 
-    VectorXd gtau_wb = plant_->CalcGravityGeneralizedForces(*context);
+    VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
 
     cout << "bias total" << endl << gtau_wb << endl;
     #if WHOLE_BODY
-      KukaArm_TRK KukaArmModel(dt, N, xgoal, plant_, query->name);
+      KukaArm_TRK KukaArmModel(dt, N, xgoal, &plant_, query->name);
     #else
       KukaArm_TRK KukaArmModel(dt, N, xgoal, query->name);
     #endif

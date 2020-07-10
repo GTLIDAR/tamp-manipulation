@@ -139,8 +139,6 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
-        "//systems/framework:diagram_builder",
-        "//geometry:scene_graph",
     ],
 )
 
@@ -172,7 +170,5 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
-        "//systems/framework:diagram_builder",
-        "//geometry:scene_graph",
     ],
 )
