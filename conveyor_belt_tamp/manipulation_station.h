@@ -24,7 +24,7 @@ namespace manipulation_station {
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which manipulation station is simulated.
-enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa, kConveyorBelt };
+enum class Setup { kNone, kConveyorBelt };
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -139,37 +139,6 @@ class ManipulationStation : public systems::Diagram<T> {
 
   void SetupConveyorBeltStation(
     IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
-
-  /// Adds a default iiwa, wsg, two bins, and a camera, then calls
-  /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
-  /// the appropriate arguments.
-  /// @note Must be called before Finalize().
-  /// @note Only one of the `Setup___()` methods should be called.
-  /// @param X_WCameraBody Transformation between the world and the camera body.
-  /// @param collision_model Determines which sdf is loaded for the IIWA.
-  void SetupClutterClearingStation(
-      const std::optional<const math::RigidTransformd>& X_WCameraBody = {},
-      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
-
-  /// Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT
-  /// Intelligent Robot Manipulation class, then calls
-  /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
-  /// the appropriate arguments.
-  /// @note Must be called before Finalize().
-  /// @note Only one of the `Setup___()` methods should be called.
-  /// @param collision_model Determines which sdf is loaded for the IIWA.
-  void SetupManipulationClassStation(
-      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
-
-  /// Adds a version of the iiwa with joints that would result in
-  /// out-of-plane rotations welded in a fixed orientation, reducing the
-  /// total degrees of freedom of the arm to 3.  This arm lives in the X-Z
-  /// plane.  Also adds the WSG planar gripper and two tables to form the
-  /// workspace.  Note that additional floating base objects (aka
-  /// manipulands) will still potentially move in 3D.
-  /// @note Must be called before Finalize().
-  /// @note Only one of the `Setup___()` methods should be called.
-  void SetupPlanarIiwaStation();
 
   /// Sets the default State for the chosen setup.
   /// @param context A const reference to the ManipulationStation context.

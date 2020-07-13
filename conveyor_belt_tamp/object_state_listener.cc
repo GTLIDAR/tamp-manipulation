@@ -29,7 +29,7 @@ class ObjectStateListener {
         state_num_++;
 
         if (state_num_%10==0) {
-            std::cout<<"N_Objects: "<<status->n_objects<<"\n";
+            std::cout<<"N_Objects: "<<status->num_objects<<"\n";
             std::cout<<"utime: "<<status->utime<<"\n";
             for (int i = 0; i < status->q_dim; i++) {
                 std::cout<< status->q[0][i] <<" ";
