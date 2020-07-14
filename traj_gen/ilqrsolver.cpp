@@ -56,7 +56,7 @@ void ILQRSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, c
     N = iiwaN;
     dt = iiwadt;
     initCommand = initialTorque;
-    
+
     //TRACE("initialize option parameters\n");
     //Op = INIT_OPTSET;
     standardizeParameters(&Op);
@@ -84,7 +84,7 @@ void ILQRSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, c
     FList.resize(N+1);
     Vx.resize(N+1);
     Vxx.resize(N+1);
-    
+
     for(unsigned int i=0;i<N;i++){
         xList[i].setZero();
         uList[i].setZero();
@@ -95,7 +95,7 @@ void ILQRSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, c
         costListNew[i] = 0;
         kList[i].setZero();
         KList[i].setZero();
-        FList[i].setZero();    
+        FList[i].setZero();
         Vx[i].setZero();
         Vxx[i].setZero();
     }
@@ -107,7 +107,7 @@ void ILQRSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, c
     FList[N].setZero();
     Vx[N].setZero();
     Vxx[N].setZero();
-    
+
     k.setZero();
     K.setZero();
     dV.setZero();
@@ -133,7 +133,7 @@ void ILQRSolver::solveTrajectory()
 
     Op.lambda = Op.lambdaInit;
     Op.dlambda = Op.dlambdaInit;
-    
+
     // TODO: update multipliers
     //update_multipliers(Op, 1);
 
@@ -147,7 +147,7 @@ void ILQRSolver::solveTrajectory()
             int nargout = 7;//fx,fu,cx,cu,cxx,cxu,cuu
             for(unsigned int i=0;i<u_NAN.size();i++)
                 u_NAN(i,0) = sqrt(-1.0); // control vector = Nan for last time step
-            
+
             for(unsigned int i=0;i<uList.size();i++) {
                 uListFull[i] = uList[i];
                 // cout << "UlistFULL " << i << endl;
@@ -235,13 +235,13 @@ void ILQRSolver::solveTrajectory()
             gettimeofday(&tend_time_fwd,NULL);
             Op.time_forward(iter) = (static_cast<double>(1000*(tend_time_fwd.tv_sec-tbegin_time_fwd.tv_sec)+((tend_time_fwd.tv_usec-tbegin_time_fwd.tv_usec)/1000)))/1000.0;
         }
-        
+
         //====== STEP 4: accept step (or not), draw graphics, print status
         if (Op.debug_level > 1 && Op.last_head == Op.print_head){
             Op.last_head = 0;
             TRACE("iteration,\t cost, \t reduction, \t expected, \t gradient, \t log10(lambda) \n");
         }
-        
+
         if(fwdPassDone){
             // print status
             if (Op.debug_level > 1){
@@ -263,7 +263,7 @@ void ILQRSolver::solveTrajectory()
             if(Op.dcost < Op.tolFun) {
                 if(Op.debug_level >= 1)
                     TRACE(("\nSUCCESS: cost change < tolFun\n"));
-            
+
                 break;
             }
         }
@@ -277,7 +277,7 @@ void ILQRSolver::solveTrajectory()
             //     o->w_pen_f= min(o->w_pen_max_f, o->w_pen_f*o->w_pen_fact2);
             //     forward_pass(o->nominal, o, 0.0, &o->cost, 1);
             // }
-            
+
             // print status
             if(Op.debug_level >= 1){
                 if(!debugging_print) printf("%-14d%-12.9s%-15.3g%-15.3g%-19.3g%-17.1f\n", iter+1, "No STEP", Op.dcost, Op.expected, Op.g_norm, log10(Op.lambda));
@@ -298,12 +298,12 @@ void ILQRSolver::solveTrajectory()
     if(!backPassDone) {
         if(Op.debug_level >= 1)
             TRACE(("\nEXIT: no descent direction found.\n"));
-        
-        return;    
+
+        return;
     } else if(iter >= Op.max_iter) {
         if(Op.debug_level >= 1)
             TRACE(("\nEXIT: Maximum iterations reached.\n"));
-        
+
         return;
     }
 }
@@ -320,9 +320,9 @@ void ILQRSolver::initializeTraj()
     diverge = 1;
 
     // cout << "Op alphaList size: " << Op.alphaList.size() << endl; // 11
-    
+
     for(int alpha_index = 0; alpha_index < Op.alphaList.size(); alpha_index++){
-        alpha = Op.alphaList[alpha_index]; // alpha = 1, 
+        alpha = Op.alphaList[alpha_index]; // alpha = 1,
 
         // cout << "alpha: " << alpha << endl;
 
@@ -355,7 +355,7 @@ void ILQRSolver::initializeTraj()
             break;
         }
     }
-    
+
     initFwdPassDone = 1;
     xList = updatedxList;
 
@@ -390,19 +390,19 @@ void ILQRSolver::standardizeParameters(tOptSet *o) {
     o->w_pen_max_l = 1e100;//set to INF originally
     o->w_pen_max_f = 1e100;//set to INF originally
     o->w_pen_fact1 = 4.0; // 4...10 Bertsekas p. 123
-    o->w_pen_fact2 = 1.0; 
+    o->w_pen_fact2 = 1.0;
     o->print = 2;
 }
 
 void ILQRSolver::doBackwardPass()
-{    
+{
     if(Op.regType == 1)
         lambdaEye = Op.lambda*stateMat_t::Identity();
     else
         lambdaEye = Op.lambda*stateMat_t::Zero();
 
     diverge = 0;
-    
+
     g_norm_sum = 0.0;
     Vx[N] = costFunction->getcx()[N];
     Vxx[N] = costFunction->getcxx()[N];
@@ -420,7 +420,7 @@ void ILQRSolver::doBackwardPass()
             QuuF = Quu + Op.lambda*commandMat_t::Identity();
         else
             QuuF = Quu;
-        
+
         // if(enableFullDDP)
         // {
             //Qxx += dynamicModel->computeTensorContxx(nextVx);
@@ -432,12 +432,12 @@ void ILQRSolver::doBackwardPass()
             // Quu += dynamicModel->computeTensorContuu(Vx[i+1]);
             // QuuF += dynamicModel->computeTensorContuu(Vx[i+1]);
         // }
-        
+
         QuuInv = QuuF.inverse();
 
         if(!isPositiveDefinite(Quu))
         {
-            
+
             //To be Implemented : Regularization (is Quu definite positive ?)
             TRACE("Quu is not positive definite");
             if(Op.lambda==0.0) Op.lambda += 1e-4;
@@ -471,9 +471,9 @@ void ILQRSolver::doBackwardPass()
             // Cholesky decomposition by using upper triangular matrix
             //TRACE("Use Cholesky decomposition");
             Eigen::LLT<MatrixXd> lltOfQuuF(QuuF);
-            Eigen::MatrixXd L = lltOfQuuF.matrixU(); 
+            Eigen::MatrixXd L = lltOfQuuF.matrixU();
             //assume QuuF is positive definite
-            
+
             //A temporary solution: check the non-PD case
             if(lltOfQuuF.info() == Eigen::NumericalIssue)
                 {

@@ -111,7 +111,7 @@ string model_path_;
 LCM lcm_;
 const lcmt_motion_plan_query* current_query_;
 
-lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to ddp\n";
 
@@ -129,7 +129,7 @@ lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     return runner.RunUDP(qv_init, q_goal, query);
 }
 
-lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to admm\n";
 
@@ -162,15 +162,23 @@ int main(int argc, char* argv[]) {
     query.time_step = 0.005;
     query.wait_time = 0;
 
-    double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
+    // double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
+    double prev_q[] = {-0.9498766005895738, -1.4303909653637479, 2.0864686773500476, -1.4801119967595946, 0.11195986419142938, 0.889741592707635, -0.003942442475240289};
     query.prev_q = std::vector<double>(prev_q, prev_q+sizeof(prev_q)/sizeof(double));
 
-    query.desired_ee[0] = 0.4;
-    query.desired_ee[1] = 0.1;
-    query.desired_ee[2] = 0.5;
+    // query.desired_ee[0] = 0.4;
+    // query.desired_ee[1] = 0.1;
+    // query.desired_ee[2] = 0.5;
+    // query.desired_ee[3] = 0;
+    // query.desired_ee[4] = 0;
+    // query.desired_ee[5] = -1.57;
+
+    query.desired_ee[0] = 0.5656;
+    query.desired_ee[1] = 0.0;
+    query.desired_ee[2] = 0.25;
     query.desired_ee[3] = 0;
     query.desired_ee[4] = 0;
-    query.desired_ee[5] = -1.57;
-    
+    query.desired_ee[5] = -0.7854;
+
     runner.Run(&query);
 }

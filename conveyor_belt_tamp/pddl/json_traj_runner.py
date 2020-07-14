@@ -11,7 +11,7 @@ sys.path.append(PDDL_DIR)
 
 from utils.traj_utils import dict_to_lcmt_manipulator_traj
 
-JSON_FILENAME = "/home/zhigen/code/pddl_planning/results/20200710T134540/traj0.json"
+JSON_FILENAME = "/home/zhigen/code/pddl_planning/results/traj20200714T142848.json"
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 
@@ -19,7 +19,7 @@ class JsonManipulatorTrajRunner:
     def __init__(self, filename):
         with open(filename) as fp:
             self.plan = json.load(fp)
-        
+
         self._lcm = LCM()
         self._lcm.subscribe("EXECUTION_STATUS", self._kuka_plan_runner_status_handler)
 
@@ -33,7 +33,7 @@ class JsonManipulatorTrajRunner:
         if len(self.plan):
             print("Node", self.cur_node_id)
             self._publish_node_traj(self.plan[self.cur_node_id])
-        
+
             while True:
                 self._lcm.handle()
                 if self.node_completed:
@@ -45,7 +45,7 @@ class JsonManipulatorTrajRunner:
                     print("Node", self.cur_node_id)
                     self._publish_node_traj(self.plan[self.cur_node_id])
 
-    
+
     def _publish_node_traj(self, node):
         msg = dict_to_lcmt_manipulator_traj(node)
 
@@ -57,7 +57,7 @@ class JsonManipulatorTrajRunner:
         if msg.n_time_steps:
             self._lcm.publish("COMMITTED_ROBOT_PLAN", msg.encode())
             print("Trajectory Published!")
-    
+
     def _kuka_plan_runner_status_handler(self, channel, msg):
         print("Kuka Traj Completed")
         self.node_completed = True
@@ -70,11 +70,11 @@ class JsonManipulatorTrajRunner:
     def _start_plan_handler(self, channel, msg):
         self.plan_started = True
         print("Starting plan")
-        self.run_plan() 
+        self.run_plan()
 
 def main():
     runner = JsonManipulatorTrajRunner(JSON_FILENAME)
     runner.run_plan__lcmwrapper()
-    
+
 if __name__=="__main__":
     main()

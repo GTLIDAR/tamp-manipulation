@@ -31,7 +31,7 @@ namespace conveyor_belt_tamp {
 namespace manipulation_station {
 DEFINE_double(conveyor_velocity, 0.1, "Velocity of conveyor belt");
 DEFINE_double(
-    target_real_time, 
+    target_real_time,
     1,
     "Playback Speed, See documentation for Simulator::set_target_realtime_rate()"
 );
@@ -61,8 +61,8 @@ int do_main(int argc, char* argv[]) {
     const std::string box_sdf_path = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
     math::RigidTransform<double> X_WO1(
         math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.03, 
-                        0 + yAdditionalOffset,//-1.8, 
+        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.03,
+                        0 + yAdditionalOffset,//-1.8,
                         kConveyorBeltTopZInWorld+0.1)
     );
     station->AddManipulandFromFile(box_sdf_path, X_WO1);
@@ -71,48 +71,48 @@ int do_main(int argc, char* argv[]) {
     const std::string box_sdf_path3 = "drake/conveyor_belt_tamp/models/boxes/black_box.urdf";
     math::RigidTransform<double> X_WO3(
         math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.1, 
-                        -0.4 + yAdditionalOffset,//-1.8, 
+        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.1,
+                        -0.4 + yAdditionalOffset,//-1.8,
                         kConveyorBeltTopZInWorld+0.1)
     );
     station->AddManipulandFromFile(box_sdf_path3, X_WO3);
 
-    // // box_2 inside black box
-    // const std::string black_box_urdf_path4 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
-    // math::RigidTransform<double> X_WO7(
-    //     math::RotationMatrix<double>::Identity(),
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2-0.1, 
-    //                     -0.4 + yAdditionalOffset, 
+    // box_2 inside black box
+    const std::string black_box_urdf_path4 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
+    math::RigidTransform<double> X_WO7(
+        math::RotationMatrix<double>::Identity(),
+        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2-0.1,
+                        -0.4 + yAdditionalOffset,
+                        kConveyorBeltTopZInWorld+0.1)
+    );
+    station->AddManipulandFromFile(black_box_urdf_path4, X_WO7);
+
+    // // box_3 first large box
+    // const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
+    // math::RigidTransform<double> X_WOO1(
+    //     math::RotationMatrix<double>::MakeYRotation(-M_PI_2), //math::RotationMatrix<double>::Identity()
+    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.01, //0.01
+    //                     -1.0 + yAdditionalOffset, //-1
     //                     kConveyorBeltTopZInWorld+0.1)
     // );
-    // station->AddManipulandFromFile(black_box_urdf_path4, X_WO7);
+    // station->AddManipulandFromFile(large_box_sdf_path01, X_WOO1);
 
-    // box_3 first large box
-    const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
-    math::RigidTransform<double> X_WOO1(
-        math::RotationMatrix<double>::MakeYRotation(-M_PI_2), //math::RotationMatrix<double>::Identity()
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.01, //0.01 
-                        -1.0 + yAdditionalOffset, //-1 
-                        kConveyorBeltTopZInWorld+0.1)
-    );
-    station->AddManipulandFromFile(large_box_sdf_path01, X_WOO1);
-    
-    // box_4 red box behind first big box
-    const std::string box_sdf_path2 = "drake/conveyor_belt_tamp/models/boxes/redblock2.urdf";
-    math::RigidTransform<double> X_WO2(
-        math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.11, 
-                        -1.35 + yAdditionalOffset,//-1.8, 
-                        kConveyorBeltTopZInWorld+0.1)
-    );
-    station->AddManipulandFromFile(box_sdf_path2, X_WO2);
+    // // box_4 red box behind first big box
+    // const std::string box_sdf_path2 = "drake/conveyor_belt_tamp/models/boxes/redblock2.urdf";
+    // math::RigidTransform<double> X_WO2(
+    //     math::RotationMatrix<double>::Identity(),
+    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.11,
+    //                     -1.35 + yAdditionalOffset,//-1.8,
+    //                     kConveyorBeltTopZInWorld+0.1)
+    // );
+    // station->AddManipulandFromFile(box_sdf_path2, X_WO2);
 
     // // box_5 black box before second large box
     // const std::string black_box_urdf_path3 = "drake/conveyor_belt_tamp/models/boxes/black_box3.urdf";
     // math::RigidTransform<double> X_WO6(
     //     math::RotationMatrix<double>::Identity(),
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.012, 
-    //                     -1.75 + yAdditionalOffset, 
+    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.012,
+    //                     -1.75 + yAdditionalOffset,
     //                     kConveyorBeltTopZInWorld+0.1)
     // );
     // station->AddManipulandFromFile(black_box_urdf_path3, X_WO6);
@@ -121,8 +121,8 @@ int do_main(int argc, char* argv[]) {
     // const std::string large_box_sdf_path = "drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf";
     // math::RigidTransform<double> X_WO4(
     //     math::RotationMatrix<double>::MakeYRotation(-M_PI_2), //math::RotationMatrix<double>::Identity()
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.01, //0.01 
-    //                     -2.3 + yAdditionalOffset, //-1 
+    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.01, //0.01
+    //                     -2.3 + yAdditionalOffset, //-1
     //                     kConveyorBeltTopZInWorld+0.1)
     // );
     // station->AddManipulandFromFile(large_box_sdf_path, X_WO4);
@@ -140,7 +140,7 @@ int do_main(int argc, char* argv[]) {
         )
     );
     auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
-    
+
     auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
     auto iiwa_status_publisher = builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_status>(
@@ -150,7 +150,7 @@ int do_main(int argc, char* argv[]) {
     // connect iiwa lcm systems
     builder.Connect(iiwa_command_subscriber->get_output_port(),
                     iiwa_command_receiver->get_message_input_port());
-    
+
     builder.Connect(iiwa_command_receiver->get_commanded_position_output_port(),
                     station->GetInputPort("iiwa_position"));
     builder.Connect(iiwa_command_receiver->get_commanded_torque_output_port(),
@@ -170,7 +170,7 @@ int do_main(int argc, char* argv[]) {
 
     builder.Connect(iiwa_status_sender->get_output_port(),
                     iiwa_status_publisher->get_input_port());
-    
+
     // add wsg lcm systems
     auto wsg_command_subscriber = builder.AddSystem(
         systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_schunk_wsg_command>(
@@ -202,7 +202,7 @@ int do_main(int argc, char* argv[]) {
                     wsg_status_publisher->get_input_port());
 
     // add object lcm systems
-    auto object_state_pub = 
+    auto object_state_pub =
         builder.AddSystem(systems::lcm::LcmPublisherSystem::Make<lcmt_combined_object_state>(
             "OBJECT_STATE", lcm, 0.05 // publish period
         ));

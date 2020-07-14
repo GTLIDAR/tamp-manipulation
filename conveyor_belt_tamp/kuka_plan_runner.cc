@@ -103,9 +103,9 @@ class RobotPlanRunner {
                 // check if current traj is finished
                 if (cur_traj_idx_ >= manip_traj_.n_time_steps) {
                     std::cout<<"Current plan completed. Waiting for new plan\n";
-                    
-                    has_active_plan_ = false;     
-                    
+
+                    has_active_plan_ = false;
+
                     lcmt_generic_string_msg plan_status;
                     plan_status.msg = "Finished";
                     lcm_.publish(kExecutionStatusChannel, &plan_status);
@@ -122,16 +122,16 @@ class RobotPlanRunner {
             if (manip_traj_.dim_torques) {
                 iiwa_command_.joint_position = iiwa_status_.joint_position_measured;
                 for (int i=0; i<kNumIiwaJoints; i++) {
-                    iiwa_command_.joint_torque[i] = 
+                    iiwa_command_.joint_torque[i] =
                         manip_traj_.torques[cur_traj_idx_][i+kIiwaTorqueStartIdx];
                 }
             } else {
-                for (int i=0; i<kNumIiwaJoints; i++) { 
-                    iiwa_command_.joint_position[i] = 
+                for (int i=0; i<kNumIiwaJoints; i++) {
+                    iiwa_command_.joint_position[i] =
                         manip_traj_.states[cur_traj_idx_][i+kIiwaTorqueStartIdx];
                 }
             }
-            
+
             lcm_.publish(kLcmCommandChannel, &iiwa_command_);
 
             wsg_command_.utime = wsg_status_.utime;
@@ -142,10 +142,10 @@ class RobotPlanRunner {
 
 
             cur_traj_idx_++;
-                
+
         }
     }
-    
+
     void HandleIiwaTraj(const lcm::ReceiveBuffer*, const std::string&,
                         const lcmt_manipulator_traj* plan) {
         std::cout<<"Received new plan.\n";
