@@ -250,23 +250,23 @@ void ManipulationStation<T>::SetupConveyorBeltStation(
 
     RigidTransform<double> X_WC(RotationMatrix<double>::MakeZRotation(M_PI_2),
                                 Vector3d(1, 0., kTableTopZInWorld-bin_height-0.05));
-    internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_path, "bin_0", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
 
     X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
                                   Vector3d(1, 0.55, kTableTopZInWorld-bin_height-0.05));
-    internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_path, "bin_1", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
 
     X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
                                   Vector3d(1, -0.55, kTableTopZInWorld-bin_height-0.05));
-    internal::AddAndWeldModelFrom(sdf_path, "bin3", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_path, "bin_2", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
 
     // throw bin
     X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
                                   Vector3d(1.75, 0., kTableTopZInWorld-bin_height-0.05));
-    internal::AddAndWeldModelFrom(sdf_path, "bin4", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_path, "bin_3", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
   }
 
@@ -590,12 +590,13 @@ void ManipulationStation<T>::Finalize(
 
   { // Object State Estimator
   auto object_state_est =
-    builder.template AddSystem<ObjectStateEstimator<T>>(plant_, &object_model_ids_);
+    builder.template AddSystem<ObjectStateEstimator<T>>(plant_, &object_ids_);
 
-  for (size_t i = 0; i < object_model_ids_.size(); i++) {
-    builder.Connect(plant_->get_state_output_port(object_model_ids_[i]),
-                    object_state_est->get_input_port_states(object_model_ids_[i]));
-  }
+
+  builder.Connect(plant_->get_body_poses_output_port(),
+                  object_state_est->get_input_port_body_poses());
+  builder.Connect(plant_->get_body_spatial_velocities_output_port(),
+                  object_state_est->get_input_port_body_velocities());
 
   builder.ExportOutput(object_state_est->get_output_port_msg(), "object_states");
   }

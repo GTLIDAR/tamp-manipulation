@@ -92,6 +92,8 @@ drake_cc_library(
         "//systems/framework",
         "//multibody/plant",
         "//lcmtypes:combined_object_state",
+        "//math:geometric_transform",
+        "//multibody/math:spatial_velocity"
     ]
 )
 

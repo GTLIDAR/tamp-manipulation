@@ -31,10 +31,16 @@ class ObjectStateListener {
         if (state_num_%10==0) {
             std::cout<<"N_Objects: "<<status->num_objects<<"\n";
             std::cout<<"utime: "<<status->utime<<"\n";
+            std::cout<<"q: ";
             for (int i = 0; i < status->q_dim; i++) {
                 std::cout<< status->q[0][i] <<" ";
             }
             std::cout<<"\n";
+            std::cout<<"v: ";
+            for (int i = 0; i < status->v_dim; i++) {
+                std::cout<< status->v[0][i] <<" ";
+            }
+
         }
     }
 };
