@@ -101,27 +101,28 @@ enum class ContactModel {
 /// collection of interconnected bodies.  See @ref multibody for an overview of
 /// concepts/notation.
 ///
-/// @system{MultibodyPlant,
-///   @input_port{applied_generalized_force}
-///   @input_port{applied_spatial_force}
-///   @input_port{<em style="color:gray">
-///     model_instance_name[i]</em>_actuation}
-///   @input_port{<span style="color:green">geometry_query</span>},
-///   @output_port{continuous_state}
-///   @output_port{body_poses}
-///   @output_port{body_spatial_velocities}
-///   @output_port{body_spatial_accelerations}
-///   @output_port{generalized_acceleration}
-///   @output_port{reaction_forces}
-///   @output_port{contact_results}
-///   @output_port{<em style="color:gray">
-///     model_instance_name[i]</em>_continuous_state}
-///   @output_port{<em style="color:gray">
-///     model_instance_name[i]</em>_generalized_acceleration}
-///   @output_port{<em style="color:gray">
-///     model_instance_name[i]</em>_generalized_contact_forces}
-///   @output_port{<span style="color:green">geometry_pose</span>}
-/// }
+/// @system
+/// name: MultibodyPlant
+/// input_ports:
+/// - applied_generalized_force
+/// - applied_spatial_force
+/// - <em style="color:gray">model_instance_name[i]</em>_actuation
+/// - <span style="color:green">geometry_query</span>
+/// output_ports:
+/// - continuous_state
+/// - body_poses
+/// - body_spatial_velocities
+/// - body_spatial_accelerations
+/// - generalized_acceleration
+/// - reaction_forces
+/// - contact_results
+/// - <em style="color:gray">model_instance_name[i]</em>_continuous_state
+/// - '<em style="color:gray">
+///   model_instance_name[i]</em>_generalized_acceleration'
+/// - '<em style="color:gray">
+///   model_instance_name[i]</em>_generalized_contact_forces'
+/// - <span style="color:green">geometry_pose</span>
+/// @endsystem
 ///
 /// The ports whose names begin with <em style="color:gray">
 /// model_instance_name[i]</em> represent groups of ports, one for each of the
@@ -315,14 +316,14 @@ enum class ContactModel {
 /// registrations took place. All geometry registration **must** be performed
 /// pre-finalize.
 ///
-/// If %MultibodyPlant registers geometry with a SceneGraph via calls to
-/// RegisterCollisionGeometry(), an input port for geometric queries will be
-/// declared at Finalize() time, see get_geometry_query_input_port(). Users must
-/// connect this input port to the output port for geometric queries of the
-/// SceneGraph used for registration, which can be obtained with
-/// SceneGraph::get_query_output_port().
-/// In summary, if %MultibodyPlant registers collision geometry, the setup
-/// process will include:
+/// %Multibodyplant declares an input port for geometric queries, see
+/// get_geometry_query_input_port(). If %MultibodyPlant registers geometry with
+/// a SceneGraph via calls to RegisterCollisionGeometry(), users may use this
+/// port for geometric queries. Users must connect this input port to the output
+/// port for geometric queries of the SceneGraph used for registration, which
+/// can be obtained with SceneGraph::get_query_output_port(). In summary, if
+/// %MultibodyPlant registers collision geometry, the setup process will
+/// include:
 ///
 /// 1. Call to RegisterAsSourceForSceneGraph().
 /// 2. Calls to RegisterCollisionGeometry(), as many as needed.
@@ -338,8 +339,6 @@ enum class ContactModel {
       the table below. -->
  @anchor accessing_contact_properties
                #### Accessing point contact parameters
- <!-- TODO(joemasterjohn) update this table when other contact parameters
-      are moved into ProximityProperties -->
  %MultibodyPlant's point contact model looks for model parameters stored as
  geometry::ProximityProperties by geometry::SceneGraph. These properties can
  be obtained before or after context creation through
@@ -349,11 +348,19 @@ enum class ContactModel {
  | Group name |   Property Name  | Required |    Property Type   | Property Description |
  | :--------: | :--------------: | :------: | :----------------: | :------------------- |
  |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
+ |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
+ |  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
+
 
  ¹ Collision geometry is required to be registered with a
    geometry::ProximityProperties object that contains the
-   ("material", "coulomb_friction") property. If the parameter
-   is not registered, %MultibodyPlant will throw an exeception.
+   ("material", "coulomb_friction") property. If the property
+   is missing, %MultibodyPlant will throw an exeception.
+
+ ² If the property is missing, %MultibodyPlant will use
+   a heuristic value as the default. Refer to the
+   section @ref mbp_penalty_method "Penalty method point contact" for further
+   details.
 
  Accessing and modifying contact properties requires interfacing with
  geometry::SceneGraph's model inspector. Interfacing with a model inspector
@@ -571,8 +578,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Refer to section @ref mbp_geometry "Geometry" of this class's
   /// documentation for further details on collision geometry registration and
   /// connection with a SceneGraph.
-  /// @throws std::exception if this system was not registered with a
-  /// SceneGraph.
   const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns a constant reference to the output port for the multibody state
@@ -641,8 +646,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
-  /// SceneGraph.
-  /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @} <!-- Input and output ports -->
@@ -725,7 +728,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
-    if (geometry_source_is_registered()) DeclareSceneGraphPorts();
+    DeclareSceneGraphPorts();
 
     // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
@@ -1396,12 +1399,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// positive when the bodies are in contact) and the penetration distance
   /// rate ẋ (with ẋ > 0 meaning the penetration distance is increasing and
   /// therefore the interpenetration between the bodies is also increasing).
-  /// k and d are the penalty method coefficients for stiffness and damping.
+  /// k and d are the combined penalty method coefficients for stiffness and
+  /// dissipation, given a pair of colliding geometries.
+  /// For flexibility of parameterization, stiffness and dissipation are set on
+  /// a per-geometry basis (@ref accessing_contact_properties). Given two
+  /// geometries with individual stiffness and dissipation parameters (k₁, d₁)
+  /// and (k₂, d₂), we define the rule for combined stiffness (k) and
+  /// dissipation (d) as: <pre>
+  ///     k = (k₁⋅k₂)/(k₁+k₂)
+  ///     d = (k₂/(k₁+k₂))⋅d₁ + (k₁/(k₁+k₂))⋅d₂
+  /// </pre>
+  /// These parameters are optional for each geometry. For any geometry not
+  /// assigned these parameters by a user Pre-Finalize, %MultibodyPlant will
+  /// assign default values such that the combined parameters of two geometries
+  /// with default values match those estimated using the user-supplied
+  /// "penetration allowance", as described below.
+  ///
   /// These are ad-hoc parameters which need to be tuned as a trade-off between:
   /// - The accuracy of the numerical approximation to rigid contact, which
   ///   requires a stiffness that approaches infinity, and
   /// - the computational cost of the numerical integration, which will
   ///   require smaller time steps for stiffer systems.
+  ///
   ///
   /// There is no exact procedure for choosing these coefficients, and
   /// estimating them manually can be cumbersome since in general they will
@@ -1417,15 +1436,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// increase it for the simulation of heavy walking robots for which an
   /// allowance of 1 millimeter would result in a very stiff system.
   ///
-  /// As for the damping coefficient in the simple law above, %MultibodyPlant
-  /// chooses the damping coefficient d to model inelastic collisions and
-  /// therefore sets it so that the penetration distance x behaves as a
-  /// critically damped oscillator. That is, at the limit of ideal rigid contact
-  /// (very stiff penalty coefficient k or equivalently the penetration
-  /// allowance goes to zero), this method behaves as a unilateral constraint on
-  /// the penetration distance, which models a perfect inelastic collision. For
-  /// most applications, such as manipulation and walking, this is the desired
-  /// behavior.
+  /// As for the dissipation coefficient in the simple law above,
+  /// %MultibodyPlant chooses the dissipation coefficient d to model inelastic
+  /// collisions and therefore sets it so that the penetration distance x
+  /// behaves as a critically damped oscillator. That is, at the limit of ideal
+  /// rigid contact (very stiff penalty coefficient k or equivalently the
+  /// penetration allowance goes to zero), this method behaves as a unilateral
+  /// constraint on the penetration distance, which models a perfect inelastic
+  /// collision. For most applications, such as manipulation and walking, this
+  /// is the desired behavior.
   ///
   /// When set_penetration_allowance() is called, %MultibodyPlant will estimate
   /// reasonable penalty method coefficients as a function of the input
@@ -2601,8 +2620,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
-    // TODO(Mitiguy) Allow frame_A to be a non-World frame.
-    // TODO(Mitiguy) Per issue #13354, add unit tests for this public method.
     return internal_tree().CalcBiasTranslationalAcceleration(
         context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
   }
@@ -2647,8 +2664,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
-    // TODO(Mitiguy) Allow frame_A to be a non-World frame.
-    // TODO(Mitiguy) Per issue #13354, add unit tests for this public method.
     return internal_tree().CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E);
   }
@@ -2939,8 +2954,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// point Ccm is the composite center of mass of the system of all bodies
   /// (except world_body()) in the MultibodyPlant. abias_ACcm is the part of
   /// a_ACcm (Ccm's translational acceleration) that does not multiply ṡ, equal
-  /// to abias_ACcm = J̇𝑠_v_ACcm * s. This allows a_ACcm to be written as
-  /// a_ACcm = J̇𝑠_v_ACcm * s + abias_ACcm.
+  /// to abias_ACcm = J̇𝑠_v_ACcm ⋅ s. This allows a_ACcm to be written as
+  /// a_ACcm = J𝑠_v_ACcm ⋅ ṡ + abias_ACcm.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -3696,6 +3711,48 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // SceneGraph supports symbolic::Expression.)
   MemberSceneGraph& member_scene_graph();
 
+  // Consolidates calls to Eval on the geometry query input port to have a
+  // consistent and helpful error message in the situation where the
+  // geometry_query_input_port is not connected, but is expected to be.
+  const geometry::QueryObject<T>& EvalGeometryQueryInput(
+      const systems::Context<T>& context) const {
+    if (!get_geometry_query_input_port().HasValue(context)) {
+      throw std::logic_error(
+          "The geometry query input port (see "
+          "MultibodyPlant::get_geometry_query_input_port()) "
+          "of this MultibodyPlant is not connected. Please connect the"
+          "geometry query output port of a SceneGraph object "
+          "(see SceneGraph::get_query_output_port()) to this plants input "
+          "port in a Diagram.");
+    }
+    return get_geometry_query_input_port()
+        .template Eval<geometry::QueryObject<T>>(context);
+  }
+
+  // Helper to acquire per-geometry contact parameters from SG.
+  // Returns the pair (stiffness, dissipation)
+  // Defaults to heuristically computed parameter if the given geometry
+  // isn't assigned that parameter.
+  std::pair<T, T> get_point_contact_parameters(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const {
+    if constexpr (std::is_same<symbolic::Expression, T>::value) {
+      throw std::domain_error(
+          "This method doesn't support T = symbolic::Expression.");
+    }
+    const geometry::ProximityProperties* prop =
+        inspector.GetProximityProperties(id);
+    DRAKE_DEMAND(prop != nullptr);
+    return std::pair(prop->template GetPropertyOrDefault<T>(
+                         geometry::internal::kMaterialGroup,
+                         geometry::internal::kPointStiffness,
+                         penalty_method_contact_parameters_.geometry_stiffness),
+                     prop->template GetPropertyOrDefault<T>(
+                         geometry::internal::kMaterialGroup,
+                         geometry::internal::kHcDissipation,
+                         penalty_method_contact_parameters_.dissipation));
+  }
+
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;
 
@@ -4213,13 +4270,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // no-interpenetration between bodies by a penalty method.
   struct ContactByPenaltyMethodParameters {
     // Penalty method coefficients used to compute contact forces.
-    // TODO(amcastro-tri): consider having these per body. That would allow us
-    // for instance to calibrate the stiffness at the fingers (stiffness related
-    // to the weight of the objects being manipulated) of a walking robot (
-    // stiffness related to the weight of the entire robot) with the same
-    // penetration allowance.
-    double stiffness{0};
-    double damping{0};
+    double geometry_stiffness{0};
+    double dissipation{0};
     // An estimated time scale in which objects come to a relative stop during
     // contact.
     double time_scale{-1.0};
