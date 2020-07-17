@@ -15,7 +15,7 @@
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -99,6 +99,7 @@ void Run(const lcmt_motion_plan_query* query) {
     traj.gripper_force = forces;
     traj.gripper_width = widths;
 
+    std::cout<<"Goal: "<< q_goal<<"\n";
     std::cout<<"Press any key to continue...\n";
     while (std::getc(stdin)==EOF) {}
 
@@ -162,23 +163,23 @@ int main(int argc, char* argv[]) {
     query.time_step = 0.005;
     query.wait_time = 0;
 
-    // double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
-    double prev_q[] = {-0.9498766005895738, -1.4303909653637479, 2.0864686773500476, -1.4801119967595946, 0.11195986419142938, 0.889741592707635, -0.003942442475240289};
+    double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
+    // double prev_q[] = {-0.9498766005895738, -1.4303909653637479, 2.0864686773500476, -1.4801119967595946, 0.11195986419142938, 0.889741592707635, -0.003942442475240289};
     query.prev_q = std::vector<double>(prev_q, prev_q+sizeof(prev_q)/sizeof(double));
 
-    // query.desired_ee[0] = 0.4;
-    // query.desired_ee[1] = 0.1;
-    // query.desired_ee[2] = 0.5;
-    // query.desired_ee[3] = 0;
-    // query.desired_ee[4] = 0;
-    // query.desired_ee[5] = -1.57;
-
-    query.desired_ee[0] = 0.5656;
-    query.desired_ee[1] = 0.0;
-    query.desired_ee[2] = 0.25;
+    query.desired_ee[0] = 0.4;
+    query.desired_ee[1] = 0.05;
+    query.desired_ee[2] = 0.15;
     query.desired_ee[3] = 0;
     query.desired_ee[4] = 0;
-    query.desired_ee[5] = -0.7854;
+    query.desired_ee[5] = -1.57;
+
+    // query.desired_ee[0] = 0.5656;
+    // query.desired_ee[1] = 0.0;
+    // query.desired_ee[2] = 0.25;
+    // query.desired_ee[3] = 0;
+    // query.desired_ee[4] = 0;
+    // query.desired_ee[5] = -0.7854;
 
     runner.Run(&query);
 }

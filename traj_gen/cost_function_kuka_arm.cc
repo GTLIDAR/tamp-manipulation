@@ -3,19 +3,19 @@
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
-	
+
 CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
-{    
-    pos_scale = 1;
-    vel_scale = 0;
-    pos_f_scale = 1000;//0.001;
-    vel_f_scale = 1000;//10;
+{
+    pos_scale = 10;
+    vel_scale = 10;
+    pos_f_scale = 100;//0.001;
+    vel_f_scale = 100;//10;
     torqoe_scale = 1;//100;
 
     // initial, final costs (pos ,vel)
     // torque cost
     // l = sigma(xQx+uRu) + xfQfxf
-    QDiagElementVec << pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100,  
+    QDiagElementVec << pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100,
                         vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10;
     QfDiagElementVec << pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0,
                         vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0;
@@ -25,7 +25,7 @@ CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
     Qf = QfDiagElementVec.asDiagonal();
     R = RDiagElementVec.asDiagonal();
 
-    // TimeHorizon = total time 
+    // TimeHorizon = total time
     // TimeStep = time between two timesteps
     // N = number of knot
     cx_new.resize(N+1);
