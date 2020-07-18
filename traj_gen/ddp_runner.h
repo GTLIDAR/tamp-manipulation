@@ -13,7 +13,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -26,7 +25,6 @@
 #include "drake/lcmt_generic_string_msg.hpp"
 
 #include "drake/traj_gen/config.h"
-//#include "drake/traj_gen/spline.h"
 #include "drake/traj_gen/ilqrsolver.h"
 #include "drake/traj_gen/kuka_arm.h"
 
@@ -47,11 +45,6 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-
-using trajectories::PiecewisePolynomial;
-typedef PiecewisePolynomial<double> PPType;
-typedef PPType::PolynomialMatrix PPMatrix;
-
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using multibody::ModelInstanceIndex;
 using math::RigidTransformd;
@@ -60,7 +53,7 @@ using multibody::MultibodyForces;
 
 class DDPRunner {
 public:
-lcmt_manipulator_traj RunUDP(stateVec_t xinit, stateVec_t xgoal, 
+lcmt_manipulator_traj RunUDP(stateVec_t xinit, stateVec_t xgoal,
     const lcmt_motion_plan_query* query);
 void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);

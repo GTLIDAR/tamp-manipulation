@@ -20,7 +20,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -70,13 +69,6 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-
-
-using trajectories::PiecewisePolynomial;
-typedef PiecewisePolynomial<double> PPType;
-typedef PPType::PolynomialMatrix PPMatrix;
-
-// using manipulation::planner::ConstraintRelaxingIk;
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using multibody::ModelInstanceIndex;
@@ -86,11 +78,11 @@ using math::RollPitchYaw;
 
 class ADMMRunner {
   public:
-  lcmt_manipulator_traj RunADMM(stateVec_t xinit, stateVec_t xgoal, 
+  lcmt_manipulator_traj RunADMM(stateVec_t xinit, stateVec_t xgoal,
     const lcmt_motion_plan_query* query);
 
-  projStateAndCommandTab_t projection(const stateVecTab_t& xnew, 
-    const commandVecTab_t& unew, unsigned int NumberofKnotPt, 
+  projStateAndCommandTab_t projection(const stateVecTab_t& xnew,
+    const commandVecTab_t& unew, unsigned int NumberofKnotPt,
     string action_name);
 
   void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
@@ -114,4 +106,3 @@ class ADMMRunner {
 }  // namespace kuka_iiwa_arm
 }  // namespace traj_gen
 }  // namespace drake
-
