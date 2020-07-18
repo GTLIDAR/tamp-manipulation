@@ -63,6 +63,7 @@ void Run(const lcmt_motion_plan_query* query) {
 
     wp.pose.set_translation(xyz);
     wp.pose.set_rotation(rpy);
+    wp.constrain_orientation = true;
 
     Eigen::VectorXd iiwa_q(query->dim_q);
     for (int i = 0; i < query->dim_q; i++) {
@@ -171,7 +172,7 @@ int main(int argc, char* argv[]) {
     query.desired_ee[1] = 0.05;
     query.desired_ee[2] = 0.15;
     query.desired_ee[3] = 0;
-    query.desired_ee[4] = 0;
+    query.desired_ee[4] = 1.57;
     query.desired_ee[5] = -1.57;
 
     // query.desired_ee[0] = 0.5656;

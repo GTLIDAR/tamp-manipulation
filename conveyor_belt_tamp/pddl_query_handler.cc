@@ -47,7 +47,7 @@ class PDDLQueryHandler {
 
 public:
 PDDLQueryHandler() {
-    // Q_POST_THROW_ << -3.40486e-12, 0.743339, 8.16463e-12,  -0.5, 8.20197e-12, 
+    // Q_POST_THROW_ << -3.40486e-12, 0.743339, 8.16463e-12,  -0.5, 8.20197e-12,
     //     -0.6 ,-1.01735e-11;
     model_path_ = FindResourceOrThrow(FLAGS_KukaIiwaUrdf);
     lcm_.subscribe(FLAGS_query_channel, &PDDLQueryHandler::HandleQuery, this);
@@ -84,6 +84,7 @@ void HandleQuery(
 
     wp.pose.set_translation(xyz);
     wp.pose.set_rotation(rpy);
+    wp.constrain_orientation = true;
 
     Eigen::VectorXd iiwa_q(query->dim_q);
     for (int i = 0; i < query->dim_q; i++) {
@@ -149,7 +150,7 @@ void HandleQuery(
             } else {
                 widths.push_back(FLAGS_gripper_open_width);
             }
-        } 
+        }
     } else {
         std::cout << "This shouldn't happen, Assigning gripper to previous state\n";
         widths.assign(traj.n_time_steps, query->prev_gripper_width);
@@ -172,7 +173,7 @@ void HandleQuery(
         }
         std::cout<<"wait traj added.\n";
     }
-    
+
     lcm_.publish(FLAGS_result_channel, &traj);
     std::cout << "--------"<<query->name<<" Trajectory Published to LCM! --------" << endl;
 }
@@ -188,7 +189,7 @@ lcmt_manipulator_traj GetInfCost() {
     return *msg;
 }
 
-lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to ddp\n";
 
@@ -206,7 +207,7 @@ lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     return runner.RunUDP(qv_init, q_goal, query);
 }
 
-lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal, 
+lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to admm\n";
 
