@@ -48,10 +48,12 @@ drake_cc_binary(
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//conveyor_belt_tamp:models",
+        "//conveyor_belt_tamp:setup",
     ],
     deps = [
         "@gflags",
         "@lcm",
+        "@jsoncpp",
         ":manipulation_station",
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",
@@ -63,6 +65,7 @@ drake_cc_binary(
         "//examples/kuka_iiwa_arm:iiwa_lcm",
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//math:geometric_transform",
+        "//common:find_resource",
         "//lcmtypes:iiwa",
         "//lcmtypes:schunk",
         "//lcmtypes:combined_object_state",

@@ -1,8 +1,10 @@
 #include <limits>
-#include <gflags/gflags.h>
 #include <string>
+#include <fstream>
 
-#include "lcm/lcm-cpp.hpp"
+#include <gflags/gflags.h>
+#include <jsoncpp/json/json.h>
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/conveyor_belt_tamp/manipulation_station.h"
 #include "drake/systems/framework/diagram.h"
@@ -17,6 +19,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/common/find_resource.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -31,9 +34,11 @@ namespace conveyor_belt_tamp {
 namespace manipulation_station {
 DEFINE_double(conveyor_velocity, 0.1, "Velocity of conveyor belt");
 DEFINE_bool(enable_objects, true, "whether to show objects in sim.");
+DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup.json",
+    "file for geometry setup");
 DEFINE_double(
     target_real_time,
-    0.75,
+    0.001,
     "Playback Speed, See documentation for Simulator::set_target_realtime_rate()"
 );
 DEFINE_double(
@@ -48,8 +53,15 @@ using examples::kuka_iiwa_arm::IiwaStatusSender;
 
 int do_main(int argc, char* argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    systems::DiagramBuilder<double> builder;
 
+    Json::Value geo_setup;
+    std::ifstream json_fstream(FindResourceOrThrow(FLAGS_geo_setup_file));
+    json_fstream >> geo_setup;
+
+    auto object_init_pos = geo_setup["object_init_pos"];
+    std::cout<<object_init_pos["box_0"];
+
+    systems::DiagramBuilder<double> builder;
     auto station = builder.AddSystem<ManipulationStation>();
 
     station->SetupConveyorBeltStation();
@@ -79,15 +91,15 @@ int do_main(int argc, char* argv[]) {
     );
     station->AddManipulandFromFile(box_sdf_path3, X_WO3);
 
-    // // box_2 inside black box
-    // const std::string black_box_urdf_path4 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
-    // math::RigidTransform<double> X_WO7(
-    //     math::RotationMatrix<double>::Identity(),
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2-0.1,
-    //                     -0.4 + yAdditionalOffset,
-    //                     kConveyorBeltTopZInWorld+0.1)
-    // );
-    // station->AddManipulandFromFile(black_box_urdf_path4, X_WO7);
+    // box_2 inside black box
+    const std::string black_box_urdf_path4 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
+    math::RigidTransform<double> X_WO7(
+        math::RotationMatrix<double>::Identity(),
+        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2-0.1,
+                        -0.4 + yAdditionalOffset,
+                        kConveyorBeltTopZInWorld+0.1)
+    );
+    station->AddManipulandFromFile(black_box_urdf_path4, X_WO7);
 
     // // box_3 first large box
     // const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
