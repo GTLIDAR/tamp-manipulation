@@ -32,7 +32,7 @@ namespace manipulation_station {
 DEFINE_double(conveyor_velocity, 0.1, "Velocity of conveyor belt");
 DEFINE_double(
     target_real_time,
-    1,
+    0.005,
     "Playback Speed, See documentation for Simulator::set_target_realtime_rate()"
 );
 DEFINE_double(

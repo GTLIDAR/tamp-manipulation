@@ -62,7 +62,7 @@ class JsonManipulatorTrajRunner:
         print("Kuka Traj Completed")
         self.node_completed = True
 
-    def run_plan__lcmwrapper(self):
+    def run_plan_lcm_wrapper(self):
         self._lcm.subscribe("START_PLAN", self._start_plan_handler)
         while (not self.plan_started):
             self._lcm.handle()
@@ -74,7 +74,7 @@ class JsonManipulatorTrajRunner:
 
 def main():
     runner = JsonManipulatorTrajRunner(JSON_FILENAME)
-    runner.run_plan__lcmwrapper()
+    runner.run_plan_lcm_wrapper()
 
 if __name__=="__main__":
     main()
