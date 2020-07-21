@@ -5,7 +5,8 @@ from datetime import datetime
 import copy
 import json
 import numpy as np
-from multiprocessing import Process, current_process
+from multiprocessing import Process
+import select
 
 from lcm import LCM
 from drake import (lcmt_combined_object_state, lcmt_iiwa_status, lcmt_schunk_wsg_status,
@@ -135,7 +136,13 @@ class ConveyorBeltManipReactivePlanner:
         root = PddlTampNode.make_root_node(init_state)
 
         start = time.time()
-        tree = PddlTree(root, subtask, self.motion_plan_runner) 
+        tree = PddlTree(
+            root, 
+            subtask, 
+            ConveyorBeltManipReactiveMotionPlanRunner(
+                self.geo_setup_file, self.traj_setup_file
+            )
+        ) 
 
         (tree.goals, n_visited) = tree.hybrid_search(
             total_depth_limit=15, n_sols=1
@@ -245,6 +252,7 @@ class ConveyorBeltManipReactivePlanner:
                 execution_process = Process(
                     target=self._execute_tree, args=(self.trees.pop(0),))
                 execution_process.start()
+
             if (not self._planning) and len(self.unplanned_subproblems) and (
                 len(self.trees) < self.tree_horizon):
                 print("start planning process")
@@ -285,8 +293,15 @@ class TrajectoryRunner:
     
     def run_trajectory(self, node):
         self._publish_node_traj(node)
-        while not self._completed:
-            self._lcm.handle()
+        try:
+            timeout = 5000
+            while not self._completed:
+                rfds, wfds, efds = select.select(
+                    [self._lcm.fileno()], [], [], timeout)
+                if rfds:
+                    self._lcm.handle()
+        except KeyboardInterrupt:
+            pass
 
 def main():
     domain_file = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
