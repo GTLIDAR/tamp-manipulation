@@ -11,7 +11,7 @@ sys.path.append(PDDL_DIR)
 
 from utils.traj_utils import dict_to_lcmt_manipulator_traj
 
-JSON_FILENAME = "/home/zhigen/code/pddl_planning/results/traj20200714T142848.json"
+JSON_FILENAME = "/home/zhigen/code/pddl_planning/results/traj20200720T140753.json"
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 

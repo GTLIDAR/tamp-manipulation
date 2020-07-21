@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
 
     query.desired_ee[0] = 0.4;
     query.desired_ee[1] = 0.05;
-    query.desired_ee[2] = 0.15;
+    query.desired_ee[2] = 0.35;
     query.desired_ee[3] = 0;
     query.desired_ee[4] = 1.57;
     query.desired_ee[5] = -1.57;
