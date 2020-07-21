@@ -30,9 +30,10 @@ namespace drake {
 namespace conveyor_belt_tamp {
 namespace manipulation_station {
 DEFINE_double(conveyor_velocity, 0.1, "Velocity of conveyor belt");
+DEFINE_bool(enable_objects, true, "whether to show objects in sim.");
 DEFINE_double(
     target_real_time,
-    0.005,
+    0.75,
     "Playback Speed, See documentation for Simulator::set_target_realtime_rate()"
 );
 DEFINE_double(
@@ -40,7 +41,7 @@ DEFINE_double(
 DEFINE_string(setup, "conveyor_belt", "Manipulation station type to simulate");
 DEFINE_double(table_width, 0.7112, "Width of table supporting kuka arm");
 DEFINE_double(belt_width, 0.4, "Width of conveyor belt");
-DEFINE_double(dt, 1e-3, "Integration step size");
+DEFINE_double(dt, 0.0005, "Integration step size");
 
 using examples::kuka_iiwa_arm::IiwaCommandReceiver;
 using examples::kuka_iiwa_arm::IiwaStatusSender;
@@ -52,17 +53,18 @@ int do_main(int argc, char* argv[]) {
     auto station = builder.AddSystem<ManipulationStation>();
 
     station->SetupConveyorBeltStation();
+    if (FLAGS_enable_objects) {
     // setup objects
     const double kConveyorBeltTopZInWorld = 0.736 + 0.02 / 2;
     // const double xAdditionalOffset = 0.06;
-    const double yAdditionalOffset = -0.02;
+    const double yAdditionalOffset = -0.0;
 
     // box_0 first red box
     const std::string box_sdf_path = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
     math::RigidTransform<double> X_WO1(
         math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.03,
-                        0 + yAdditionalOffset,//-1.8,
+        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.04, //+0.03
+                        0 + yAdditionalOffset + 0.04,
                         kConveyorBeltTopZInWorld+0.1)
     );
     station->AddManipulandFromFile(box_sdf_path, X_WO1);
@@ -71,21 +73,21 @@ int do_main(int argc, char* argv[]) {
     const std::string box_sdf_path3 = "drake/conveyor_belt_tamp/models/boxes/black_box.urdf";
     math::RigidTransform<double> X_WO3(
         math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.1,
-                        -0.4 + yAdditionalOffset,//-1.8,
+        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.04, //+0.1
+                        -0.4 + yAdditionalOffset -0.07,
                         kConveyorBeltTopZInWorld+0.1)
     );
     station->AddManipulandFromFile(box_sdf_path3, X_WO3);
 
-    // box_2 inside black box
-    const std::string black_box_urdf_path4 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
-    math::RigidTransform<double> X_WO7(
-        math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2-0.1,
-                        -0.4 + yAdditionalOffset,
-                        kConveyorBeltTopZInWorld+0.1)
-    );
-    station->AddManipulandFromFile(black_box_urdf_path4, X_WO7);
+    // // box_2 inside black box
+    // const std::string black_box_urdf_path4 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
+    // math::RigidTransform<double> X_WO7(
+    //     math::RotationMatrix<double>::Identity(),
+    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2-0.1,
+    //                     -0.4 + yAdditionalOffset,
+    //                     kConveyorBeltTopZInWorld+0.1)
+    // );
+    // station->AddManipulandFromFile(black_box_urdf_path4, X_WO7);
 
     // // box_3 first large box
     // const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
@@ -126,6 +128,7 @@ int do_main(int argc, char* argv[]) {
     //                     kConveyorBeltTopZInWorld+0.1)
     // );
     // station->AddManipulandFromFile(large_box_sdf_path, X_WO4);
+    }
 
     station->Finalize();
     geometry::ConnectDrakeVisualizer(&builder, station->get_scene_graph(),
