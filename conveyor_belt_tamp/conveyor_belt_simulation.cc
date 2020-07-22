@@ -19,6 +19,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/common/find_resource.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
@@ -32,20 +33,16 @@ using lcm::LCM;
 namespace drake {
 namespace conveyor_belt_tamp {
 namespace manipulation_station {
-DEFINE_double(conveyor_velocity, 0.1, "Velocity of conveyor belt");
-DEFINE_bool(enable_objects, true, "whether to show objects in sim.");
 DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup.json",
     "file for geometry setup");
 DEFINE_double(
     target_real_time,
-    0.001,
+    1,
     "Playback Speed, See documentation for Simulator::set_target_realtime_rate()"
 );
 DEFINE_double(
     duration, std::numeric_limits<double>::infinity(), "Simulation duration");
 DEFINE_string(setup, "conveyor_belt", "Manipulation station type to simulate");
-DEFINE_double(table_width, 0.7112, "Width of table supporting kuka arm");
-DEFINE_double(belt_width, 0.4, "Width of conveyor belt");
 DEFINE_double(dt, 0.0005, "Integration step size");
 
 using examples::kuka_iiwa_arm::IiwaCommandReceiver;
@@ -65,42 +62,82 @@ int do_main(int argc, char* argv[]) {
     auto station = builder.AddSystem<ManipulationStation>();
 
     station->SetupConveyorBeltStation();
-    if (FLAGS_enable_objects) {
+    if (geo_setup["enable_objects"].asBool()) {
     // setup objects
-    const double kConveyorBeltTopZInWorld = 0.736 + 0.02 / 2;
-    // const double xAdditionalOffset = 0.06;
-    const double yAdditionalOffset = -0.0;
+    auto kConveyorBeltTopZInWorld = geo_setup["kConveyorBeltTopZInWorld"].asDouble();
+    auto xAdditionalOffset = geo_setup["xAdditionalOffset"].asDouble();
+    auto yAdditionalOffset = geo_setup["yAdditionalOffset"].asDouble();
 
     // box_0 first red box
-    const std::string box_sdf_path = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
-    math::RigidTransform<double> X_WO1(
-        math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.04, //+0.03
-                        0 + yAdditionalOffset + 0.04,
-                        kConveyorBeltTopZInWorld+0.1)
-    );
-    station->AddManipulandFromFile(box_sdf_path, X_WO1);
+    {
+    const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
+    
+    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+        object_init_pos["box_0"][3].asDouble(),
+        object_init_pos["box_0"][4].asDouble(),
+        object_init_pos["box_0"][5].asDouble()
+    ));
 
-    // box_1 outside black box
-    const std::string box_sdf_path3 = "drake/conveyor_belt_tamp/models/boxes/black_box.urdf";
-    math::RigidTransform<double> X_WO3(
-        math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.04, //+0.1
-                        -0.4 + yAdditionalOffset -0.07,
-                        kConveyorBeltTopZInWorld+0.1)
+    auto xyz = Eigen::Vector3d(
+                object_init_pos["box_0"][0].asDouble() + xAdditionalOffset,
+                object_init_pos["box_0"][1].asDouble() + yAdditionalOffset,
+                object_init_pos["box_0"][2].asDouble() + kConveyorBeltTopZInWorld
     );
-    station->AddManipulandFromFile(box_sdf_path3, X_WO3);
+
+    math::RigidTransform<double> X_WO(
+        math::RotationMatrix<double>(rpy),
+        xyz
+    );
+    
+    station->AddManipulandFromFile(box_sdf_path0, X_WO);
+    }
+    // box_1 outside black box
+    {
+    const std::string box_sdf_path1 = "drake/conveyor_belt_tamp/models/boxes/black_box.urdf";
+    
+    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+        object_init_pos["box_1"][3].asDouble(),
+        object_init_pos["box_1"][4].asDouble(),
+        object_init_pos["box_1"][5].asDouble()
+    ));
+
+    auto xyz = Eigen::Vector3d(
+                object_init_pos["box_1"][0].asDouble() + xAdditionalOffset,
+                object_init_pos["box_1"][1].asDouble() + yAdditionalOffset,
+                object_init_pos["box_1"][2].asDouble() + kConveyorBeltTopZInWorld
+    );
+
+    math::RigidTransform<double> X_W1(
+        math::RotationMatrix<double>(rpy),
+        xyz
+    );
+    
+    station->AddManipulandFromFile(box_sdf_path1, X_W1);
+    }
 
     // box_2 inside black box
-    const std::string black_box_urdf_path4 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
-    math::RigidTransform<double> X_WO7(
-        math::RotationMatrix<double>::Identity(),
-        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2-0.1,
-                        -0.4 + yAdditionalOffset,
-                        kConveyorBeltTopZInWorld+0.1)
-    );
-    station->AddManipulandFromFile(black_box_urdf_path4, X_WO7);
+    {
+    const std::string black_box_urdf_path2 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
+    
+    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+        object_init_pos["box_2"][3].asDouble(),
+        object_init_pos["box_2"][4].asDouble(),
+        object_init_pos["box_2"][5].asDouble()
+    ));
 
+    auto xyz = Eigen::Vector3d(
+                object_init_pos["box_2"][0].asDouble() + xAdditionalOffset,
+                object_init_pos["box_2"][1].asDouble() + yAdditionalOffset,
+                object_init_pos["box_2"][2].asDouble() + kConveyorBeltTopZInWorld
+    );
+
+    math::RigidTransform<double> X_W2(
+        math::RotationMatrix<double>(rpy),
+        xyz
+    );
+    
+    station->AddManipulandFromFile(black_box_urdf_path2, X_W2);
+    }
     // // box_3 first large box
     // const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
     // math::RigidTransform<double> X_WOO1(
@@ -242,7 +279,7 @@ int do_main(int argc, char* argv[]) {
         context,
         &state,
         station->GetConveyorBeltId(),
-        drake::Vector1d(FLAGS_conveyor_velocity)
+        drake::Vector1d(geo_setup["belt_vel"][1].asDouble())
     );
 
     // Eigen::VectorXd q0 = station->GetIiwaPosition(station_context);

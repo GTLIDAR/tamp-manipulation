@@ -3,11 +3,14 @@
     "belt_width": 0.4,
     "kConveyorBeltTopZInWorld": 0.746,
     "kTableTopZInWorld": 0.7645,
+    "xAdditionalOffset": 0,
+    "yAdditionalOffset": 0,
+    "enable_objects": true,
     "belt_vel": [0, 0.1, 0, 0, 0, 0],
     "object_init_pos": {
-            "box_0": [0.5856, -0.05, 0.1415, 0, 0, 0],
-            "box_1": [0.6756, -0.45, 0.1415, 0, 0, 0],
-            "box_2": [0.4556, -0.45, 0.1415, 0, 0, 0]
+            "box_0": [0.5856, -0.05, 0.1, 0, 0, 0],
+            "box_1": [0.6756, -0.45, 0.1, 0, 0, 0],
+            "box_2": [0.4556, -0.45, 0.1, 0, 0, 0]
     },
     "bin_pos": {
             "bin_0": [0.6, 0.5, 0, 0, 0, 0],
