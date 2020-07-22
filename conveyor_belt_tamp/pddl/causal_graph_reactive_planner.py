@@ -13,9 +13,10 @@ from drake import (lcmt_combined_object_state, lcmt_iiwa_status, lcmt_schunk_wsg
     lcmt_manipulator_traj, lcmt_generic_string_msg)
 
 pddl_path = "/home/zhigen/code/pddl_planning"
-
 if pddl_path not in sys.path:
     sys.path.append(pddl_path)
+
+drake_path = "/home/zhigen/code/drake"
 
 from causal_graph.tools import build_causal_graph, get_subproblems, generate_subtask
 from search_tree.tamp_node import PddlTampNode
@@ -304,10 +305,10 @@ class TrajectoryRunner:
             pass
 
 def main():
-    domain_file = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
-    problem_file = "/home/zhigen/code/pddl_planning/examples/strips/conveyor_belt_multi_grasp_mode/3obj_coupled.pddl"
-    geo_setup_file = "/home/zhigen/code/pddl_planning/test/geo_setup.json"
-    traj_setup_file = "/home/zhigen/code/pddl_planning/test/traj_setup.json"
+    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
+    problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/3obj_coupled.pddl"
+    geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup.json"
+    traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup.json"
 
     problem = _parse(domain_file, problem_file)
     task = _ground(problem)
