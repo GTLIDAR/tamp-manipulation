@@ -35,15 +35,8 @@ namespace conveyor_belt_tamp {
 namespace manipulation_station {
 DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup.json",
     "file for geometry setup");
-DEFINE_double(
-    target_real_time,
-    1,
-    "Playback Speed, See documentation for Simulator::set_target_realtime_rate()"
-);
-DEFINE_double(
-    duration, std::numeric_limits<double>::infinity(), "Simulation duration");
-DEFINE_string(setup, "conveyor_belt", "Manipulation station type to simulate");
-DEFINE_double(dt, 0.0005, "Integration step size");
+DEFINE_string(sim_setup_file, "drake/conveyor_belt_tamp/setup/sim_setup.json",
+    "file for simulatino setup");
 
 using examples::kuka_iiwa_arm::IiwaCommandReceiver;
 using examples::kuka_iiwa_arm::IiwaStatusSender;
@@ -52,8 +45,12 @@ int do_main(int argc, char* argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     Json::Value geo_setup;
-    std::ifstream json_fstream(FindResourceOrThrow(FLAGS_geo_setup_file));
-    json_fstream >> geo_setup;
+    std::ifstream geo_fstream(FindResourceOrThrow(FLAGS_geo_setup_file));
+    geo_fstream >> geo_setup;
+
+    Json::Value sim_setup;
+    std::ifstream sim_fstream(FindResourceOrThrow(FLAGS_sim_setup_file));
+    sim_fstream >> sim_setup;
 
     auto object_init_pos = geo_setup["object_init_pos"];
     std::cout<<object_init_pos["box_0"];
@@ -62,7 +59,7 @@ int do_main(int argc, char* argv[]) {
     auto station = builder.AddSystem<ManipulationStation>();
 
     station->SetupConveyorBeltStation();
-    if (geo_setup["enable_objects"].asBool()) {
+    if (sim_setup["enable_objects"].asBool()) {
     // setup objects
     auto kConveyorBeltTopZInWorld = geo_setup["kConveyorBeltTopZInWorld"].asDouble();
     auto xAdditionalOffset = geo_setup["xAdditionalOffset"].asDouble();
@@ -269,7 +266,9 @@ int do_main(int argc, char* argv[]) {
     systems::Simulator<double> simulator(*diagram);
     // simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(*diagram,
     // FLAGS_dt, &simulator.get_mutable_context());
-    simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(FLAGS_dt);
+    simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+        sim_setup["integration_timestep"].asDouble()
+    );
     auto& context = simulator.get_mutable_context();
     auto& state = context.get_mutable_state();
     // auto& station_context = diagram->GetMutableSubsystemContext(*station, &context);
@@ -288,7 +287,7 @@ int do_main(int argc, char* argv[]) {
     // );
 
     simulator.set_publish_every_time_step(false);
-    simulator.set_target_realtime_rate(FLAGS_target_real_time);
+    simulator.set_target_realtime_rate(sim_setup["target_realtime_rate"].asDouble());
     simulator.Initialize();
 
     LCM lcm_;
@@ -296,8 +295,12 @@ int do_main(int argc, char* argv[]) {
     msg.msg = "start";
     lcm_.publish("START_PLAN", &msg);
 
-    simulator.AdvanceTo(FLAGS_duration);
-
+    if (sim_setup.isMember("duration")) {
+        simulator.AdvanceTo(sim_setup["duration"].asDouble());
+    } else {
+        simulator.AdvanceTo(std::numeric_limits<double>::infinity());
+    }
+    
     return 0;
 }
 
