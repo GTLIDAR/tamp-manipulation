@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 import sys
 import os
@@ -65,16 +67,15 @@ class CausalGraphTampPlanner(object):
             print("No available trajectory.")
             return
 
-        file_dir = os.getcwd()
-        foldername = "/results/"
+        foldername = drake_path + "/conveyor_belt_tamp/results/"
         try:
-            os.stat(file_dir+foldername)
+            os.stat(foldername)
         except:
-            os.makedirs(file_dir+foldername)
+            os.makedirs(foldername)
 
         filename = "traj"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
 
-        with open(file_dir+foldername+filename, 'w') as out:
+        with open(foldername+filename, 'w') as out:
             json.dump(self.trajectories, out)
 
     def plan(self):
@@ -102,7 +103,7 @@ class CausalGraphTampPlanner(object):
             if len(tree.goals):
                 self.state = tree.goals[0].state
                 root = PddlTampNode.make_root_node(self.state)
-                root.parent_traj = tree.goals[0].traj
+                root.traj = tree.goals[0].traj
                 root.time = tree.goals[0].time
 
                 self.trajectories.extend(tree.get_traj(tree.goals[0]))

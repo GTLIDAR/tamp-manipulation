@@ -1,5 +1,5 @@
 {
-    "durative_action_time": 2,
+    "durative_action_time": 1.5,
     "gripper_wait_time": 0.5,
 
     "ddp_time_step": 0.005,
@@ -10,7 +10,7 @@
     "ddp_max_iter": 15,
     "admm_max_iter": 10,
 
-    "gripper_force": 80,
+    "gripper_force": 20,
     "gripper_open_width": 100,
     "gripper_close_width": 20,
 

@@ -392,6 +392,9 @@ void ManipulationStation<T>::Finalize(
 
   MakeIiwaControllerModel();
 
+  plant_->set_contact_model(multibody::ContactModel::kHydroelasticWithFallback);
+  // plant_->set_penetration_allowance(0.005);
+
   // Note: This deferred diagram construction method/workflow exists because we
   //   - cannot finalize plant until all of my objects are added, and
   //   - cannot wire up my diagram until we have finalized the plant.

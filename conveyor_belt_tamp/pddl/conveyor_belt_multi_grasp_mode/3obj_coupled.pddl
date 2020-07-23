@@ -25,10 +25,10 @@
 
     (unblocked box_1 box_0)
     (unblocked box_1 box_1)
-    ; (unblocked box_1 box_2)
+    (unblocked box_1 box_2)
 
     (unblocked box_2 box_0)
-    (unblocked box_2 box_1)
+    ; (unblocked box_2 box_1)
     (unblocked box_2 box_2)
 
 )

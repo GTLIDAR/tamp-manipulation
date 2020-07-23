@@ -53,7 +53,6 @@ int do_main(int argc, char* argv[]) {
     sim_fstream >> sim_setup;
 
     auto object_init_pos = geo_setup["object_init_pos"];
-    std::cout<<object_init_pos["box_0"];
 
     systems::DiagramBuilder<double> builder;
     auto station = builder.AddSystem<ManipulationStation>();
@@ -264,14 +263,11 @@ int do_main(int argc, char* argv[]) {
 
     // setup simulator
     systems::Simulator<double> simulator(*diagram);
-    // simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(*diagram,
-    // FLAGS_dt, &simulator.get_mutable_context());
     simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
         sim_setup["integration_timestep"].asDouble()
     );
     auto& context = simulator.get_mutable_context();
     auto& state = context.get_mutable_state();
-    // auto& station_context = diagram->GetMutableSubsystemContext(*station, &context);
 
     auto& plant = station->get_multibody_plant();
     plant.SetVelocities(
@@ -280,11 +276,6 @@ int do_main(int argc, char* argv[]) {
         station->GetConveyorBeltId(),
         drake::Vector1d(geo_setup["belt_vel"][1].asDouble())
     );
-
-    // Eigen::VectorXd q0 = station->GetIiwaPosition(station_context);
-    // iiwa_command_receiver->set_initial_position(
-    //     &diagram->GetMutableSubsystemContext(*iiwa_command_receiver, &context), q0
-    // );
 
     simulator.set_publish_every_time_step(false);
     simulator.set_target_realtime_rate(sim_setup["target_realtime_rate"].asDouble());

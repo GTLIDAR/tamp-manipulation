@@ -8,8 +8,8 @@ CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
 {
     pos_scale = 10;
     vel_scale = 10;
-    pos_f_scale = 100;//0.001;
-    vel_f_scale = 100;//10;
+    pos_f_scale = 1000;//0.001;
+    vel_f_scale = 10;//10;
     torqoe_scale = 1;//100;
 
     // initial, final costs (pos ,vel)

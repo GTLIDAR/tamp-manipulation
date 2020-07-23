@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 import os
 import sys
@@ -59,7 +61,7 @@ class ConveyorBeltManipReactivePlanner:
         self.motion_plan_runner = ConveyorBeltManipReactiveMotionPlanRunner(
             self.geo_setup_file, self.traj_setup_file
         )
-        self.traj_runner = TrajectoryRunner()
+        self.traj_runner = None
 
         self.task_orig = task
         self.task_cur = task
@@ -82,6 +84,7 @@ class ConveyorBeltManipReactivePlanner:
         self._cur_node_completed = True
         self._executing_tree = False
         self._planning = False
+        self._replan = False
 
     def _object_state_handler(self, channel, msg):
         self._object_state = lcmt_combined_object_state.decode(msg)
@@ -96,10 +99,6 @@ class ConveyorBeltManipReactivePlanner:
     def _start_plan_handler(self, channel, msg):
         print("Simulation started")
         self._is_sim_started = True    
-    
-    # def _kuka_plan_runner_status_handler(self, channel, msg):
-    #     print("Kuka Traj Completed")
-    #     self._cur_node_completed = True
 
 ##########################      Planner      ###################################
     def _rank_subproblems(self, subproblems):
@@ -124,6 +123,9 @@ class ConveyorBeltManipReactivePlanner:
             state = self._plan_subproblem(sp, self._planned_state)
             if state is not None:
                 self._planned_state = state
+    
+    def _update_unplanned_subproblems(self):
+        pass
 
     def _plan_subproblem(self, subproblem, init_state):
         self._planning = True
@@ -153,72 +155,45 @@ class ConveyorBeltManipReactivePlanner:
 
         if len(tree.goals):
             self.trees.append(tree)
-            goal_state = tree.goals[0].state
+            print("Tree Added.")
         else:
             print("This tree does not have solution...")
             print(subtask)
             input("Press Enter to exit")
         
         self._planning = False
-        
-        return goal_state    
+
 
         
 ##########################      Excecutor    ###################################
     def _execute_tree(self, tree):
         """ Add tree nodes to execution queue
         """
+        self._executing_tree = True
         actions = tree.get_sol(tree.goals[0])
         trajectories = tree.get_traj(tree.goals[0])
 
         cur_node_id = 0
 
-        # print("Node", cur_node_id)
-        # print(actions[cur_node_id])
-        # self._publish_node_traj(trajectories[cur_node_id])
-
-        # while True:
-        #     self._lcm.handle()
-        #     if self._cur_node_completed:
-        #         self._executed_state = actions[cur_node_id].apply(self._executed_state)
-        #         self.executed_actions.append(actions[cur_node_id])
-        #         self.trajectories.append(trajectories[cur_node_id])
-        #         # TODO: check if real state matches expected state
-        #         # TODO: Flag replan if accidents occurs
-
-        #         self._cur_node_completed = False
-        #         cur_node_id += 1
-        #         if cur_node_id >= len(actions):
-        #             print("Tree Executed")
-        #             break
-
-        #     print("Node", cur_node_id)
-        #     print(actions[cur_node_id])
-        #     self._publish_node_traj(trajectories[cur_node_id])
         for cur_node_id in range(len(actions)):
             print("Node", cur_node_id)
             print(actions[cur_node_id])
-            self.traj_runner.run_trajectory(trajectories[cur_node_id])
+            traj_runner = TrajectoryRunner()
+            traj_runner.run_trajectory(trajectories[cur_node_id])
             self._executed_state = actions[cur_node_id].apply(self._executed_state)
             self.executed_actions.append(actions[cur_node_id])
             self.trajectories.append(trajectories[cur_node_id])
             # TODO: check if real state matches expected state
             # TODO: Flag replan if accidents occurs
-
-
-    def _publish_node_traj(self, node):
-        msg = dict_to_lcmt_manipulator_traj(node)
-
-        if USE_TORQUE:
-            msg.dim_torques = 7
-        else:
-            msg.dim_torques = 0
-
-        if msg.n_time_steps:
-            self._lcm.publish("COMMITTED_ROBOT_PLAN", msg.encode())
-            print("Trajectory Published!")
-
-
+            if (not self._check_discrete_state(actions[cur_node_id])):
+                self._update_unplanned_subproblems()
+                self._replan = True
+                self._executing_tree = False
+                break
+                
+        self._executing_tree = False
+    def _check_discrete_state(self, action):
+        return True
 
 #########################   Public Run Function   ##############################
     def save_traj(self):

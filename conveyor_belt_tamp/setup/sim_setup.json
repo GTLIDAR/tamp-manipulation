@@ -1,5 +1,5 @@
 {
-    "target_realtime_rate": 1.0,
+    "target_realtime_rate": 1,
     "enable_objects": true,
-    "integration_timestep": 0.005
+    "integration_timestep": 0.0001
 }
