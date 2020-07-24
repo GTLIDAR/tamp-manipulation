@@ -60,10 +60,10 @@ SpatialInertia<double> MakeCompositeGripperInertia(
   plant.Finalize();
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
   const auto& gripper_body = plant.GetRigidBodyByName(frame.body().name());
-  const auto& left_finger = plant.GetRigidBodyByName("wsg_50_finger_left");
-  const auto& right_finger = plant.GetRigidBodyByName("wsg_50_finger_right");
-  const auto& left_slider = plant.GetJointByName("wsg_50_base_joint_gripper_left");
-  const auto& right_slider = plant.GetJointByName("wsg_50_base_joint_gripper_right");
+  const auto& left_finger = plant.GetRigidBodyByName("left_finger");
+  const auto& right_finger = plant.GetRigidBodyByName("right_finger");
+  const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
+  const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
   const SpatialInertia<double>& M_GGo_G =
       gripper_body.default_spatial_inertia();
   const SpatialInertia<double>& M_LLo_L = left_finger.default_spatial_inertia();
@@ -884,10 +884,8 @@ void ManipulationStation<T>::AddLidarIiwa(
 // Add default wsg.
 template <typename T>
 void ManipulationStation<T>::AddLidarWsg() {
-  const std::string wsg_urdf_path = FindResourceOrThrow(
-    "drake/manipulation/models/wsg_50_description/urdf/"
-    "wsg_50_mesh_collision_no_world_joint.urdf"
-  );
+  const std::string wsg_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
   const std::string connector_urdf_path = FindResourceOrThrow(
     "drake/manipulation/models/kuka_connector_description/urdf/"
     "KukaConnector_no_world_joint.urdf"
@@ -902,12 +900,12 @@ void ManipulationStation<T>::AddLidarWsg() {
 
   // This is a workaround to prevent bug from MakeIiwaControllerModel()
   // Directly welding wsg to iiwa rather than welding to connector
-  const RigidTransform<double> X_EG(RollPitchYaw<double>(0, 0, M_PI_2),
-                                    Vector3d(0, 0, 0.0175));
+  const RigidTransform<double> X_EG(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                    Vector3d(0, 0, 0.053));
   auto wsg_instance = internal::AddAndWeldModelFrom(
-      wsg_urdf_path, "gripper", link_ee, "wsg_50_base_link", X_EG, plant_);
-  RegisterWsgControllerModel(wsg_urdf_path, wsg_instance, link_ee,
-                             plant_->GetFrameByName("wsg_50_base_link", wsg_instance),
+      wsg_sdf_path, "gripper", link_ee, "body", X_EG, plant_);
+  RegisterWsgControllerModel(wsg_sdf_path, wsg_instance, link_ee,
+                             plant_->GetFrameByName("body", wsg_instance),
                              X_EG);
 }
 

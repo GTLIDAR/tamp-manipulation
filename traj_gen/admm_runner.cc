@@ -81,7 +81,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     std::string kIiwaUrdf =
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
     std::string schunkPath =
-      FindResourceOrThrow("drake/manipulation/models/wsg_50_description/urdf/wsg_50_mesh_collision_no_world_joint.urdf");
+      FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
     std::string connectorPath =
       FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
 
@@ -104,7 +104,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     const ModelInstanceIndex wsg_model =
       parser.AddModelFromFile(schunkPath, "wsg");
-    const auto& wsg_frame = plant_.GetFrameByName("wsg_50_base_link", wsg_model);
+    const auto& wsg_frame = plant_.GetFrameByName("body", wsg_model);
     RigidTransformd X_EG(RollPitchYaw<double>(0, 0, M_PI_2),
                                 Vector3d(0, 0, 0.0175));
     plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
