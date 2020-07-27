@@ -55,7 +55,8 @@ int do_main(int argc, char* argv[]) {
     auto object_init_pos = geo_setup["object_init_pos"];
 
     systems::DiagramBuilder<double> builder;
-    auto station = builder.AddSystem<ManipulationStation>();
+    auto station = builder.AddSystem<ManipulationStation>(
+        sim_setup["discrete_update_period"].asDouble());
 
     station->SetupConveyorBeltStation();
     if (sim_setup["enable_objects"].asBool()) {
