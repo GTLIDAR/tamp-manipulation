@@ -33,7 +33,7 @@ using lcm::LCM;
 namespace drake {
 namespace conveyor_belt_tamp {
 namespace manipulation_station {
-DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup.json",
+DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup_stationary.json",
     "file for geometry setup");
 DEFINE_string(sim_setup_file, "drake/conveyor_belt_tamp/setup/sim_setup.json",
     "file for simulatino setup");
@@ -264,9 +264,9 @@ int do_main(int argc, char* argv[]) {
 
     // setup simulator
     systems::Simulator<double> simulator(*diagram);
-    simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-        sim_setup["integration_timestep"].asDouble()
-    );
+    // simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+    //     sim_setup["integration_timestep"].asDouble()
+    // );
     auto& context = simulator.get_mutable_context();
     auto& state = context.get_mutable_state();
 

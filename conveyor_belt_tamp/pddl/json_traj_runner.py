@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import json
 import sys
 import os
@@ -11,7 +13,7 @@ sys.path.append(PDDL_DIR)
 
 from utils.traj_utils import dict_to_lcmt_manipulator_traj
 
-JSON_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/good_3obj.json"
+JSON_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/traj20200729T223526.json"
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 

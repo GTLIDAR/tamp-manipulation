@@ -124,9 +124,11 @@ class CausalGraphTampPlanner(object):
 
 
 def main():
-    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
+    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
+    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled_stationary.pddl"
     problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/3obj_coupled.pddl"
-    geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup.json"
+    # geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup.json"
+    geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup_stationary.json"
     traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup.json"
 
     problem = _parse(domain_file, problem_file)
