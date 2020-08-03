@@ -79,7 +79,7 @@ using math::RollPitchYaw;
 class ADMMRunner {
   public:
   lcmt_manipulator_traj RunADMM(stateVec_t xinit, stateVec_t xgoal,
-    const lcmt_motion_plan_query* query);
+    double time_horizon, double time_step, string action_name);
 
   projStateAndCommandTab_t projection(const stateVecTab_t& xnew,
     const commandVecTab_t& unew, unsigned int NumberofKnotPt,

@@ -4,19 +4,19 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
-  const lcmt_motion_plan_query* query) {
+  double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
     commandVecTab_t u_0;
-    double dt = query->time_step;
-    unsigned int N = int(query->time_horizon/query->time_step);
+    double dt = time_step;
+    unsigned int N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 10;
     unsigned int ADMMiterMax = 8;
 
-    if (query->name.compare("push")==0 || query->name.compare("throw")==0) {
+    if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
       iterMax = 50;
       ADMMiterMax = 5;
     }
@@ -126,9 +126,9 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     cout << "bias total" << endl << gtau_wb << endl;
     #if WHOLE_BODY
-      KukaArm_TRK KukaArmModel(dt, N, xgoal, &plant_, query->name);
+      KukaArm_TRK KukaArmModel(dt, N, xgoal, &plant_, action_name);
     #else
-      KukaArm_TRK KukaArmModel(dt, N, xgoal, query->name);
+      KukaArm_TRK KukaArmModel(dt, N, xgoal, action_name);
     #endif
 
     // Initialize ILQRSolver
@@ -189,7 +189,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
         u_temp2[k] = unew[k] + u_lambda[k];
       }
       x_temp2[N] = xnew[N] + x_lambda[N];
-      xubar = projection(x_temp2, u_temp2, N, query->name);
+      xubar = projection(x_temp2, u_temp2, N, action_name);
       // cout << "checkpoint 2" << endl;
       // Dual variables update
       for(unsigned int j=0;j<N;j++){
@@ -316,7 +316,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     for (int32_t i=0; i < ptr->n_time_steps; ++i) {
       // need new, cuz dynamic allocation or pointer
-      ptr->times_sec.push_back(static_cast<double>(query->time_step*i/InterpolationScale));
+      ptr->times_sec.push_back(static_cast<double>(time_step*i/InterpolationScale));
       auto ptr2 = std::make_unique<std::vector<double>>();
       auto ptr2_st = std::make_unique<std::vector<double>>();
 

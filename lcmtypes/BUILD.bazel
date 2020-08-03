@@ -32,6 +32,14 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_lcm_cc_library(
+    name = "multi_wp_manip_query",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_multi_wp_manip_query.lcm",
+    ]
+)
+
+drake_lcm_cc_library(
     name = "combined_object_state",
     lcm_package = "drake",
     lcm_srcs = [
@@ -430,6 +438,7 @@ LCMTYPES_CC = [
     ":generic_string_msg",
     ":motion_plan_query",
     ":combined_object_state",
+    ":multi_wp_manip_query",
 ]
 
 # This rule should list every LCM type that is known to Drake or its external

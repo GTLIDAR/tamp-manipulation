@@ -144,3 +144,20 @@ drake_cc_binary(
         "//traj_gen:admm_runner",
     ],
 )
+
+drake_cc_binary(
+    name = "multi_wp_traj_test",
+    srcs = ["multi_wp_traj_test.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:multi_wp_manip_query",
+        "//lcmtypes:motion_plan_query",
+    ],
+)

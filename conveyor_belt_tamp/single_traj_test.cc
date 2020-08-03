@@ -128,7 +128,7 @@ lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
 
     DDPRunner runner;
-    return runner.RunUDP(qv_init, q_goal, query);
+    return runner.RunDDP(qv_init, q_goal, query->time_horizon, query->time_step);
 }
 
 lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
@@ -145,7 +145,7 @@ lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
     VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
     ADMMRunner runner;
-    return runner.RunADMM(qv_init, q_goal, query);
+    return runner.RunADMM(qv_init, q_goal, query->time_horizon, query->time_step, query->name);
 }
 
 };

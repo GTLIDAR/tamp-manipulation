@@ -4,13 +4,13 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-lcmt_manipulator_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal, 
-  const lcmt_motion_plan_query* query) {
+lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal, 
+  double time_horizon, double time_step) {
     struct timeval tbegin,tend;
     double texec = 0.0;
 
-    double dt = query->time_step;
-    unsigned int N = int(query->time_horizon/query->time_step);
+    double dt = time_step;
+    unsigned int N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
     unsigned int iterMax = 15; //100;
@@ -179,8 +179,8 @@ lcmt_manipulator_traj DDPRunner::RunUDP(stateVec_t xinit, stateVec_t xgoal,
 
     for (int32_t i=0; i < ptr->n_time_steps; ++i) {
       // need new, cuz dynamic allocation or pointer
-      ptr->times_sec.push_back(static_cast<double>(query->time_step*i/InterpolationScale));
-      // cout << query->time_step*i/InterpolationScale << endl;
+      ptr->times_sec.push_back(static_cast<double>(time_step*i/InterpolationScale));
+      // cout << time_step*i/InterpolationScale << endl;
 
       // cout << ptr->times_sec[i] << endl;
 

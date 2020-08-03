@@ -53,8 +53,8 @@ using multibody::MultibodyForces;
 
 class DDPRunner {
 public:
-lcmt_manipulator_traj RunUDP(stateVec_t xinit, stateVec_t xgoal,
-    const lcmt_motion_plan_query* query);
+lcmt_manipulator_traj RunDDP(stateVec_t xinit, stateVec_t xgoal,
+    double time_horizon, double time_step);
 void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);
 void clean_file(const char * _file_name, std::string & _ret_file);

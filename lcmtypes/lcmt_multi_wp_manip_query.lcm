@@ -1,0 +1,21 @@
+package drake;
+
+struct lcmt_multi_wp_manip_query {
+    string name; // name of action
+
+    string option; // option for traj op
+                   // "ik", "ddp", "admm"
+
+    int32_t dim_q; // dimension of q
+    int32_t n_wp; // number of waypoints
+
+    double time_horizon[n_wp]; // time duration of 
+    double time_step; // time_step size for traj op
+
+    double desired_ee[n_wp][6]; // xyz rpy of each waypoints
+    
+    double gripper_force;
+
+    double prev_gripper_width; // previous gripper configuration
+    double prev_q[dim_q]; // previous configuration of robot
+}
