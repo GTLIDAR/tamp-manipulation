@@ -20,8 +20,12 @@ from causal_graph.tools import build_causal_graph, get_subproblems, generate_sub
 from search_tree.tamp_node import PddlTampNode
 from search_tree.tamp_tree import PddlTree
 from search_tree.motion_plan_runner import ConveyorBeltManipMotionPlanRunner
+from search_tree.multi_wp_motion_plan_runner import MultiWPConveyorBeltManipMotionPlanRunner
 
 from pyperplan import _parse, _ground
+
+TRAJ_OPTION = "ddp"
+MULTI_WP = True
 
 class CausalGraphTampPlanner(object):
     """ A planner based on causal graph subtask separation
@@ -78,7 +82,7 @@ class CausalGraphTampPlanner(object):
         with open(foldername+filename, 'w') as out:
             json.dump(self.trajectories, out)
 
-    def plan(self):
+    def plan(self, option="ddp"):
         """ Runs plan that uses causal graph to generate subproblems first
         """
         subproblems = get_subproblems(self.causal_graph, self.task, show=True)
@@ -97,7 +101,7 @@ class CausalGraphTampPlanner(object):
             tree = PddlTree(root, st, self.motion_planner)
             print(tree.task)
             (tree.goals, n_visited) = tree.hybrid_search(
-                total_depth_limit=15, n_sols=1)
+                total_depth_limit=15, n_sols=1, option=option)
             total_n_visited += n_visited
             print("Subtask Search Time:", time.time()-task_start)
             if len(tree.goals):
@@ -127,18 +131,27 @@ def main():
     # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
     domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled_stationary.pddl"
     problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/3obj_coupled.pddl"
-    # geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup.json"
-    geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup_stationary.json"
-    traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup.json"
 
     problem = _parse(domain_file, problem_file)
     task = _ground(problem)
-    motion_planner = ConveyorBeltManipMotionPlanRunner(
-        geo_setup_file, traj_setup_file
-    )
+
+    if MULTI_WP:
+        geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup_multi_wp.json"
+        traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup_multi_wp.json"
+        motion_planner = MultiWPConveyorBeltManipMotionPlanRunner(
+            geo_setup_file, traj_setup_file
+        )
+    else:
+        # geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup.json"
+        geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup_stationary.json"
+        traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup.json"
+        motion_planner = ConveyorBeltManipMotionPlanRunner(
+            geo_setup_file, traj_setup_file
+        )
+
 
     planner = CausalGraphTampPlanner(task, motion_planner)
-    planner.plan()
+    planner.plan(TRAJ_OPTION)
     planner.save_traj()
 
 if __name__=="__main__":

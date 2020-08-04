@@ -1,0 +1,68 @@
+{
+    "durative_action_time": 1.5,
+    "gripper_wait_time": 0.25,
+
+    "ddp_time_step": 0.005,
+    "admm_time_step": 0.005,
+    "manual_time_step": 0.005,
+    "min_time_step": 0.0001,
+
+    "ddp_max_iter": 15,
+    "admm_max_iter": 10,
+
+    "gripper_force": 40,
+    "gripper_open_width": 100,
+    "gripper_close_width": 20,
+
+    "init_iiwa_pos": [0, 0, 0, 0, 0, 0, 0],
+    "init_gripper_pos": [100],
+
+    "n_joints": 7,
+
+    "wait": {
+        "traj_op": false,
+        "time_horizon": [1],
+        "gripper_open": 0,
+        "cost": 0
+    },
+
+    "release": {
+        "traj_op": false,
+        "time_horizon": [0.3],
+        "gripper_open": 1,
+        "cost": 0
+    },
+
+    "grasp-top": {
+        "traj_op": false,
+        "time_horizon": [0.3],
+        "gripper_open": -1,
+        "cost": 0
+    },
+
+    "grasp-front": {
+        "traj_op": false,
+        "time_horizon": [0.3],
+        "gripper_open": -1,
+        "cost": 0
+    },
+
+    "move-to-object-top": {
+        "traj_op": true,
+        "time_horizon": [3],
+        "wait_time": 0
+    },
+
+    "move-to-object-front": {
+        "traj_op": true,
+        "time_horizon": [3],
+        "wait_time": 0
+    },
+
+    "move-to-bin": {
+        "traj_op": true,
+        "time_horizon": [3],
+        "wait_time": 0
+    }
+
+}
