@@ -79,6 +79,7 @@ void Run(const lcmt_multi_wp_manip_query* query) {
         wp.constrain_orientation = true;
 
         wp_vec.push_back(wp);
+        std::cout<<"WP added "<<xyz<<"\n";
     }
 
     bool ik_feasible = ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &q_sol);
@@ -90,8 +91,12 @@ void Run(const lcmt_multi_wp_manip_query* query) {
     lcmt_manipulator_traj total_traj;
     total_traj.dim_states = query->dim_q;
     total_traj.dim_torques = 0;
+    total_traj.n_time_steps = 0;
+
     lcmt_manipulator_traj traj;
     for (size_t i = 0; i < q_sol.size()-1; i++) {
+        std::cout<<"q_init "<<q_sol[i]<<"\n";
+        std::cout<<"q_goal "<<q_sol[i+1]<<"\n";
         if (query->option.compare("ddp")==0) {
             traj = 
                 GetDDPRes(q_sol[i], q_sol[i+1], query->time_horizon[i], query->time_step);
@@ -109,13 +114,15 @@ void Run(const lcmt_multi_wp_manip_query* query) {
         traj.gripper_force = forces;
         traj.gripper_width = widths;
 
-        AppendTrajectory(&total_traj, &traj);
+        AppendTrajectory(total_traj, traj);
+        std::cout<<"Traj Appended\n";
+        std::cout << "Traj Length: " << total_traj.n_time_steps << "\n";
     }
 
     std::cout<<"Press any key to continue...\n";
     while (std::getc(stdin)==EOF) {}
 
-    lcm_.publish(FLAGS_plan_channel, &traj);
+    lcm_.publish(FLAGS_plan_channel, &total_traj);
     std::cout<<"Trajectory Published\n";
 }
 
@@ -159,23 +166,29 @@ lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
     return runner.RunADMM(qv_init, qv_goal, time_horizon, time_step, action_name);
 }
 
-void AppendTrajectory(lcmt_manipulator_traj *dest, lcmt_manipulator_traj *src) {
-    DRAKE_DEMAND(dest->dim_states==src->dim_states);
-    DRAKE_DEMAND(dest->dim_torques==src->dim_torques);
+void AppendTrajectory(lcmt_manipulator_traj &dest, lcmt_manipulator_traj &src) {
+    DRAKE_DEMAND(dest.dim_states==src.dim_states);
+    DRAKE_DEMAND(dest.dim_torques==src.dim_torques);
 
-    dest->n_time_steps += src->n_time_steps;
-    dest->cost += src->cost;
+    dest.n_time_steps += src.n_time_steps;
+    dest.cost += src.cost;
+    std::vector<double> times_sec = src.times_sec;
+    if (dest.times_sec.size()) {
+        for (size_t i = 0; i < times_sec.size(); i++) {
+            times_sec[i] += dest.times_sec.back();
+        }
+    }
 
-    dest->times_sec.insert(
-        dest->times_sec.end(), src->times_sec.begin(), src->times_sec.end());
-    dest->states.insert(
-        dest->states.end(), src->states.begin(), src->states.end()); 
-    dest->torques.insert(
-        dest->torques.end(), src->torques.begin(), src->torques.end());
-    dest->gripper_width.insert(
-        dest->gripper_width.end(), src->gripper_width.begin(), src->gripper_width.end());
-    dest->gripper_force.insert(
-        dest->gripper_force.end(), src->gripper_force.begin(), src->gripper_force.end());
+    dest.times_sec.insert(
+        dest.times_sec.end(), times_sec.begin(), times_sec.end());
+    dest.states.insert(
+        dest.states.end(), src.states.begin(), src.states.end()); 
+    dest.torques.insert(
+        dest.torques.end(), src.torques.begin(), src.torques.end());
+    dest.gripper_width.insert(
+        dest.gripper_width.end(), src.gripper_width.begin(), src.gripper_width.end());
+    dest.gripper_force.insert(
+        dest.gripper_force.end(), src.gripper_force.begin(), src.gripper_force.end());
 }
 
 };
@@ -209,7 +222,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<double> wp0 = {0.4, 0.05, 0.35, 0, 1.57, -1.57};
     std::vector<double> wp1 = {0.4, 0.05, 0.2, 0, 1.57, -1.57};
-    std::vector<double> wp2 = {0.4, 0.05, 0.45, 0, 1.57, -1.57};
+    std::vector<double> wp2 = {0.4, 0.05, 0.45, 0, 0, -1.57};
 
     query.desired_ee.push_back(wp0);
     query.desired_ee.push_back(wp1);
