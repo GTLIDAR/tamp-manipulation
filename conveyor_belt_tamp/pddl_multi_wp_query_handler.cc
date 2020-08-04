@@ -1,52 +1,73 @@
 #include <iostream>
 #include <vector>
+#include <string>
 
-#include "lcm/lcm-cpp.hpp"
 #include "gflags/gflags.h"
+#include "lcm-cpp.hpp"
 
 #include "drake/common/find_resource.h"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/traj_gen/admm_runner.h"
-#include "drake/traj_gen/ddp_runner.h"
-
-#include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_multi_wp_manip_query.hpp"
-
-DEFINE_bool(use_admm, false, "whether to use admm or ddp");
+#include "drake/lcmt_manipulator_traj.hpp"
+#include "drake/traj_gen/ddp_runner.h"
+#include "drake/traj_gen/admm_runner.h"
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
-DEFINE_double(gripper_force, 50, "force for gripper");
 
 DEFINE_string(
     KukaIiwaUrdf,
     "drake/manipulation/models/iiwa_description/urdf/iiwa7.urdf",
     "file name of iiwa7 urdf"
 );
-
+DEFINE_string(
+    query_channel,
+    "TREE_SEARCH_QUERY",
+    "channel for tree search to send its path plan query"
+);
+DEFINE_string(
+    result_channel,
+    "TREE_SEARCH_QUERY_RESULTS",
+    "channel for low level to send back query results"
+);
 DEFINE_string(ee_name, "iiwa_link_ee", "Name of the end effector link");
 
-DEFINE_string(plan_channel, "COMMITTED_ROBOT_PLAN", "Plan channels for plan");
-
-using lcm::LCM;
 using drake::manipulation::planner::ConstraintRelaxingIk;
 using drake::traj_gen::kuka_iiwa_arm::ADMMRunner;
 using drake::traj_gen::kuka_iiwa_arm::DDPRunner;
+namespace real_lcm = lcm;
 
 namespace drake {
 namespace conveyor_belt_tamp {
 
+class PDDLQueryHandler {
 
-class TrajTestRunner {
 public:
-TrajTestRunner() {
+PDDLQueryHandler() {
+    // Q_POST_THROW_ << -3.40486e-12, 0.743339, 8.16463e-12,  -0.5, 8.20197e-12,
+    //     -0.6 ,-1.01735e-11;
     model_path_ = FindResourceOrThrow(FLAGS_KukaIiwaUrdf);
+    lcm_.subscribe(FLAGS_query_channel, &PDDLQueryHandler::HandleQuery, this);
 }
 
-void Run(const lcmt_multi_wp_manip_query* query) {
+void Run() {
+    while (lcm_.handle()>=0);
+}
+
+private:
+std::string model_path_;
+real_lcm::LCM lcm_;
+lcmt_multi_wp_manip_query current_query_;
+
+void HandleQuery(
+    const real_lcm::ReceiveBuffer*,
+    const std::string&,
+    const lcmt_multi_wp_manip_query* query
+) {
+    current_query_ = *query;
     // initialize
     VectorXd iiwa_q = VectorXd::Zero(query->dim_q);
     for (int i = 0; i < query->dim_q; i++) {
@@ -84,18 +105,32 @@ void Run(const lcmt_multi_wp_manip_query* query) {
 
     bool ik_feasible = ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &q_sol);
 
+    lcmt_manipulator_traj traj;
     if (!ik_feasible) {
         std::cout<<"IK infeasuble\n";
+        traj = GetInfCost();
+        lcm_.publish(FLAGS_result_channel, &traj);
         return;
     }
 
+    std::cout<<"\n";
     lcmt_manipulator_traj total_traj;
     total_traj.dim_states = query->dim_q;
     total_traj.dim_torques = 0;
     total_traj.n_time_steps = 0;
 
-    lcmt_manipulator_traj traj;
     for (size_t i = 0; i < q_sol.size()-1; i++) {
+        std::cout<<"IK Results"<<"\n";
+        std::cout<<"q_init ";
+        for (int j = 0; j < kNumJoints; j++) {
+            std::cout<<q_sol[i][j]<<" ";
+        }
+        std::cout<<"\nq_goal";
+        for (int j = 0; j < kNumJoints; j++) {
+            std::cout<<q_sol[i+1][j]<<" ";
+        }
+        std::cout<<"\n";
+
         if (query->option.compare("ddp")==0) {
             traj = 
                 GetDDPRes(q_sol[i], q_sol[i+1], query->time_horizon[i], query->time_step);
@@ -108,26 +143,49 @@ void Run(const lcmt_multi_wp_manip_query* query) {
 
         std::vector<double> widths;
         std::vector<double> forces;
-        forces.assign(traj.n_time_steps, FLAGS_gripper_force);
-        widths.assign(traj.n_time_steps, FLAGS_gripper_close_width);
+        forces.assign(traj.n_time_steps, query->gripper_force);
+        if (query->name.find("move")==0) {
+            widths.assign(traj.n_time_steps, query->prev_gripper_width);
+        } else if (query->name.find("wait")==0) {
+            widths.assign(traj.n_time_steps, query->prev_gripper_width);
+        } else if (query->name.find("release")==0) {
+            widths.assign(traj.n_time_steps, FLAGS_gripper_open_width);
+        } else if (query->name.find("grasp")==0) {
+            widths.assign(traj.n_time_steps, FLAGS_gripper_close_width);
+        } else if (query->name.find("push")==0) {
+            widths.assign(traj.n_time_steps, FLAGS_gripper_close_width);
+        } else if (query->name.find("throw")==0) {
+            for (int j = 0; j < traj.n_time_steps; j++) {
+                if (j < traj.n_time_steps/5.) {
+                    widths.push_back(FLAGS_gripper_close_width);
+                } else {
+                    widths.push_back(FLAGS_gripper_open_width);
+                }
+            }
+        } else {
+            std::cout << "This shouldn't happen, Assigning gripper to previous state\n";
+            widths.assign(traj.n_time_steps, query->prev_gripper_width);
+        }
         traj.gripper_force = forces;
         traj.gripper_width = widths;
 
         AppendTrajectory(total_traj, traj);
-        std::cout<<"Traj Appended\n";
-        std::cout << "Traj Length: " << total_traj.n_time_steps << "\n";
     }
 
-    std::cout<<"Press any key to continue...\n";
-    while (std::getc(stdin)==EOF) {}
-
-    lcm_.publish(FLAGS_plan_channel, &total_traj);
-    std::cout<<"Trajectory Published\n";
+    lcm_.publish(FLAGS_result_channel, &total_traj);
+    std::cout << "--------"<<query->name<<" Trajectory Published to LCM! --------" << endl;
 }
 
-private:
-string model_path_;
-LCM lcm_;
+lcmt_manipulator_traj GetInfCost() {
+    std::cout<<"IK FAILED, publishing Inf cost\n";
+    auto msg = std::make_unique<lcmt_manipulator_traj>();
+    msg->cost = std::numeric_limits<double>::infinity();
+    msg->n_time_steps = 0;
+    msg->dim_states = 0;
+    msg->dim_torques = 0;
+
+    return *msg;
+}
 
 lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     double time_horizon, double time_step) {
@@ -191,41 +249,12 @@ void AppendTrajectory(lcmt_manipulator_traj &dest, lcmt_manipulator_traj &src) {
 }
 
 };
-
-} // namespace tamp_conveyor_belt
+} // namespace conveyor_belt_iiwa
 } // namespace drake
 
 int main(int argc, char* argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    drake::conveyor_belt_tamp::TrajTestRunner runner;
-    drake::lcmt_multi_wp_manip_query query;
-    
-    query.dim_q = 7;
-    query.n_wp = 3;
-    query.name = "Test";
-    if (FLAGS_use_admm) {
-        query.option = "admm";
-    } else {
-        query.option = "ddp";
-    }
-
-    query.time_step = 0.005;
-
-    double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
-    query.prev_q = std::vector<double>(prev_q, prev_q+sizeof(prev_q)/sizeof(double));
-    double time_horizon[] = {3, 3, 3};
-    query.time_horizon = std::vector<double>(time_horizon, time_horizon+sizeof(time_horizon)/sizeof(double));
-
-    query.gripper_force = FLAGS_gripper_force;
-    query.prev_gripper_width = FLAGS_gripper_close_width;
-
-    std::vector<double> wp0 = {0.4, 0.05, 0.35, 0, 1.57, -1.57};
-    std::vector<double> wp1 = {0.4, 0.05, 0.2, 0, 1.57, -1.57};
-    std::vector<double> wp2 = {0.4, 0.05, 0.45, 0, 0, -1.57};
-
-    query.desired_ee.push_back(wp0);
-    query.desired_ee.push_back(wp1);
-    query.desired_ee.push_back(wp2);
-
-    runner.Run(&query);
+    drake::conveyor_belt_tamp::PDDLQueryHandler handler;
+    handler.Run();
+    return 0;
 }

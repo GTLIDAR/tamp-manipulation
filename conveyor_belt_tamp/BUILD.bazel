@@ -158,6 +158,24 @@ drake_cc_binary(
         "//traj_gen:ddp_runner",
         "//lcmtypes:manipulator_traj",
         "//lcmtypes:multi_wp_manip_query",
-        "//lcmtypes:motion_plan_query",
+    ],
+)
+
+drake_cc_binary(
+    name = "pddl_multi_wp_query_handler",
+    srcs = ["pddl_multi_wp_query_handler.cc",],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//lcmtypes:multi_wp_manip_query",
+        "//lcmtypes:manipulator_traj",
+        "//traj_gen:ddp_runner",
+        "//traj_gen:admm_runner",
     ],
 )
