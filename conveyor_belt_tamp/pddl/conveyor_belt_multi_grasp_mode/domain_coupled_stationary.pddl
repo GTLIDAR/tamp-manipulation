@@ -41,21 +41,21 @@
 ; )
 
 ;define actions here
-; (:action move-to-object-top
-;     :parameters (?r - robot ?b - box)
-;     :precondition (and
-;         (free ?r)
-;         (ready-to-move ?r)
-;         (todo ?b)
-;         (unblocked ?b box_0)
-;         (unblocked ?b box_1)
-;         (unblocked ?b box_2)
-;     )
-;     :effect (and
-;         (not (ready-to-move ?r))
-;         (moved-to-object-top ?r ?b)
-;     )
-; )
+(:action move-to-object-top
+    :parameters (?r - robot ?b - box)
+    :precondition (and
+        (free ?r)
+        (ready-to-move ?r)
+        (todo ?b)
+        (unblocked ?b box_0)
+        (unblocked ?b box_1)
+        (unblocked ?b box_2)
+    )
+    :effect (and
+        (not (ready-to-move ?r))
+        (moved-to-object-top ?r ?b)
+    )
+)
 
 (:action move-to-object-front
     :parameters (?r - robot ?b - box)
@@ -73,23 +73,23 @@
     )
 )
 
-; (:action grasp-top
-;     :parameters (?r - robot ?b - box)
-;     :precondition (and
-;         (free ?r)
-;         (moved-to-object-top ?r ?b)
-;     )
-;     :effect (and
-;         (not (free ?r))
-;         (not (moved-to-object-top ?r ?b))
-;         (ready-to-move ?r)
+(:action grasp-top
+    :parameters (?r - robot ?b - box)
+    :precondition (and
+        (free ?r)
+        (moved-to-object-top ?r ?b)
+    )
+    :effect (and
+        (not (free ?r))
+        (not (moved-to-object-top ?r ?b))
+        (ready-to-move ?r)
 
-;         (holding ?r ?b)
-;         (unblocked box_0 ?b)
-;         (unblocked box_1 ?b)
-;         (unblocked box_2 ?b)
-;     )
-; )
+        (holding ?r ?b)
+        (unblocked box_0 ?b)
+        (unblocked box_1 ?b)
+        (unblocked box_2 ?b)
+    )
+)
 
 (:action grasp-front
     :parameters (?r - robot ?b - box)

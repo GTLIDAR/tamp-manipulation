@@ -18,4 +18,6 @@ struct lcmt_multi_wp_manip_query {
 
     double prev_gripper_width; // previous gripper configuration
     double prev_q[dim_q]; // previous configuration of robot
+
+    boolean constrain_orientation[n_wp]; // whether orientation of ee will be constrained
 }

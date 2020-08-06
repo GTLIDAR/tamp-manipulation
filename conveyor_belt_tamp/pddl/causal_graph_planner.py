@@ -8,8 +8,6 @@ import copy
 import json
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
-
 pddl_path = "/home/zhigen/code/pddl_planning"
 if pddl_path not in sys.path:
     sys.path.append(pddl_path)
@@ -64,28 +62,31 @@ class CausalGraphTampPlanner(object):
             ranked_subproblems.append(subproblems[r])
         return ranked_subproblems
 
-    def save_traj(self):
+    def save_traj(self, foldername=None, filename=None):
         """ save trajectory
         """
         if not self.trajectories:
             print("No available trajectory.")
             return
 
-        foldername = drake_path + "/conveyor_belt_tamp/results/"
+        if foldername is None:
+            foldername = drake_path + "/conveyor_belt_tamp/results/"
+        
         try:
             os.stat(foldername)
         except:
             os.makedirs(foldername)
 
-        filename = "traj"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
+        if filename is None:
+            filename = "traj"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
 
         with open(foldername+filename, 'w') as out:
             json.dump(self.trajectories, out)
 
-    def plan(self, option="ddp"):
+    def plan(self, total_depth_limit=15, option="ddp", show=True):
         """ Runs plan that uses causal graph to generate subproblems first
         """
-        subproblems = get_subproblems(self.causal_graph, self.task, show=True)
+        subproblems = get_subproblems(self.causal_graph, self.task, show=show)
         subproblems = self._rank_subproblems(subproblems)
         subtasks = []
         for sp in subproblems:
@@ -101,7 +102,7 @@ class CausalGraphTampPlanner(object):
             tree = PddlTree(root, st, self.motion_planner)
             print(tree.task)
             (tree.goals, n_visited) = tree.hybrid_search(
-                total_depth_limit=15, n_sols=1, option=option)
+                total_depth_limit=total_depth_limit, n_sols=1, option=option)
             total_n_visited += n_visited
             print("Subtask Search Time:", time.time()-task_start)
             if len(tree.goals):
@@ -115,8 +116,7 @@ class CausalGraphTampPlanner(object):
                 self.trees.append(tree)
             else:
                 print("This tree does not have solution...")
-                input("Press Enter to exit")
-                break
+                raise RuntimeError
 
         print("CG Plan Completed")
         print("Total time:", time.time()-start)
@@ -128,8 +128,8 @@ class CausalGraphTampPlanner(object):
 
 
 def main():
-    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
-    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled_stationary.pddl"
+    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
+    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled_stationary.pddl"
     problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/3obj_coupled.pddl"
 
     problem = _parse(domain_file, problem_file)

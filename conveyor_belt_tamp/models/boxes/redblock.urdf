@@ -34,6 +34,7 @@
       https://github.com/RobotLocomotion/drake/issues/6254 tracks the
       difficulty in supporting face-to-face contact.
      -->
+    <contact_coefficients kd="1.0" kp="1000.0" mu="1"/>
     <collision>
       <geometry>
         <box size="0.059 0.059 0.179" />

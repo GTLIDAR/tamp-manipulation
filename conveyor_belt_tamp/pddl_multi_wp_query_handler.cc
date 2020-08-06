@@ -97,7 +97,7 @@ void HandleQuery(
 
         wp.pose.set_translation(xyz);
         wp.pose.set_rotation(rpy);
-        wp.constrain_orientation = true;
+        wp.constrain_orientation = query->constrain_orientation[i];
 
         wp_vec.push_back(wp);
         std::cout<<"WP added "<<xyz<<"\n";

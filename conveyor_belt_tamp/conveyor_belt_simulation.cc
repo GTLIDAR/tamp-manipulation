@@ -33,7 +33,7 @@ using lcm::LCM;
 namespace drake {
 namespace conveyor_belt_tamp {
 namespace manipulation_station {
-DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup_stationary.json",
+DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup_multi_wp_stationary.json",
     "file for geometry setup");
 DEFINE_string(sim_setup_file, "drake/conveyor_belt_tamp/setup/sim_setup.json",
     "file for simulatino setup");
