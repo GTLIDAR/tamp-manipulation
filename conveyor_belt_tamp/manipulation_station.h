@@ -20,11 +20,13 @@ namespace drake {
 namespace conveyor_belt_tamp {
 namespace manipulation_station {
 
+using math::RigidTransform;
+
 /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which manipulation station is simulated.
-enum class Setup { kNone, kConveyorBelt };
+enum class Setup { kNone, kConveyorBelt , kObjectSorting};
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -136,6 +138,10 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   discrete derivative used to approximate velocity from the position
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
+
+  void SetupObjectSortingStation(
+    IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision
+  );
 
   void SetupConveyorBeltStation(
     IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
@@ -438,7 +444,7 @@ class ManipulationStation : public systems::Diagram<T> {
   void AddDefaultIiwa(const IiwaCollisionModel collision_model);
   void AddDefaultWsg();
 
-  void AddLidarIiwa(const IiwaCollisionModel collision_model);
+  void AddLidarIiwa(const IiwaCollisionModel collision_model, const RigidTransform<double> X_WI);
   void AddLidarWsg();
 
   // These are only valid until Finalize() is called.

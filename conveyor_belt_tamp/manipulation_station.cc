@@ -190,6 +190,65 @@ void ManipulationStation<T>::AddManipulandFromFile(
 }
 
 template <typename T>
+void ManipulationStation<T>::SetupObjectSortingStation(
+  const IiwaCollisionModel collision_model
+) {
+  DRAKE_DEMAND(setup_==Setup::kNone);
+  setup_ = Setup::kConveyorBelt;
+  const double kTableTopZInWorld = 0.736 + 0.057 / 2;
+
+  // Add Table that supports Iiwa
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+      "drake/conveyor_belt_tamp/models/furnitures/"
+      "extra_heavy_duty_table_surface_only_collision.sdf"
+    );
+    RigidTransform<double> X_WC(RotationMatrix<double>::Identity(),
+                                Vector3d(0, 0, 0));
+    internal::AddAndWeldModelFrom(
+      sdf_path, "table0", plant_->world_frame(), "link", X_WC, plant_
+      );
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::Identity(), Vector3d(0, 0.762, 0));
+    internal::AddAndWeldModelFrom(
+      sdf_path, "table1", plant_->world_frame(), "link", X_WC, plant_
+    );
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::Identity(), Vector3d(0, -0.762, 0));
+    internal::AddAndWeldModelFrom(
+      sdf_path, "table2", plant_->world_frame(), "link", X_WC, plant_
+    );
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::Identity(), Vector3d(0.7112, 0, 0));
+    internal::AddAndWeldModelFrom(
+      sdf_path, "table3", plant_->world_frame(), "link", X_WC, plant_
+    );
+
+    // X_WC = RigidTransform<double>(RotationMatrix<double>::Identity(), Vector3d(0.7112, 0.762, 0));
+    // internal::AddAndWeldModelFrom(
+    //   sdf_path, "table4", plant_->world_frame(), "link", X_WC, plant_
+    // );
+
+    // X_WC = RigidTransform<double>(RotationMatrix<double>::Identity(), Vector3d(0.7112, -0.762, 0));
+    // internal::AddAndWeldModelFrom(
+    //   sdf_path, "table5", plant_->world_frame(), "link", X_WC, plant_
+    // );
+  }  
+
+  // add IIWA and WSG
+  // The `z` coordinate of the top of the table in the world frame.
+  // The quantity 0.736 is the `z` coordinate of the frame associated with the
+  // 'surface' collision element in the SDF. This element uses a box of height
+  // 0.057m thus giving the surface height (`z`) in world coordinates as
+  // 0.736 + 0.057 / 2.
+  const auto X_WI = RigidTransform<double>(
+    RollPitchYaw<double>(0, 0, 0), Vector3d(-0.2, 0, kTableTopZInWorld));
+  // add IIWA and WSG
+  AddLidarIiwa(collision_model, X_WI);
+  AddLidarWsg();
+}
+
+template <typename T>
 void ManipulationStation<T>::SetupConveyorBeltStation(
   const IiwaCollisionModel collision_model
 ) {
@@ -276,8 +335,15 @@ void ManipulationStation<T>::SetupConveyorBeltStation(
     //                               "bin_base", X_WC, plant_);
   }
 
+  // The `z` coordinate of the top of the table in the world frame.
+  // The quantity 0.736 is the `z` coordinate of the frame associated with the
+  // 'surface' collision element in the SDF. This element uses a box of height
+  // 0.057m thus giving the surface height (`z`) in world coordinates as
+  // 0.736 + 0.057 / 2.
+  const auto X_WI = RigidTransform<double>(
+    RollPitchYaw<double>(0, 0, 0), Vector3d(0.2, 0, kTableTopZInWorld));
   // add IIWA and WSG
-  AddLidarIiwa(collision_model);
+  AddLidarIiwa(collision_model, X_WI);
   AddLidarWsg();
 
 }
@@ -412,6 +478,10 @@ void ManipulationStation<T>::Finalize(
   switch (setup_) {
     case Setup::kNone:
     case Setup::kConveyorBelt: {
+      q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      break;
+    }
+    case Setup::kObjectSorting: {
       q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
       break;
     }
@@ -854,7 +924,7 @@ void ManipulationStation<T>::AddDefaultWsg() {
 
 template <typename T>
 void ManipulationStation<T>::AddLidarIiwa(
-  const IiwaCollisionModel collision_model) {
+  const IiwaCollisionModel collision_model, const RigidTransform<double> X_WI) {
   std::string urdf_path;
   switch (collision_model) {
     case IiwaCollisionModel::kNoCollision:
@@ -871,14 +941,6 @@ void ManipulationStation<T>::AddLidarIiwa(
       throw std::domain_error("Unrecognized collision_model.");
   }
 
-  // The `z` coordinate of the top of the table in the world frame.
-  // The quantity 0.736 is the `z` coordinate of the frame associated with the
-  // 'surface' collision element in the SDF. This element uses a box of height
-  // 0.057m thus giving the surface height (`z`) in world coordinates as
-  // 0.736 + 0.057 / 2.
-  const double kTableTopZInWorld = 0.736 + 0.057 / 2;
-  const auto X_WI = RigidTransform<double>(
-    RollPitchYaw<double>(0, 0, 0), Vector3d(0.2, 0, kTableTopZInWorld));
   auto iiwa_instance = internal::AddAndWeldModelFrom(
       urdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
       X_WI, plant_);
