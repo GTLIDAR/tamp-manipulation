@@ -151,7 +151,7 @@ def main():
 
 
     planner = CausalGraphTampPlanner(task, motion_planner)
-    planner.plan(TRAJ_OPTION)
+    planner.plan(option=TRAJ_OPTION)
     planner.save_traj()
 
 if __name__=="__main__":
