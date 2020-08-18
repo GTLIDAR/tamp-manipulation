@@ -20,7 +20,7 @@ from causal_graph.tools import build_causal_graph, get_subproblems, generate_sub
 from search_tree.tamp_node import PddlTampNode
 from search_tree.tamp_tree import PddlTree
 from search_tree.motion_plan_runner import ConveyorBeltManipMotionPlanRunner
-from search_tree.multi_wp_motion_plan_runner import MultiWPConveyorBeltManipMotionPlanRunner
+from search_tree.multi_wp_motion_plan_runner import MultiWPStaionaryManipMotionPlanRunner
 
 from pyperplan import _parse, _ground
 
@@ -37,7 +37,7 @@ def main():
     geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/object_sorting/geo_setup.json"
     traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/object_sorting/traj_setup.json"
 
-    motion_planner = MultiWPConveyorBeltManipMotionPlanRunner(
+    motion_planner = MultiWPStaionaryManipMotionPlanRunner(
         geo_setup_file, traj_setup_file
     )
 

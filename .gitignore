@@ -28,3 +28,5 @@
 
 # User-specified configuration
 /user.bazelrc
+*.pyc
+*.soln

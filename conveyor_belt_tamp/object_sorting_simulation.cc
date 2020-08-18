@@ -114,7 +114,7 @@ int do_main(int argc, char* argv[]) {
 
     // box_2 inside black box
     {
-    const std::string black_box_urdf_path2 = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
+    const std::string black_box_urdf_path2 = "drake/conveyor_belt_tamp/models/boxes/black_box2.urdf";
     
     auto rpy = math::RollPitchYawd(Eigen::Vector3d(
         object_init_pos["box_2"][3].asDouble(),
@@ -138,7 +138,7 @@ int do_main(int argc, char* argv[]) {
 
     // box_3 red box behind first big box
     {
-    const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/redblock2.urdf";
+    const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box3.urdf";
     
     auto rpy = math::RollPitchYawd(Eigen::Vector3d(
         object_init_pos["box_3"][3].asDouble(),
@@ -162,7 +162,7 @@ int do_main(int argc, char* argv[]) {
 
     // box_4
     {
-    const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box3.urdf";
+    const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box4.urdf";
     
     auto rpy = math::RollPitchYawd(Eigen::Vector3d(
         object_init_pos["box_4"][3].asDouble(),

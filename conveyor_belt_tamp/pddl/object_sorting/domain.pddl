@@ -1,40 +1,41 @@
 ;Header and description
 
-(define (domain conveyor_belt_domain_coupled)
+(define (domain stationary_object_sorting)
 
 ;remove requirements that are not needed
 (:requirements :strips :typing)
 
 (:types ;todo: enumerate types and their hierarchy here, e.g. car truck bus - vehicle
     robot - object
-    belt - object
     box - object
-    bin - object
+    red_box - box
+    black_box - box
+    table - object
+    goal_table - table
+    free_table - table
 )
 
 ; un-comment following line if constants are needed
-(:constants
-    box_0 - box
-    box_1 - box
-    box_2 - box
-    box_3 - box
-    box_4 - box
+(:constants 
+    box_0 - red_box
+    box_1 - black_box
+    box_2 - black_box
+    box_3 - black_box
+    box_4 - black_box
 )
 
 (:predicates ;todo: define predicates here
     (free ?r - robot)
-    (ready-to-move ?r - robot)
     (holding ?r - robot ?b - box)
-    (in ?b - box ?bin - bin)
-    (on ?b - box ?belt - belt)
+    (ready-to-move ?r - robot)
 
-    (unblocked ?b1 - box ?b2 - box)
+    (moved-to-object ?r - robot ?b - box)
+    (moved-to-table ?r - robot ?b - box ?t - table)
 
-    (moved-to-object-top ?r - robot ?b - box)
-    (moved-to-object-front ?r - robot ?b - box)
-    (moved-to-bin ?r - robot ?b - box ?to - bin)
+    (on ?b - box ?t - table)
 
-    (todo ?b - box)
+    (unobstructed ?b1 - box ?b2 - box)
+
 )
 
 
@@ -45,106 +46,95 @@
 ;define actions here
 (:action move-to-object-top
     :parameters (?r - robot ?b - box)
-    :precondition (and
+    :precondition (and 
         (free ?r)
         (ready-to-move ?r)
-        (todo ?b)
-        (unblocked ?b box_0)
-        (unblocked ?b box_1)
-        (unblocked ?b box_2)
-        (unblocked ?b box_3)
-        (unblocked ?b box_4)
+
+        (unobstructed ?b box_0)
+        (unobstructed ?b box_1)
+        (unobstructed ?b box_2)
+        (unobstructed ?b box_3)
+        (unobstructed ?b box_4)
     )
-    :effect (and
+    :effect (and 
         (not (ready-to-move ?r))
-        (moved-to-object-top ?r ?b)
+        (moved-to-object ?r ?b)
     )
 )
 
-(:action move-to-object-front
+(:action move-to-object-side
     :parameters (?r - robot ?b - box)
-    :precondition (and
+    :precondition (and 
         (free ?r)
         (ready-to-move ?r)
-        (todo ?b)
-        (unblocked ?b box_0)
-        (unblocked ?b box_1)
-        (unblocked ?b box_2)
-        (unblocked ?b box_3)
-        (unblocked ?b box_4)
+
+        (unobstructed ?b box_0)
+        (unobstructed ?b box_1)
+        (unobstructed ?b box_2)
+        (unobstructed ?b box_3)
+        (unobstructed ?b box_4)
     )
-    :effect (and
+    :effect (and 
         (not (ready-to-move ?r))
-        (moved-to-object-front ?r ?b)
+        (moved-to-object ?r ?b)
     )
 )
 
-(:action grasp-top
+(:action grasp
     :parameters (?r - robot ?b - box)
-    :precondition (and
+    :precondition (and 
         (free ?r)
-        (moved-to-object-top ?r ?b)
+        (moved-to-object ?r ?b)
     )
-    :effect (and
+    :effect (and 
         (not (free ?r))
-        (not (moved-to-object-top ?r ?b))
+        (holding ?r ?b)
+        (not (moved-to-object ?r ?b))
         (ready-to-move ?r)
 
-        (holding ?r ?b)
-        (unblocked box_0 ?b)
-        (unblocked box_1 ?b)
-        (unblocked box_2 ?b)
-        (unblocked box_3 ?b)
-        (unblocked box_4 ?b)
+        (unobstructed box_0 ?b)
+        (unobstructed box_1 ?b)
+        (unobstructed box_2 ?b)
+        (unobstructed box_3 ?b)
+        (unobstructed box_4 ?b)
     )
 )
 
-(:action grasp-front
-    :parameters (?r - robot ?b - box)
-    :precondition (and
-        (free ?r)
-        (moved-to-object-front ?r ?b)
-    )
-    :effect (and
-        (not (free ?r))
-        (not (moved-to-object-front ?r ?b))
-        (ready-to-move ?r)
-
-        (holding ?r ?b)
-        (unblocked box_0 ?b)
-        (unblocked box_1 ?b)
-        (unblocked box_2 ?b)
-        (unblocked box_3 ?b)
-        (unblocked box_4 ?b)
-    )
-)
-
-(:action move-to-bin
-    :parameters (?r - robot ?b - box ?to - bin)
-    :precondition (and
+(:action move-to-goal-table
+    :parameters (?r - robot ?b - red_box ?t - goal_table)
+    :precondition (and 
         (holding ?r ?b)
         (ready-to-move ?r)
     )
-    :effect (and
-        (moved-to-bin ?r ?b ?to)
+    :effect (and 
+        (moved-to-table ?r ?b ?t)
         (not (ready-to-move ?r))
     )
 )
 
-
+(:action move-to-free-table
+    :parameters (?r - robot ?b - black_box ?t - free_table)
+    :precondition (and 
+        (holding ?r ?b)
+        (ready-to-move ?r)
+    )
+    :effect (and 
+        (moved-to-table ?r ?b ?t)
+        (not (ready-to-move ?r))
+    )
+)
 
 (:action release
-    :parameters (?r - robot ?b - box ?to - bin)
+    :parameters (?r - robot ?b - box ?t - table)
     :precondition (and
-        (moved-to-bin ?r ?b ?to)
+        (moved-to-table ?r ?b ?t)
     )
     :effect (and
         (free ?r)
         (ready-to-move ?r)
         (not (holding ?r ?b))
-        (in ?b ?to)
-        (not (moved-to-bin ?r ?b ?to))
-        (not (todo ?b))
+        (on ?b ?t)
+        (not (moved-to-table ?r ?b ?t))
     )
 )
 

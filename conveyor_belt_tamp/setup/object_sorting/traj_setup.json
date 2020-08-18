@@ -27,15 +27,7 @@
         "constrain_orientation": [true]
     },
 
-    "grasp-top": {
-        "traj_op": false,
-        "time_horizon": [0.5],
-        "gripper_open": -1,
-        "cost": 0,
-        "constrain_orientation": [true]
-    },
-
-    "grasp-front": {
+    "grasp": {
         "traj_op": false,
         "time_horizon": [0.5],
         "gripper_open": -1,
@@ -50,14 +42,21 @@
         "constrain_orientation": [true, true]
     },
 
-    "move-to-object-front": {
+    "move-to-object-side": {
         "traj_op": true,
         "time_horizon": [2, 1],
         "wait_time": 0,
         "constrain_orientation": [true, true]
     },
 
-    "move-to-bin": {
+    "move-to-goal-table": {
+        "traj_op": true,
+        "time_horizon": [2, 1.5],
+        "wait_time": 0,
+        "constrain_orientation": [false, false]
+    },
+
+    "move-to-free-table": {
         "traj_op": true,
         "time_horizon": [2, 1.5],
         "wait_time": 0,
