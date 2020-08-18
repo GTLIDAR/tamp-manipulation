@@ -12,7 +12,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator_status.h"
@@ -262,9 +261,13 @@ class Simulator {
   /// AdvanceTo() calls you should consider whether to call Initialize() before
   /// resuming; AdvanceTo() will not do that automatically for you. Whether to
   /// do so depends on whether you want the above initialization operations
-  /// performed. For example, if you changed the time you will likely want the
-  /// time-triggered events to be recalculated in case one is due at the new
-  /// starting time.
+  /// performed.
+  ///
+  /// @note In particular, if you changed the time you must call Initialize().
+  /// The time-triggered events must be recalculated in case one is due at the
+  /// new starting time. Currently, the AdvanceTo() call will print a warning
+  /// for the first violation; after 2020-12-01 the warning will become a hard
+  /// error.
   ///
   /// @warning Initialize() does not automatically attempt to satisfy System
   /// constraints -- it is up to you to make sure that constraints are
@@ -585,18 +588,6 @@ class Simulator {
   /// state of the system.
   IntegratorBase<T>& get_mutable_integrator() { return *integrator_.get(); }
 
-  template <class U>
-  DRAKE_DEPRECATED(
-      "2020-08-01",
-      "Use void or max-step-size version of reset_integrator() instead.")
-  U* reset_integrator(std::unique_ptr<U> integrator) {
-    if (!integrator)
-      throw std::logic_error("Integrator cannot be null.");
-    initialization_done_ = false;
-    integrator_ = std::move(integrator);
-    return static_cast<U*>(integrator_.get());
-  }
-
   /// Resets the integrator with a new one using factory construction.
   /// @code
   /// simulator.reset_integrator<RungeKutta3Integrator<double>>().
@@ -813,6 +804,10 @@ class Simulator {
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
+  // Set by Initialize() and AdvanceTo(). Used to detect unexpected jumps in
+  // time.
+  double last_known_simtime_{nan()};
+
   // The vector of active witness functions.
   std::unique_ptr<std::vector<const WitnessFunction<T>*>> witness_functions_;
 
@@ -838,10 +833,6 @@ class Simulator {
   TimeOrWitnessTriggered time_or_witness_triggered_{
       TimeOrWitnessTriggered::kNothingTriggered
   };
-
-  // The time that the next timed event is to be handled. This value is set in
-  // both Initialize() and AdvanceTo().
-  T next_timed_event_time_{std::numeric_limits<double>::quiet_NaN()};
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;

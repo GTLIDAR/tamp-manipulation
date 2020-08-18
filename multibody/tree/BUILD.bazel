@@ -103,6 +103,8 @@ drake_cc_library(
         "multibody_forces.cc",
         "multibody_tree.cc",
         "multibody_tree_system.cc",
+        "planar_joint.cc",
+        "planar_mobilizer.cc",
         "prismatic_joint.cc",
         "prismatic_mobilizer.cc",
         "quaternion_floating_mobilizer.cc",
@@ -139,6 +141,8 @@ drake_cc_library(
         "multibody_tree.h",
         "multibody_tree-inl.h",
         "multibody_tree_system.h",
+        "planar_joint.h",
+        "planar_mobilizer.h",
         "prismatic_joint.h",
         "prismatic_mobilizer.h",
         "quaternion_floating_mobilizer.h",
@@ -365,6 +369,15 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "planar_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "prismatic_mobilizer_test",
     deps = [
         ":mobilizer_tester",
@@ -496,6 +509,14 @@ drake_cc_googletest(
     name = "ball_rpy_joint_test",
     deps = [
         ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_joint_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

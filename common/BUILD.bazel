@@ -184,6 +184,10 @@ drake_cc_library(
     # rest of the header files by adding them in `srcs` section.
     srcs = [
         "symbolic.cc",
+        "symbolic_chebyshev_basis_element.cc",
+        "symbolic_chebyshev_basis_element.h",
+        "symbolic_chebyshev_polynomial.cc",
+        "symbolic_chebyshev_polynomial.h",
         "symbolic_codegen.cc",
         "symbolic_codegen.h",
         "symbolic_environment.cc",
@@ -206,6 +210,8 @@ drake_cc_library(
         "symbolic_monomial_util.h",
         "symbolic_polynomial.cc",
         "symbolic_polynomial.h",
+        "symbolic_polynomial_basis_element.cc",
+        "symbolic_polynomial_basis_element.h",
         "symbolic_rational_function.cc",
         "symbolic_rational_function.h",
         "symbolic_simplification.cc",
@@ -554,19 +560,6 @@ drake_cc_binary(
         ":essential",
         ":find_resource",
     ],
-)
-
-# This should probably move to the test_utilities package, but developers
-# expect to find it here, so we'll leave it alone for now.
-drake_py_binary(
-    name = "cpplint_wrapper",
-    testonly = 1,
-    srcs = ["test/cpplint_wrapper.py"],
-    data = [
-        "//:CPPLINT.cfg",
-        "@styleguide//:cpplint",
-    ],
-    main = "test/cpplint_wrapper.py",
 )
 
 install(
@@ -971,6 +964,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_chebyshev_polynomial_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_chebyshev_basis_element_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_simplification_test",
     deps = [
         ":symbolic",
@@ -1131,6 +1143,16 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_polynomial_basis_element_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -1320,20 +1342,6 @@ drake_py_unittest(
     name = "drake_cc_googletest_main_test",
     args = ["$(location :drake_cc_googletest_main_test_device)"],
     data = [":drake_cc_googletest_main_test_device"],
-)
-
-drake_py_unittest(
-    name = "cpplint_wrapper_test",
-    args = [
-        "$(location :cpplint_wrapper)",
-        "$(location :eigen_types.h)",
-    ],
-    data = [
-        ":cpplint_wrapper",
-        ":eigen_types.h",
-    ],
-    # Exceeds timeout when run under Valgrind tools.
-    tags = ["no_valgrind_tools"],
 )
 
 drake_py_unittest(

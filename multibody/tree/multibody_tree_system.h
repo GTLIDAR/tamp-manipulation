@@ -94,7 +94,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
 
   /** Returns a reference to the up to date ArticulatedBodyInertiaCache stored
-  in the given context, recalculating it first if necessary. 
+  in the given context, recalculating it first if necessary.
   See @ref internal_forward_dynamics
   "Articulated Body Algorithm Forward Dynamics" for further details. */
   const ArticulatedBodyInertiaCache<T>& EvalArticulatedBodyInertiaCache(
@@ -168,8 +168,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return this->get_cache_entry(cache_indexes_.across_node_jacobians)
         .template Eval<std::vector<Vector6<T>>>(context);
   }
-
-  // TODO(sherm1) Add ArticulatedBodyInertiaCache.
 
  protected:
   /** @name        Alternate API for derived classes

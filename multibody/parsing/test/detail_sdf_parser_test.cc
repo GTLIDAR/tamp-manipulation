@@ -21,6 +21,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -44,6 +45,29 @@ using math::RollPitchYawd;
 using systems::Context;
 
 const double kEps = std::numeric_limits<double>::epsilon();
+
+// TODO(jwnimmer-tri) This unit test has a lot of copy-pasta, including these
+// helper functions as well as all their call sites below.  We should refactor
+// the plant, scene_graph, etc. into a test fixture for brevity.
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelFromSdf(
+      { .file_name = &file_name },
+      model_name, package_map, plant, scene_graph);
+}
+std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelsFromSdf(
+      { .file_name = &file_name },
+      package_map, plant, scene_graph);
+}
 
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
@@ -572,6 +596,19 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+
+  // Planar joint
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<PlanarJoint>("planar_joint"));
+  const PlanarJoint<double>& planar_joint =
+      plant.GetJointByName<PlanarJoint>("planar_joint");
+  EXPECT_EQ(planar_joint.name(), "planar_joint");
+  EXPECT_EQ(planar_joint.parent_body().name(), "link6");
+  EXPECT_EQ(planar_joint.child_body().name(), "link7");
+  EXPECT_TRUE(CompareMatrices(planar_joint.damping(), Vector3d::Constant(0.1)));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_upper_limits(), inf3));
 }
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
@@ -900,8 +937,9 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-      std::runtime_error,
-      "Unable to find the <drake:bushing_frameC> tag.");
+                              std::runtime_error,
+                              "<drake:linear_bushing_rpy>: Unable to find the "
+                              "<drake:bushing_frameC> child tag.");
 
   // Test non-existent frame
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -922,12 +960,12 @@ GTEST_TEST(SdfParser, BushingParsing) {
       </drake:linear_bushing_rpy>
     </model>)"),
       std::runtime_error,
-      "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
+      "<drake:linear_bushing_rpy>: Frame 'frameZ' specified for "
+      "<drake:bushing_frameC> does not exist in "
       "the model.");
 
   // Test missing constants tag
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"(
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -942,8 +980,9 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-      std::runtime_error,
-      "Unable to find the <drake:bushing_torque_damping> tag.");
+                              std::runtime_error,
+                              "<drake:linear_bushing_rpy>: Unable to find the "
+                              "<drake:bushing_torque_damping> child tag.");
 }
 
 }  // namespace

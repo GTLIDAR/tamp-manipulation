@@ -16,6 +16,7 @@
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
@@ -29,6 +30,20 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
+
+// TODO(jwnimmer-tri) This unit test has a lot of copy-pasta, including this
+// helper function as well as all it's call sites below.  We should refactor
+// the plant, scene_graph, etc. into a test fixture for brevity.
+ModelInstanceIndex AddModelFromUrdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelFromUrdf(
+      { .file_name = &file_name },
+      model_name, package_map, plant, scene_graph);
+}
 
 // Verifies that the URDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
@@ -273,6 +288,19 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+
+  // Planar joint
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<PlanarJoint>("planar_joint"));
+  const PlanarJoint<double>& planar_joint =
+      plant.GetJointByName<PlanarJoint>("planar_joint");
+  EXPECT_EQ(planar_joint.name(), "planar_joint");
+  EXPECT_EQ(planar_joint.parent_body().name(), "link6");
+  EXPECT_EQ(planar_joint.child_body().name(), "link7");
+  EXPECT_TRUE(CompareMatrices(planar_joint.damping(), Vector3d::Constant(0.1)));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_upper_limits(), inf3));
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {

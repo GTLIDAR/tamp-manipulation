@@ -22,6 +22,7 @@
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/plant/tamsi_solver_results.h"
 #include "drake/multibody/topology/multibody_graph.h"
@@ -2781,7 +2782,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return Abias_WFp.get_coeffs();
   }
 
-  /// For one point Bp affixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
+  /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
   ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
@@ -2796,14 +2797,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABp` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame on which point Bp is affixed/welded.
+  /// @param[in] frame_B The frame on which point Bp is fixed/welded.
   /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
-  /// Bp (regarded as affixed/welded to B), expressed in frame_B.
+  /// Bp (regarded as fixed/welded to B), expressed in frame_B.
   /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
   /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
   /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
   /// because Bp's velocity in A is defined as the derivative in frame A of
-  /// Bp's position vector from _any_ point affixed to A.
+  /// Bp's position vector from _any_ point fixed to A.
   /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
   /// the frame in which the Jacobian `J𝑠_V_ABp` is expressed on output.
   /// @param[out] J𝑠_V_ABp_E Point Bp's spatial velocity Jacobian in frame A
@@ -2818,9 +2819,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
   /// </pre>
   /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
-  /// affixed to frame B and consider CalcJacobianAngularVelocity() to calculate
+  /// fixed to frame B and consider CalcJacobianAngularVelocity() to calculate
   /// frame B's angular velocity Jacobian.
-  /// @throws std::exception if `J𝑠_V_ABi_E` is nullptr or not sized `3*p x n`.
+  /// @throws std::exception if `J𝑠_V_ABp_E` is nullptr or not sized `6 x n`.
   void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
                                    JacobianWrtVariable with_respect_to,
                                    const Frame<T>& frame_B,
@@ -3670,7 +3671,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
     systems::CacheIndex contact_surfaces;
-    systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
     systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
@@ -3735,7 +3735,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Returns the pair (stiffness, dissipation)
   // Defaults to heuristically computed parameter if the given geometry
   // isn't assigned that parameter.
-  std::pair<T, T> get_point_contact_parameters(
+  std::pair<T, T> GetPointContactParameters(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const {
     if constexpr (std::is_same<symbolic::Expression, T>::value) {
@@ -3753,6 +3753,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                          geometry::internal::kMaterialGroup,
                          geometry::internal::kHcDissipation,
                          penalty_method_contact_parameters_.dissipation));
+  }
+
+  // Helper to acquire per-geometry Coulomb friction coefficients from
+  // SceneGraph.
+  const CoulombFriction<double>& GetCoulombFriction(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const {
+    if constexpr (std::is_same<symbolic::Expression, T>::value) {
+      throw std::domain_error(
+          "This method doesn't support T = symbolic::Expression.");
+    }
+    const geometry::ProximityProperties* prop =
+        inspector.GetProximityProperties(id);
+    DRAKE_DEMAND(prop != nullptr);
+    DRAKE_THROW_UNLESS(prop->HasProperty(geometry::internal::kMaterialGroup,
+                                         geometry::internal::kFriction));
+    return prop->GetProperty<CoulombFriction<double>>(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction);
   }
 
   // Checks that the provided State is consistent with this plant.
@@ -3941,6 +3959,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       internal::HydroelasticFallbackCacheData<T>* data) const;
 
+  // Depending on the ContactModel, this method performs point contact and
+  // hydroelastic queries and prepares the results in the form of a list of
+  // DiscreteContactPair to be consummed by our discrete solvers.
+  std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
+      const systems::Context<T>& context) const;
+
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
   void CalcContactResultsContinuous(const systems::Context<T>& context,
@@ -3972,18 +3996,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.contact_results)
         .template Eval<ContactResults<T>>(context);
-  }
-
-  // Given the state x and input u in `context`, this method computes the
-  // generalized acceleration into vdot.
-  void CalcGeneralizedAccelerations(const drake::systems::Context<T>& context,
-                                    VectorX<T>* vdot) const;
-
-  // Eval() version of the method CalcGeneralizedAccelerations().
-  const VectorX<T>& EvalGeneralizedAccelerations(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.generalized_accelerations)
-        .template Eval<VectorX<T>>(context);
   }
 
   // Calc method for the reaction forces output port.
@@ -4128,8 +4140,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // friction properties for the i-th point pair in `point_pairs`.
   std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
       const drake::systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs)
-      const;
+      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
 
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
@@ -4202,7 +4213,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // contact point.
   void CalcNormalAndTangentContactJacobians(
       const systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
+      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
 
@@ -4613,7 +4624,7 @@ template <>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
     const drake::systems::Context<symbolic::Expression>&,
-    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&)
+    const std::vector<internal::DiscreteContactPair<symbolic::Expression>>&)
     const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(

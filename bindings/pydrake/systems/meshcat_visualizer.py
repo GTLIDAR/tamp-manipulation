@@ -213,7 +213,8 @@ class MeshcatVisualizer(LeafSystem):
                  frames_to_draw={},
                  frames_opacity=1.,
                  axis_length=0.15,
-                 axis_radius=0.006):
+                 axis_radius=0.006,
+                 **kwargs):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -241,6 +242,8 @@ class MeshcatVisualizer(LeafSystem):
                     {"1": {"A", "B"}}.
             frames_opacity, axis_length and axis_radius are the opacity, length
                 and radius of the coordinate axes to be drawn.
+
+        Additional kwargs will be passed to the MeshcatVisualizer constructor.
         Note:
             This call will not return until it connects to the
             ``meshcat-server``.
@@ -273,9 +276,13 @@ class MeshcatVisualizer(LeafSystem):
         self.prefix = prefix
         if zmq_url is not None:
             print("Connecting to meshcat-server at zmq_url=" + zmq_url + "...")
-        self.vis = meshcat.Visualizer(zmq_url=zmq_url)
+        self.vis = meshcat.Visualizer(zmq_url=zmq_url, **kwargs)
         print("Connected to meshcat-server.")
         self._scene_graph = scene_graph
+
+        # Set background color (to match drake-visualizer).
+        self.vis['/Background'].set_property("top_color", [242, 242, 255])
+        self.vis['/Background'].set_property("bottom_color", [77, 77, 89])
 
         if open_browser:
             webbrowser.open(self.vis.url())
@@ -293,6 +300,49 @@ class MeshcatVisualizer(LeafSystem):
         self.frames_opacity = frames_opacity
         self.axis_length = axis_length
         self.axis_radius = axis_radius
+
+    def set_planar_viewpoint(
+        self, camera_position=[0, -1, 0], camera_focus=[0, 0, 0], xmin=-1,
+            xmax=1, ymin=-1, ymax=1):
+        """
+        Sets meshcat to use an orthographic projection with locked out orbit
+        controls, and turns off the background, axes, and grid.  This allows
+        meshcat to play a role similar to PlanarSceneGraphVisualizer.
+
+        Args:
+            camera_position: a 3 element vector specifying the initial xyz
+                location of the camera.
+            camera_focus: a 3 element vector specifying the focal point of the
+                camera.
+            xmin, xmax, ymin, ymax: Scalars specifying the initial view
+                coordinates of the orthographic camera.  (Note that xmax is
+                actually ignored because the view is scaled to fit the size of
+                the browser window).
+
+        Note: The orientation of the camera will be locked, but users can still
+        pan and zoom interactively in the browser.
+        """
+
+        # TODO(russt): Figure out the proper set of camera transformations to
+        # implement camera_focus.
+        if np.any(camera_focus):
+            warnings.warn("Non-zero camera_focus is not supported yet")
+
+        # Set up orthographic camera.
+        camera = g.OrthographicCamera(
+            left=xmin, right=xmax, top=ymax, bottom=ymin, near=-1000, far=1000)
+        self.vis['/Cameras/default/rotated'].set_object(camera)
+        self.vis['/Cameras/default'].set_transform(
+            RigidTransform(camera_position).GetAsMatrix4())
+
+        # Lock the orbit controls.
+        self.vis['/Cameras/default/rotated/<object>'].set_property(
+            "position", [0, 0, 0])
+
+        # Turn off background, axes, and grid.
+        self.vis['/Background'].set_property("visible", False)
+        self.vis['/Grid'].set_property("visible", False)
+        self.vis['/Axes'].set_property("visible", False)
 
     def _parse_name(self, name):
         # Parse name, split on the first occurrence of `::` to get the source

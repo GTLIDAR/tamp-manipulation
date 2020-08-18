@@ -63,9 +63,12 @@ class TestMeshcat(unittest.TestCase):
         cart_pole.Finalize()
         assert cart_pole.geometry_source_is_registered()
 
+        # Note: pass window=None argument to confirm kwargs are passed
+        # through to meshcat.Visualizer.
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
                                                          zmq_url=ZMQ_URL,
-                                                         open_browser=False))
+                                                         open_browser=False,
+                                                         window=None))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
 
@@ -84,6 +87,9 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
+        visualizer.set_planar_viewpoint(
+            camera_position=[0, -1, 0], camera_focus=[0, 0, 0],
+            xmin=-2, xmax=2, ymin=-1, ymax=2)
         visualizer.start_recording()
         simulator.AdvanceTo(.1)
         visualizer.stop_recording()

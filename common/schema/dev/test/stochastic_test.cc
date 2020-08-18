@@ -18,6 +18,10 @@ namespace drake {
 namespace schema {
 namespace {
 
+// TODO(jeremy.nimmer) We can remove this argument from the call sites below
+// once Drake's YamlReadArchive constructor default changes to be strict.
+constexpr YamlReadArchive::Options kStrict;
+
 struct DistributionStruct {
   std::vector<DistributionVariant> vec;
 
@@ -27,13 +31,13 @@ struct DistributionStruct {
   }
 };
 
-const char* all_variants = R"R(
+const char* all_variants = R"""(
 vec: [ !Deterministic { value: 5.0 },
        !Gaussian { mean: 2.0, std: 4.0 },
        !Uniform { min: 1.0, max: 5.0 },
        !UniformDiscrete { values: [1, 1.5, 2] },
        3.2 ]
-)R";
+)""";
 
 const char* floats = "vec: [5.0, 6.1, 7.2]";
 
@@ -65,7 +69,7 @@ void CheckUniformDiscreteSymbolic(
 
 GTEST_TEST(StochasticTest, ScalarTest) {
   DistributionStruct variants;
-  YamlReadArchive(YAML::Load(all_variants)).Accept(&variants);
+  YamlReadArchive(YAML::Load(all_variants), kStrict).Accept(&variants);
 
   RandomGenerator generator;
 
@@ -142,7 +146,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   EXPECT_PRED2(ExprEqual, symbolic_vec(4), 3.2);
 
   // Try loading a value which looks like an ordinary vector.
-  YamlReadArchive(YAML::Load(floats)).Accept(&variants);
+  YamlReadArchive(YAML::Load(floats), kStrict).Accept(&variants);
   vec = Sample(variants.vec, &generator);
   ASSERT_EQ(vec.size(), 3);
   EXPECT_TRUE(CompareMatrices(vec, Eigen::Vector3d(5.0, 6.1, 7.2)));
@@ -171,7 +175,7 @@ struct DistributionVectorStruct {
   }
 };
 
-const char* vector_variants = R"R(
+const char* vector_variants = R"""(
 vector: [1., 2., 3.]
 deterministic: !DeterministicVector { value: [3., 4., 5.] }
 gaussian1: !GaussianVector { mean: [1.1, 1.2, 1.3], std: [0.1, 0.2, 0.3] }
@@ -180,11 +184,11 @@ uniform: !UniformVector { min: [10, 20], max: [11, 22] }
 deterministic_scalar: !Deterministic { value: 19.5 }
 gaussian_scalar: !Gaussian { mean: 5, std: 1 }
 uniform_scalar: !Uniform { min: 1, max: 2 }
-)R";
+)""";
 
 GTEST_TEST(StochasticTest, VectorTest) {
   DistributionVectorStruct variants;
-  YamlReadArchive(YAML::Load(vector_variants)).Accept(&variants);
+  YamlReadArchive(YAML::Load(vector_variants), kStrict).Accept(&variants);
 
   RandomGenerator generator;
 

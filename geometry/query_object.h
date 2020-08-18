@@ -69,7 +69,8 @@ class QueryObject {
   /** Constructs a default QueryObject (all pointers are null). */
   QueryObject() = default;
 
-  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable
+  /** @name Implements CopyConstructible, CopyAssignable, \
+                       MoveConstructible, MoveAssignable
 
    Calling the copy constructor or assignment will turn a _live_ %QueryObject
    into a _baked_ %QueryObject (an expensive operation). Copying baked
@@ -174,7 +175,9 @@ class QueryObject {
    -->
 
    @returns A vector populated with all detected penetrations characterized as
-            point pairs.
+            point pairs. The ordering of the results is guaranteed to be
+            consistent -- for fixed geometry poses, the results will remain
+            the same.
    @warning This silently ignores Mesh geometries (but Convex mesh geometries
             are included). */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
@@ -222,7 +225,9 @@ class QueryObject {
    geometry pairs that couldn't be culled.
 
    @returns A vector populated with all detected intersections characterized as
-            contact surfaces.  */
+            contact surfaces. The ordering of the results is guaranteed to be
+            consistent -- for fixed geometry poses, the results will remain
+            the same.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
   /** Reports pair-wise intersections and characterizes each non-empty
@@ -243,6 +248,9 @@ class QueryObject {
    Because point pairs can only be computed for double-valued systems, this can
    also only support double-valued ContactSurface instances.
 
+   The ordering of the _added_ results is guaranteed to be consistent -- for
+   fixed geometry poses, the results will remain the same.
+
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
@@ -258,7 +266,9 @@ class QueryObject {
    b) *known* to be separated. The caller is responsible for confirming that
    the remaining, unculled geometry pairs are *actually* in collision.
 
-   @returns A vector populated with collision pair candidates.
+   @returns A vector populated with collision pair candidates (the order will
+            remain constant for a fixed population but can change as geometry
+            ids are added/removed).
    @warning This silently ignores Mesh geometries (but Convex mesh geometries
             are included). */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
