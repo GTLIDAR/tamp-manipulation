@@ -30,3 +30,4 @@
 /user.bazelrc
 *.pyc
 *.soln
+/conveyor_belt_tamp/results/

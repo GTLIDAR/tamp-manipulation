@@ -2,6 +2,7 @@
 (:objects
     iiwa - robot
 
+    table_0 - init_table
     table_1 - goal_table
     table_2 - free_table
 )
@@ -10,6 +11,12 @@
     ;todo: put the initial state's facts and numeric values here
     (free iiwa)
     (ready-to-move iiwa)
+
+    (on box_0 table_0)
+    (on box_1 table_0)
+    (on box_2 table_0)
+    (on box_3 table_0)
+    (on box_4 table_0)
 
     (unobstructed box_0 box_0)
     ; (unobstructed box_0 box_1)

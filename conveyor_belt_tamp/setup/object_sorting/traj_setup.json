@@ -39,28 +39,37 @@
         "traj_op": true,
         "time_horizon": [2, 1],
         "wait_time": 0,
-        "constrain_orientation": [true, true]
+        "constrain_orientation": [true, true],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
+        "init_offset_time": 1
     },
 
     "move-to-object-side": {
         "traj_op": true,
         "time_horizon": [2, 1],
         "wait_time": 0,
-        "constrain_orientation": [true, true]
+        "constrain_orientation": [true, true],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
+        "init_offset_time": 1
     },
 
     "move-to-goal-table": {
         "traj_op": true,
         "time_horizon": [2, 1.5],
         "wait_time": 0,
-        "constrain_orientation": [false, false]
+        "constrain_orientation": [false, false],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
+        "init_offset_time": 1
     },
 
     "move-to-free-table": {
         "traj_op": true,
         "time_horizon": [2, 1.5],
         "wait_time": 0,
-        "constrain_orientation": [false, false]
+        "constrain_orientation": [false, false],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
+        "init_offset_time": 1
+        
     }
 
 }

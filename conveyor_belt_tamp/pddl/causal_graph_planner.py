@@ -83,7 +83,7 @@ class CausalGraphTampPlanner(object):
         with open(foldername+filename, 'w') as out:
             json.dump(self.trajectories, out)
 
-    def plan(self, total_depth_limit=15, option="ddp", show=True):
+    def plan(self, total_depth_limit=-1, option="ddp", show=True):
         """ Runs plan that uses causal graph to generate subproblems first
         """
         subproblems = get_subproblems(self.causal_graph, self.task, show=show)

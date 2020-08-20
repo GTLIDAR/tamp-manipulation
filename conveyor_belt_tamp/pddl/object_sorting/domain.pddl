@@ -13,6 +13,7 @@
     table - object
     goal_table - table
     free_table - table
+    init_table - table
 )
 
 ; un-comment following line if constants are needed
@@ -45,10 +46,11 @@
 
 ;define actions here
 (:action move-to-object-top
-    :parameters (?r - robot ?b - box)
+    :parameters (?r - robot ?b - box ?t - init_table)
     :precondition (and 
         (free ?r)
         (ready-to-move ?r)
+        (on ?b ?t)
 
         (unobstructed ?b box_0)
         (unobstructed ?b box_1)
@@ -59,14 +61,16 @@
     :effect (and 
         (not (ready-to-move ?r))
         (moved-to-object ?r ?b)
+        (not (on ?b ?t))
     )
 )
 
 (:action move-to-object-side
-    :parameters (?r - robot ?b - box)
+    :parameters (?r - robot ?b - box ?t - init_table)
     :precondition (and 
         (free ?r)
         (ready-to-move ?r)
+        (on ?b ?t)
 
         (unobstructed ?b box_0)
         (unobstructed ?b box_1)
@@ -77,6 +81,7 @@
     :effect (and 
         (not (ready-to-move ?r))
         (moved-to-object ?r ?b)
+        (not (on ?b ?t))
     )
 )
 
