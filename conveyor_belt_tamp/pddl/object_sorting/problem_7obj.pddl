@@ -17,6 +17,9 @@
     (on box_2 table_0)
     (on box_3 table_0)
     (on box_4 table_0)
+    (on box_5 table_0)
+    (on box_6 table_0)
+    (on box_7 table_0)
 
     (unobstructed box_0 box_0)
     ; (unobstructed box_0 box_1)
