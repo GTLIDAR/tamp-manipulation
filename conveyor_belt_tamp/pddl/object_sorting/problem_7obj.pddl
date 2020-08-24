@@ -41,7 +41,7 @@
     (unobstructed box_1 box_7)
 
     (unobstructed box_2 box_0)
-    (unobstructed box_2 box_1)
+    ; (unobstructed box_2 box_1)
     (unobstructed box_2 box_2)
     ; (unobstructed box_2 box_3)
     (unobstructed box_2 box_4)
