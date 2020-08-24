@@ -145,7 +145,9 @@ class ConveyorBeltManipReactivePlanner:
             ConveyorBeltManipReactiveMotionPlanRunner(
                 self.geo_setup_file, self.traj_setup_file
             )
-        ) 
+        )
+
+        tree.motion_plan_runner.update_object_state(self._object_state)
 
         (tree.goals, n_visited) = tree.hybrid_search(
             total_depth_limit=15, n_sols=1
