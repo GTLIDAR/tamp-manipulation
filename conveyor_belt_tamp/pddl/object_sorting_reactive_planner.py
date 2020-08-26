@@ -14,8 +14,17 @@ from lcm import LCM
 from drake import (lcmt_combined_object_state, lcmt_iiwa_status, lcmt_schunk_wsg_status,
     lcmt_manipulator_traj, lcmt_generic_string_msg)
 
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.parsing import Parser
+from pydrake.common import FindResourceOrThrow
+from pydrake.systems.framework import System
+from pydrake.math import RigidTransform, RollPitchYaw
+
 pddl_path = "/home/zhigen/code/pddl_planning"
 drake_path = "/home/zhigen/code/drake"
+
+iiwa_path = "/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf"
+wsg_path = "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"
 
 if pddl_path not in sys.path:
     sys.path.append(pddl_path)
@@ -24,6 +33,7 @@ from causal_graph.tools import build_causal_graph, get_subproblems, generate_sub
 from search_tree.tamp_node import PddlTampNode
 from search_tree.tamp_tree import PddlTree
 from search_tree.multi_wp_motion_plan_runner import ReactiveMultiWPStaionaryManipMotionPlanRunner
+from utils.traj_utils import dict_to_lcmt_manipulator_traj
 
 from pyperplan import _parse, _ground
 
@@ -48,7 +58,7 @@ class StationaryObjectSortingReactivePlanner:
         self.geo_setup_file = geo_setup_file
         self.traj_setup_file = traj_setup_file
 
-        self.plan_trees = []
+        self.planned_trees = []
         self.planned_state = task.initial_state
         self.planned_manipulator_pos = None
         self.planned_time = 0
@@ -74,13 +84,54 @@ class StationaryObjectSortingReactivePlanner:
         self._lcm.subscribe("SCHUNK_WSG_STATUS", self._wsg_status_handler)
         self._lcm.subscribe("START_PLAN", self._start_plan_handler)
 
+        self._plant = MultibodyPlant(0.001)
+        self._parser = Parser(self._plant)
+        self._iiwa_model = self._parser.AddModelFromFile(drake_path+iiwa_path)
+        self._wsg_model = self._parser.AddModelFromFile(drake_path+wsg_path)
+
+        X_WI = RigidTransform.Identity()
+        self._plant.WeldFrames(
+            self._plant.world_frame(), 
+            self._plant.GetFrameByName("iiwa_link_0", self._iiwa_model),
+            X_WI
+        )
+
+        rpy = RollPitchYaw(np.pi/2, 0, np.pi/2)
+        xyz = np.array([0, 0, 0.114]).astype(np.float64)
+        X_IG = RigidTransform(rpy, xyz)
+        self._plant.WeldFrames(
+            self._plant.GetFrameByName("iiwa_link_7", self._iiwa_model),
+            self._plant.GetFrameByName("body", self._wsg_model),
+            X_IG
+        )
+        self._plant.Finalize()
+        self._context = self._plant.CreateDefaultContext()
+        self._ee_pose = [0, 0, 0, 0, 0, 0]
+        self._n_iiwa_status = 0
+
 ################################ lcm handlers ##################################
     def _object_state_handler(self, channel, msg):
         self._object_state = lcmt_combined_object_state.decode(msg)
-        self.motion_plan_runner.update_object_state(self._object_state)
 
     def _iiwa_status_handler(self, channel, msg):
         self._iiwa_status = lcmt_iiwa_status.decode(msg)
+        self._plant.SetPositions(
+            self._context, 
+            self._iiwa_model, 
+            self._iiwa_status.joint_position_measured
+        )
+        ee_pose = self._plant.EvalBodyPoseInWorld(
+            self._context,
+            self._plant.GetBodyByName("body", self._wsg_model)
+        )
+
+        self._ee_pose[:3] = ee_pose.translation()
+        self._ee_pose[3:] = RollPitchYaw(ee_pose.rotation()).vector()
+
+        self._n_iiwa_status += 1
+        if self._n_iiwa_status % 100 == 1:
+            print("EE Pose:", self._ee_pose)
+
 
     def _wsg_status_handler(self, channel, msg):
         self._wsg_status = lcmt_schunk_wsg_status.decode(msg)
@@ -112,41 +163,38 @@ class StationaryObjectSortingReactivePlanner:
     def _check_obstruction(self, obj_1, obj_2):
         return False
 
+    def _check_object_in_robot(self, obj, robot):
+        pass
+
     def _update_object_predicates(self):
         object_name_list = []
         for i in range(N_OBJECT):
             object_name_list.append("box_" + str(i))
         
-        remove_list = []
-        add_list = []
+        remove_set = set()
+        add_set = set()
 
         for ob in object_name_list:
             cur_obj_loc = self._update_object_location(ob)
             
             if cur_obj_loc is not None:
-                add_list.append(cur_obj_loc)
+                add_set.add(cur_obj_loc)
                 for pre in self.state:
                     if pre.startswith(cur_obj_loc[:9]):
-                        remove_list.append(pre)
-
-        for ob1 in object_name_list:
-            for ob2 in object_name_list:
-                if not self._check_obstruction(ob1, ob2):
-                    add_list.add("(unobstructed "+ob1+" "+ob2+")")
-                elif ("(unobstructed "+ob1+" "+ob2+")") in self.state:
-                    remove_list.add("(unobstructed "+ob1+" "+ob2+")")
+                        remove_set.add(pre)
+                        
+        # TODO: Enable this after obstruction checking is completed
+        # for ob1 in object_name_list:
+        #     for ob2 in object_name_list:
+        #         if not self._check_obstruction(ob1, ob2):
+        #             add_set.add("(unobstructed "+ob1+" "+ob2+")")
+        #         elif ("(unobstructed "+ob1+" "+ob2+")") in self.state:
+        #             remove_set.add("(unobstructed "+ob1+" "+ob2+")")
         
-        changed = False
-        for pre in remove_list:
-            if pre in self.state:
-                self.state.remove(pre)
-                changed = True
-
-        for pre in add_list:
-            if pre not in self.state:
-                self.state.append(pre)
-                changed = True
+        new_state = (self.state - remove_set) | add_set
+        changed = len(new_state.difference(self.state))==0
         
+        self.state = new_state
         self.task_cur.initial_state = self.state
 
         return changed
@@ -185,13 +233,13 @@ class StationaryObjectSortingReactivePlanner:
         tree.motion_plan_runner.update_object_state(self._object_state)
 
         (tree.goals, n_visited) = tree.hybrid_search(
-            total_depth_limit=15, n_sols=1
+            total_depth_limit=-1, n_sols=1
         )
 
         print("Subtask search time:", time.time()-start)
 
         if len(tree.goals):
-            self.plan_trees.append(tree)
+            self.planned_trees.append(tree)
             actions = tree.get_sol(tree.goals[0])
             for act in actions:
                 self.planned_state = act.apply(self.planned_state)
@@ -217,7 +265,7 @@ class StationaryObjectSortingReactivePlanner:
 
         for cur_node_id in range(len(actions)):
             print("Node", cur_node_id)
-            print(actions[cur_node_id])
+            print(actions[cur_node_id].name)
             traj_runner = TrajectoryRunner()
             traj_runner.run_trajectory(trajectories[cur_node_id])
             self.state = actions[cur_node_id].apply(self.state)
@@ -240,13 +288,22 @@ class StationaryObjectSortingReactivePlanner:
         self._update_subproblems()
         self._rank_subproblems()
         
-        while len(self.plan_trees) < self.plan_horizon:
+        while len(self.planned_trees) < self.plan_horizon:
             sp = self.subproblems.pop(0)
             self._plan_subproblem(sp, self.planned_state)
 
         input("Preplanning Completed...")
         
         while not self.task_orig.goal_reached(self.state):
+            while self._object_state is None:
+                self._lcm.handle()
+
+            timeout = 1
+            rfds, wfds, efds = select.select([self._lcm.fileno()], [],[],timeout)
+            if rfds:
+                self._lcm.handle()
+            
+
             if len(self.planned_trees) and (not self._executing_tree):
                 print("start tree execution process")
                 execution_process = Process(
@@ -257,7 +314,7 @@ class StationaryObjectSortingReactivePlanner:
                 print("start planning process")
                 sp = self.subproblems.pop(0)
                 planning_process = Process(
-                    target=self._plan_subproblem, args=(sp, self._planned_state))
+                    target=self._plan_subproblem, args=(sp, self.planned_state))
                 planning_process.start()
             
             if self._replan:
