@@ -16,8 +16,6 @@ from drake import (lcmt_combined_object_state, lcmt_iiwa_status, lcmt_schunk_wsg
 
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
-from pydrake.common import FindResourceOrThrow
-from pydrake.systems.framework import System
 from pydrake.math import RigidTransform, RollPitchYaw
 
 pddl_path = "/home/zhigen/code/pddl_planning"
@@ -106,7 +104,7 @@ class StationaryObjectSortingReactivePlanner:
         )
         self._plant.Finalize()
         self._context = self._plant.CreateDefaultContext()
-        self._ee_pose = [0, 0, 0, 0, 0, 0]
+        self._ee_pose = None
         self._n_iiwa_status = 0
 
 ################################ lcm handlers ##################################
@@ -120,17 +118,17 @@ class StationaryObjectSortingReactivePlanner:
             self._iiwa_model, 
             self._iiwa_status.joint_position_measured
         )
-        ee_pose = self._plant.EvalBodyPoseInWorld(
+        self._ee_pose = self._plant.EvalBodyPoseInWorld(
             self._context,
             self._plant.GetBodyByName("body", self._wsg_model)
         )
 
-        self._ee_pose[:3] = ee_pose.translation()
-        self._ee_pose[3:] = RollPitchYaw(ee_pose.rotation()).vector()
+        # self._ee_pose[:3] = ee_pose.translation()
+        # self._ee_pose[3:] = RollPitchYaw(ee_pose.rotation()).vector()
 
-        self._n_iiwa_status += 1
-        if self._n_iiwa_status % 100 == 1:
-            print("EE Pose:", self._ee_pose)
+        # self._n_iiwa_status += 1
+        # if self._n_iiwa_status % 100 == 1:
+        #     print("EE Pose:", self._ee_pose)
 
 
     def _wsg_status_handler(self, channel, msg):
@@ -163,8 +161,24 @@ class StationaryObjectSortingReactivePlanner:
     def _check_obstruction(self, obj_1, obj_2):
         return False
 
-    def _check_object_in_robot(self, obj, robot):
-        pass
+    def _check_object_in_robot(self, object_name, robot_name, threshold=0.1):
+        object_id = int(object_name[-1])
+        object_xyz = np.array(self._object_state.q[object_id][:3])
+        ee_xyz = (self._ee_pose.translation() + 
+                  np.dot(self._ee_pose.rotation().transpose().matrix(),
+                    np.array([0, 0.15, 0]).reshape((3, 1))))
+        
+        print("object xyz:", object_xyz)
+        print("ee translation", self._ee_pose.translation())
+        print("ee xyz:", ee_xyz)
+
+        if (np.linalg.norm(object_xyz-ee_xyz)<threshold and 
+            self._wsg_status.actual_position_mm<50):
+            print(object_name+" is in "+robot_name)
+            return True
+        
+        return False
+
 
     def _update_object_predicates(self):
         object_name_list = []
@@ -175,13 +189,15 @@ class StationaryObjectSortingReactivePlanner:
         add_set = set()
 
         for ob in object_name_list:
-            cur_obj_loc = self._update_object_location(ob)
-            
-            if cur_obj_loc is not None:
-                add_set.add(cur_obj_loc)
-                for pre in self.state:
-                    if pre.startswith(cur_obj_loc[:9]):
-                        remove_set.add(pre)
+            if not self._check_object_in_robot(ob, "iiwa"):
+                cur_obj_loc = self._update_object_location(ob)
+                
+                if cur_obj_loc is not None and cur_obj_loc not in self.state:
+                    add_set.add(cur_obj_loc)
+                    print("ADD SET:", cur_obj_loc)
+                    for pre in self.state:
+                        if pre.startswith(cur_obj_loc[:9]):
+                            remove_set.add(pre)
                         
         # TODO: Enable this after obstruction checking is completed
         # for ob1 in object_name_list:
