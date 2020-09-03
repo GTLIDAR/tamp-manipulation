@@ -419,6 +419,10 @@ class ManipulationStation : public systems::Diagram<T> {
     return conveyor_belt_id_;
   }
 
+  multibody::ModelInstanceIndex GetObjectModel(int idx) {
+    return object_model_ids_[idx];
+  }
+
  private:
   // Struct defined to store information about the how to parse and add a model.
   struct ModelInformation {

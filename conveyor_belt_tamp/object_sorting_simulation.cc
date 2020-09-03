@@ -256,6 +256,78 @@ int do_main(int argc, char* argv[]) {
     station->AddManipulandFromFile(box_urdf_path, X_W3);
     }
 
+    // // box_8
+    // {
+    // const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box7.urdf";
+    
+    // auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+    //     object_init_pos["box_8"][3].asDouble(),
+    //     object_init_pos["box_8"][4].asDouble(),
+    //     object_init_pos["box_8"][5].asDouble()
+    // ));
+
+    // auto xyz = Eigen::Vector3d(
+    //     object_init_pos["box_8"][0].asDouble() + xAdditionalOffset,
+    //     object_init_pos["box_8"][1].asDouble() + yAdditionalOffset,
+    //     object_init_pos["box_8"][2].asDouble() + kConveyorBeltTopZInWorld
+    // );
+
+    // math::RigidTransform<double> X_W3(
+    //     math::RotationMatrix<double>(rpy),
+    //     xyz
+    // );
+    
+    // station->AddManipulandFromFile(box_urdf_path, X_W3);
+    // }
+
+    // // box_9
+    // {
+    // const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box8.urdf";
+    
+    // auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+    //     object_init_pos["box_9"][3].asDouble(),
+    //     object_init_pos["box_9"][4].asDouble(),
+    //     object_init_pos["box_9"][5].asDouble()
+    // ));
+
+    // auto xyz = Eigen::Vector3d(
+    //     object_init_pos["box_9"][0].asDouble() + xAdditionalOffset,
+    //     object_init_pos["box_9"][1].asDouble() + yAdditionalOffset,
+    //     object_init_pos["box_9"][2].asDouble() + kConveyorBeltTopZInWorld
+    // );
+
+    // math::RigidTransform<double> X_W3(
+    //     math::RotationMatrix<double>(rpy),
+    //     xyz
+    // );
+    
+    // station->AddManipulandFromFile(box_urdf_path, X_W3);
+    // }
+
+    // // box_10
+    // {
+    // const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box9.urdf";
+    
+    // auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+    //     object_init_pos["box_10"][3].asDouble(),
+    //     object_init_pos["box_10"][4].asDouble(),
+    //     object_init_pos["box_10"][5].asDouble()
+    // ));
+
+    // auto xyz = Eigen::Vector3d(
+    //     object_init_pos["box_10"][0].asDouble() + xAdditionalOffset,
+    //     object_init_pos["box_10"][1].asDouble() + yAdditionalOffset,
+    //     object_init_pos["box_10"][2].asDouble() + kConveyorBeltTopZInWorld
+    // );
+
+    // math::RigidTransform<double> X_W3(
+    //     math::RotationMatrix<double>(rpy),
+    //     xyz
+    // );
+    
+    // station->AddManipulandFromFile(box_urdf_path, X_W3);
+    // }
+
     }
 
     station->Finalize();
@@ -314,7 +386,7 @@ int do_main(int argc, char* argv[]) {
         manipulation::schunk_wsg::SchunkWsgStatusSender>();
     auto wsg_status_publisher = builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<drake::lcmt_schunk_wsg_status>(
-            "SCHUNK_WSG_STATUS", lcm, 0.05 // publish period
+            "SCHUNK_WSG_STATUS", lcm, 0.005 // publish period
         )
     );
 
@@ -335,7 +407,7 @@ int do_main(int argc, char* argv[]) {
     // add object lcm systems
     auto object_state_pub =
         builder.AddSystem(systems::lcm::LcmPublisherSystem::Make<lcmt_combined_object_state>(
-            "OBJECT_STATE", lcm, 0.05 // publish period
+            "OBJECT_STATE", lcm, 0.005 // publish period
         ));
 
     // connect object lcm systems
@@ -356,12 +428,30 @@ int do_main(int argc, char* argv[]) {
     msg.msg = "start";
     lcm_.publish("START_PLAN", &msg);
 
-    if (sim_setup.isMember("duration")) {
-        simulator.AdvanceTo(sim_setup["duration"].asDouble());
-    } else {
-        simulator.AdvanceTo(std::numeric_limits<double>::infinity());
-    }
-    
+    // simulator.AdvanceTo(5);
+
+    // multibody::ModelInstanceIndex move_id = station->GetObjectModel(7);
+    // auto& plant = station->get_multibody_plant();
+    // auto& context = simulator.get_mutable_context();
+    // auto cur_pos = plant.GetPositions(context, move_id);
+    // Eigen::VectorXd new_pos;
+    // new_pos.resize(plant.num_positions(move_id));
+    // new_pos[0] = 1.2;
+    // for (int i = 1; i < plant.num_positions(move_id); i++) {
+    //     new_pos[i] = cur_pos[i];
+    // }
+
+    // plant.SetPositions(
+    //     &context,
+    //     move_id,
+    //     new_pos
+    // );
+
+    // struct Systems::Simulator::InitializeParams ip = {false};
+
+    // simulator.Initialize(ip);
+    simulator.AdvanceTo(std::numeric_limits<double>::infinity());
+
     return 0;
 }
 

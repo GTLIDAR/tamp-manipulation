@@ -76,11 +76,17 @@ class StationaryObjectSortingReactivePlanner:
         self._planning = False
         self._replan = False
 
+        with open(geo_setup_file) as fp:
+            self._geo_setup = json.load(fp)
+
         self._lcm = LCM()
-        self._lcm.subscribe("OBJECT_STATE", self._object_state_handler)
-        self._lcm.subscribe("IIWA_STATUS", self._iiwa_status_handler)
-        self._lcm.subscribe("SCHUNK_WSG_STATUS", self._wsg_status_handler)
-        self._lcm.subscribe("START_PLAN", self._start_plan_handler)
+        obj_sub = self._lcm.subscribe("OBJECT_STATE", self._object_state_handler)
+        obj_sub.set_queue_capacity(1)
+        iiwa_sub = self._lcm.subscribe("IIWA_STATUS", self._iiwa_status_handler)
+        iiwa_sub.set_queue_capacity(1)
+        wsg_sub = self._lcm.subscribe("SCHUNK_WSG_STATUS", self._wsg_status_handler)
+        wsg_sub.set_queue_capacity(1)
+        # self._lcm.subscribe("START_PLAN", self._start_plan_handler)
 
         self._plant = MultibodyPlant(0.001)
         self._parser = Parser(self._plant)
@@ -107,9 +113,14 @@ class StationaryObjectSortingReactivePlanner:
         self._ee_pose = None
         self._n_iiwa_status = 0
 
+        self._object_status_updated = False
+        self._iiwa_status_updated = False
+        self._wsg_status_updated = False
+
 ################################ lcm handlers ##################################
     def _object_state_handler(self, channel, msg):
         self._object_state = lcmt_combined_object_state.decode(msg)
+        self._object_status_updated = True
 
     def _iiwa_status_handler(self, channel, msg):
         self._iiwa_status = lcmt_iiwa_status.decode(msg)
@@ -130,13 +141,39 @@ class StationaryObjectSortingReactivePlanner:
         # if self._n_iiwa_status % 100 == 1:
         #     print("EE Pose:", self._ee_pose)
 
+        self._iiwa_status_updated = True
+
 
     def _wsg_status_handler(self, channel, msg):
         self._wsg_status = lcmt_schunk_wsg_status.decode(msg)
+        self._wsg_status_updated = True
 
-    def _start_plan_handler(self, channel, msg):
-        print("Simulation started")
-        self._is_sim_started = True    
+    # def _start_plan_handler(self, channel, msg):
+    #     print("Simulation started")
+    #     self._is_sim_started = True    
+
+    def _update_sim_status(self, lcm=None):
+        if lcm is None:
+            lcm = self._lcm
+        else:
+            obj_sub = lcm.subscribe("OBJECT_STATE", self._object_state_handler)
+            obj_sub.set_queue_capacity(1)
+            iiwa_sub = lcm.subscribe("IIWA_STATUS", self._iiwa_status_handler)
+            iiwa_sub.set_queue_capacity(1)
+            wsg_sub = lcm.subscribe("SCHUNK_WSG_STATUS", self._wsg_status_handler)
+            wsg_sub.set_queue_capacity(1)
+
+        self._object_status_updated = False
+        self._iiwa_status_updated = False
+        self._wsg_status_updated = False
+        
+        while not (self._object_status_updated and self._iiwa_status_updated 
+            and self._wsg_status_updated):
+            timeout = 0.01
+            rfds, wfds, efds = select.select([lcm.fileno()], [], [], timeout)
+            if rfds:
+                lcm.handle()
+
 
 ###############################sense object state################################
     def _update_object_location(self, object_name):
@@ -159,21 +196,33 @@ class StationaryObjectSortingReactivePlanner:
             return object_loc
 
     def _check_obstruction(self, obj_1, obj_2):
-        return False
+        obj_id1 = int(obj_1[-1])
+        obj_id2 = int(obj_2[-1])
+        loc_1 = self._object_state.q[obj_id1][:3]
+        loc_2 = self._object_state.q[obj_id2][:3]
+
+        return (0.15>loc_1[0]-loc_2[0]>0 and abs(loc_1[1]-loc_2[1])<0.08)
 
     def _check_object_in_robot(self, object_name, robot_name, threshold=0.1):
         object_id = int(object_name[-1])
         object_xyz = np.array(self._object_state.q[object_id][:3])
-        ee_xyz = (self._ee_pose.translation() + 
-                  np.dot(self._ee_pose.rotation().transpose().matrix(),
-                    np.array([0, 0.15, 0]).reshape((3, 1))))
+        ee_xyz = (self._ee_pose.translation() 
+                + self._ee_pose.rotation().multiply(
+                    np.array([0, 0.18, 0]).astype(np.float64)
+                  )
+                 )
+        ee_xyz[0] += self._geo_setup["iiwa_pos"][0]
+        ee_xyz[1] += self._geo_setup["iiwa_pos"][1]
+        ee_xyz[2] += self._geo_setup["iiwa_pos"][2]
         
         print("object xyz:", object_xyz)
+        print("object time:", self._object_state.utime/1e6)
         print("ee translation", self._ee_pose.translation())
         print("ee xyz:", ee_xyz)
+        print("iiwa time:", self._iiwa_status.utime/1e6)
 
         if (np.linalg.norm(object_xyz-ee_xyz)<threshold and 
-            self._wsg_status.actual_position_mm<50):
+            self._wsg_status.actual_position_mm<90):
             print(object_name+" is in "+robot_name)
             return True
         
@@ -181,6 +230,7 @@ class StationaryObjectSortingReactivePlanner:
 
 
     def _update_object_predicates(self):
+        self._update_sim_status(LCM())
         object_name_list = []
         for i in range(N_OBJECT):
             object_name_list.append("box_" + str(i))
@@ -198,22 +248,46 @@ class StationaryObjectSortingReactivePlanner:
                     for pre in self.state:
                         if pre.startswith(cur_obj_loc[:9]):
                             remove_set.add(pre)
-                        
-        # TODO: Enable this after obstruction checking is completed
-        # for ob1 in object_name_list:
-        #     for ob2 in object_name_list:
-        #         if not self._check_obstruction(ob1, ob2):
-        #             add_set.add("(unobstructed "+ob1+" "+ob2+")")
-        #         elif ("(unobstructed "+ob1+" "+ob2+")") in self.state:
-        #             remove_set.add("(unobstructed "+ob1+" "+ob2+")")
-        
-        new_state = (self.state - remove_set) | add_set
-        changed = len(new_state.difference(self.state))==0
-        
-        self.state = new_state
-        self.task_cur.initial_state = self.state
+                elif cur_obj_loc is None:
+                    # if object not on any table
+                    pass
 
-        return changed
+                for ob1 in object_name_list:
+                    for ob2 in object_name_list:
+                        if not self._check_obstruction(ob1, ob2):
+                            add_set.add("(unobstructed "+ob1+" "+ob2+")")
+                        elif ("(unobstructed "+ob1+" "+ob2+")") in self.state:
+                            remove_set.add("(unobstructed "+ob1+" "+ob2+")")
+                            print("REMOVE: (unobstructed "+ob1+" "+ob2+")")
+            
+            else:
+                # if object is in gripper
+                predicate_holding = "(holding iiwa "+ob+")"
+                add_set.add(predicate_holding)
+                
+                predicate_free = "(free iiwa)"
+                remove_set.add(predicate_free)
+
+                predicate_moved_to_object = "(moved-to-object iiwa "+ob+")"
+                add_set.add(predicate_moved_to_object)
+
+                predicate_ready_to_move = "(ready-to-move iiwa)"
+                add_set.add(predicate_ready_to_move)
+
+                predicate_obstruction_set = set(["(unobstructed "+box_name+" "+ob+")" 
+                    for box_name in object_name_list])
+                add_set |= predicate_obstruction_set
+                
+        new_state = (self.state - remove_set) | add_set
+
+        if (len(new_state.difference(self.state))):
+            print("Modified States")
+            print(new_state.difference(self.state))
+            self.state = new_state
+            self.task_cur.initial_state = self.state
+            return True
+        else:
+            return False
 
     def _update_subproblems(self):
         self.subproblems = get_subproblems(self.causal_graph, self.task_cur)
@@ -230,8 +304,6 @@ class StationaryObjectSortingReactivePlanner:
         print("Planning new subtask")
         print(subtask)
 
-        #FIXME: Initialize Continuous state of root node, currently only init
-        # to all zero
         root = PddlTampNode.make_root_node(init_state)
         if self.planned_manipulator_pos is not None:
             root.traj = self.planned_manipulator_pos
@@ -281,20 +353,26 @@ class StationaryObjectSortingReactivePlanner:
 
         for cur_node_id in range(len(actions)):
             print("Node", cur_node_id)
-            print(actions[cur_node_id].name)
             traj_runner = TrajectoryRunner()
             traj_runner.run_trajectory(trajectories[cur_node_id])
             self.state = actions[cur_node_id].apply(self.state)
             self.executed_actions.append(actions[cur_node_id])
             self.executed_trajectories.append(trajectories[cur_node_id])
-        
-            if self._update_object_predicates():
-                self._update_subproblems()
-                self.planned_manipulator_pos = trajectories[cur_node_id]
-                print("Something Unexpected Happened.")
-                print("Replanning")
-                self._replan = True
-                break
+
+            print("Execution Finished", actions[cur_node_id].name)
+            print("Expected new state")
+            for s in self.state:
+                if not s.startswith("(unob"):
+                    print(s)
+
+            if actions[cur_node_id].name.startswith("(release"):
+                if self._update_object_predicates():
+                    self._update_subproblems()
+                    self.planned_manipulator_pos = trajectories[cur_node_id]
+                    print("Something Unexpected Happened.")
+                    print("Replanning")
+                    self._replan = True
+                    break
                 
         self._executing_tree = False
 
@@ -311,15 +389,7 @@ class StationaryObjectSortingReactivePlanner:
         input("Preplanning Completed...")
         
         while not self.task_orig.goal_reached(self.state):
-            while self._object_state is None:
-                self._lcm.handle()
-
-            timeout = 1
-            rfds, wfds, efds = select.select([self._lcm.fileno()], [],[],timeout)
-            if rfds:
-                self._lcm.handle()
-            
-
+            self._update_sim_status()
             if len(self.planned_trees) and (not self._executing_tree):
                 print("start tree execution process")
                 execution_process = Process(

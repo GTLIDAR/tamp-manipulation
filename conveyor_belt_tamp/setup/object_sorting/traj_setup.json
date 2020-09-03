@@ -58,7 +58,7 @@
         "time_horizon": [2, 1.5],
         "wait_time": 0,
         "constrain_orientation": [false, true],
-        "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
+        "init_offset_wp": [0, 0, 0.4, 0, 0, 0],
         "init_offset_time": 1
     },
 
@@ -67,7 +67,7 @@
         "time_horizon": [2, 1.5],
         "wait_time": 0,
         "constrain_orientation": [false, true],
-        "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
+        "init_offset_wp": [0, 0, 0.4, 0, 0, 0],
         "init_offset_time": 1
         
     }

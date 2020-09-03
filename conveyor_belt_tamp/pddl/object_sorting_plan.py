@@ -28,8 +28,10 @@ TRAJ_OPTION = "ddp"
 MULTI_WP = True
 
 def main():
-    domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_7obj.pddl"
-    problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem_7obj.pddl"
+    domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_10obj.pddl"
+    problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem_10obj.pddl"
+    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_7obj.pddl"
+    # problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem_7obj.pddl"
     # domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain.pddl"
     # problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem.pddl"
 
