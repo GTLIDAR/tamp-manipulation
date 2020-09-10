@@ -183,9 +183,9 @@ class StationaryObjectSortingReactivePlanner:
         object_loc = ""
         if (1.5*TABLE_X >= x >= 0.5*TABLE_X) and (0.5*TABLE_Y >= y >= -0.5*TABLE_Y):
             object_loc = "(on " + object_name + " table_0)"
-        elif (0.5*TABLE_X >= x >= -0.5*TABLE_X) and (1.5*TABLE_Y >= y >= 0.2*TABLE_Y):
+        elif (0.5*TABLE_X >= x >= -0.7*TABLE_X) and (1.5*TABLE_Y >= y >= 0.2*TABLE_Y):
             object_loc = "(on " + object_name + " table_1)"
-        elif (0.5*TABLE_X >= x >= -0.5*TABLE_X) and (-0.2*TABLE_Y >= y >= -1.5*TABLE_Y):
+        elif (0.5*TABLE_X >= x >= -0.7*TABLE_X) and (-0.2*TABLE_Y >= y >= -1.5*TABLE_Y):
             object_loc = "(on " + object_name + " table_2)"
         
         if object_loc == "":
@@ -250,7 +250,9 @@ class StationaryObjectSortingReactivePlanner:
                             remove_set.add(pre)
                 elif cur_obj_loc is None:
                     # if object not on any table
-                    pass
+                    for pre in self.state:
+                        if ob in pre:
+                            remove_set.add(pre)
 
                 for ob1 in object_name_list:
                     for ob2 in object_name_list:

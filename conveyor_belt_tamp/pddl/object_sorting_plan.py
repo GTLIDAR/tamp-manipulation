@@ -24,7 +24,7 @@ from search_tree.multi_wp_motion_plan_runner import MultiWPStaionaryManipMotionP
 
 from pyperplan import _parse, _ground
 
-TRAJ_OPTION = "ddp"
+TRAJ_OPTION = "refine"
 MULTI_WP = True
 
 def main():
