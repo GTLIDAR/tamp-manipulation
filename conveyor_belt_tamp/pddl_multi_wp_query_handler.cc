@@ -173,6 +173,18 @@ void HandleQuery(
     }
 
     lcm_.publish(FLAGS_result_channel, &total_traj);
+    for (size_t i = 0; i < q_sol.size()-1; i++) {
+        std::cout<<"IK Results"<<"\n";
+        std::cout<<"q_init ";
+        for (int j = 0; j < kNumJoints; j++) {
+            std::cout<<q_sol[i][j]<<" ";
+        }
+        std::cout<<"\nq_goal";
+        for (int j = 0; j < kNumJoints; j++) {
+            std::cout<<q_sol[i+1][j]<<" ";
+        }
+        std::cout<<"\n";
+    }
     std::cout << "--------"<<query->name<<" Trajectory Published to LCM! --------" << endl;
 }
 

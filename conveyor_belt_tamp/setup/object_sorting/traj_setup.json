@@ -2,10 +2,10 @@
     "durative_action_time": 1.5,
     "gripper_wait_time": 0.25,
 
-    "ddp_time_step": 0.005,
+    "ddp_time_step": 0.01,
     "admm_time_step": 0.005,
     "manual_time_step": 0.005,
-    "min_time_step": 0.001,
+    "min_time_step": 0.002,
 
     "ddp_max_iter": 15,
     "admm_max_iter": 10,
