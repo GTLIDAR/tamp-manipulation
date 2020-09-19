@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 import time
-import sys
-import os
+from pathlib import Path
 from datetime import datetime
 import copy
 import json
@@ -10,11 +9,8 @@ import numpy as np
 
 from causal_graph_planner import CausalGraphTampPlanner
 
-pddl_path = "/home/zhigen/code/pddl_planning"
-if pddl_path not in sys.path:
-    sys.path.append(pddl_path)
+drake_path = str(Path(__file__).parent.parent.parent.absolute())
 
-drake_path = "/home/zhigen/code/drake"
 
 from causal_graph.tools import build_causal_graph, get_subproblems, generate_subtask
 from search_tree.tamp_node import PddlTampNode

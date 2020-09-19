@@ -8,9 +8,6 @@ import copy
 from lcm import LCM
 from drake import lcmt_schunk_wsg_command, lcmt_schunk_wsg_status, lcmt_manipulator_traj, lcmt_generic_string_msg
 
-PDDL_DIR = "/home/zhigen/code/pddl_planning/"
-sys.path.append(PDDL_DIR)
-
 from utils.traj_utils import dict_to_lcmt_manipulator_traj
 
 JSON_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/traj20200903T222335.json"
