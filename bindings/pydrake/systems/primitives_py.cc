@@ -26,6 +26,7 @@
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/sine.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
+#include "drake/systems/primitives/trajectory_affine_system.h"
 #include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
@@ -86,12 +87,6 @@ PYBIND11_MODULE(primitives, m) {
         // Wrap a few methods from the TimeVaryingAffineSystem parent class.
         // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
         // wrapped.
-        .def("get_input_port", &TimeVaryingAffineSystem<T>::get_input_port,
-            py_rvp::reference_internal,
-            doc.TimeVaryingAffineSystem.get_input_port.doc)
-        .def("get_output_port", &TimeVaryingAffineSystem<T>::get_output_port,
-            py_rvp::reference_internal,
-            doc.TimeVaryingAffineSystem.get_output_port.doc)
         .def("time_period", &AffineSystem<T>::time_period,
             doc.TimeVaryingAffineSystem.time_period.doc)
         .def("configure_default_state",
@@ -100,15 +95,7 @@ PYBIND11_MODULE(primitives, m) {
         .def("configure_random_state",
             &TimeVaryingAffineSystem<T>::configure_random_state,
             py::arg("covariance"),
-            doc.TimeVaryingAffineSystem.configure_random_state.doc)
-        // Need to specifically redeclare the System to have both overloads
-        // available.
-        .def("get_input_port", &System<T>::get_input_port,
-            py_rvp::reference_internal, py::arg("port_index"),
-            pydrake_doc.drake.systems.System.get_input_port.doc)
-        .def("get_output_port", &System<T>::get_output_port,
-            py_rvp::reference_internal, py::arg("port_index"),
-            pydrake_doc.drake.systems.System.get_output_port.doc);
+            doc.TimeVaryingAffineSystem.configure_random_state.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
         m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
@@ -226,8 +213,11 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
-        .def(py::init<int>(), doc.PassThrough.ctor.doc_1args_vector_size)
-        .def(py::init<const AbstractValue&>(),
+        .def(py::init<int>(), py::arg("vector_size"),
+            doc.PassThrough.ctor.doc_1args_vector_size)
+        .def(py::init<const Eigen::Ref<const VectorXd>&>(), py::arg("value"),
+            doc.PassThrough.ctor.doc_1args_value)
+        .def(py::init<const AbstractValue&>(), py::arg("abstract_model_value"),
             doc.PassThrough.ctor.doc_1args_abstract_model_value);
 
     DefineTemplateClassWithDefault<Saturation<T>, LeafSystem<T>>(
@@ -325,6 +315,61 @@ PYBIND11_MODULE(primitives, m) {
             doc.ZeroOrderHold.ctor.doc_2args_period_sec_abstract_model_value);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
+
+  // N.B. Capturing `&doc` should not be required; workaround per #9600.
+  auto bind_non_symbolic_scalar_types = [m, &doc](auto dummy) {
+    using T = decltype(dummy);
+
+    DefineTemplateClassWithDefault<TrajectoryAffineSystem<T>, LeafSystem<T>>(m,
+        "TrajectoryAffineSystem", GetPyParam<T>(),
+        doc.TrajectoryAffineSystem.doc)
+        .def(py::init<const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&, double>(),
+            py::arg("A"), py::arg("B"), py::arg("f0"), py::arg("C"),
+            py::arg("D"), py::arg("y0"), py::arg("time_period") = 0.0,
+            doc.TrajectoryAffineSystem.ctor.doc)
+        .def("A",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryAffineSystem<T>::A),
+            doc.TrajectoryAffineSystem.A.doc)
+        .def("B",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryAffineSystem<T>::B),
+            doc.TrajectoryAffineSystem.B.doc)
+        .def("f0",
+            overload_cast_explicit<VectorX<T>, const T&>(
+                &TrajectoryAffineSystem<T>::f0),
+            doc.TrajectoryAffineSystem.f0.doc)
+        .def("C",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryAffineSystem<T>::C),
+            doc.TrajectoryAffineSystem.C.doc)
+        .def("D",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryAffineSystem<T>::D),
+            doc.TrajectoryAffineSystem.D.doc)
+        .def("y0",
+            overload_cast_explicit<VectorX<T>, const T&>(
+                &TrajectoryAffineSystem<T>::y0),
+            doc.TrajectoryAffineSystem.y0.doc)
+        // Wrap a few methods from the TimeVaryingAffineSystem parent class.
+        // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
+        // wrapped.
+        .def("time_period", &TrajectoryAffineSystem<T>::time_period,
+            doc.TimeVaryingAffineSystem.time_period.doc)
+        .def("configure_default_state",
+            &TimeVaryingAffineSystem<T>::configure_default_state, py::arg("x0"),
+            doc.TimeVaryingAffineSystem.configure_default_state.doc)
+        .def("configure_random_state",
+            &TimeVaryingAffineSystem<T>::configure_random_state,
+            py::arg("covariance"),
+            doc.TimeVaryingAffineSystem.configure_random_state.doc);
+  };
+  type_visit(bind_non_symbolic_scalar_types, NonSymbolicScalarPack{});
 
   py::class_<BarycentricMeshSystem<double>, LeafSystem<double>>(
       m, "BarycentricMeshSystem", doc.BarycentricMeshSystem.doc)

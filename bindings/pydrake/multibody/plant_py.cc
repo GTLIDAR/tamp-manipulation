@@ -265,6 +265,31 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<Vector3<T>, const Context<T>&>(
                 &Class::CalcCenterOfMassPosition),
             py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
+        .def(
+            "CalcBiasCenterOfMassTranslationalAcceleration",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
+                const Frame<T>& frame_E) {
+              return self->CalcBiasCenterOfMassTranslationalAcceleration(
+                  context, with_respect_to, frame_A, frame_E);
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
+            py::arg("frame_E"),
+            cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc)
+        .def(
+            "CalcJacobianCenterOfMassTranslationalVelocity",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
+                const Frame<T>& frame_E) {
+              Matrix3X<T> Js_v_ACcm_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianCenterOfMassTranslationalVelocity(
+                  context, with_respect_to, frame_A, frame_E, &Js_v_ACcm_E);
+              return Js_v_ACcm_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
+            py::arg("frame_E"),
+            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
@@ -697,14 +722,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_collision_geometries.doc)
         .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
             py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("default_coulomb_friction", &Class::default_coulomb_friction,
-        py::arg("geometry_id"), py_rvp::reference_internal,
-        cls_doc.default_coulomb_friction.doc_deprecated);
-#pragma GCC diagnostic pop
-    DeprecateAttribute(cls, "default_coulomb_friction",
-        cls_doc.default_coulomb_friction.doc_deprecated);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
@@ -1082,8 +1099,6 @@ PYBIND11_MODULE(plant, m) {
           doc.PropellerInfo.thrust_ratio.doc)
       .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
           doc.PropellerInfo.moment_ratio.doc);
-
-  ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

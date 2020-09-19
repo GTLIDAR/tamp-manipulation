@@ -270,8 +270,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   double get_default_mass() const { return default_mass_; }
 
   /// (Advanced) Returns the mass of this body stored in `context`.
-  virtual T get_mass(
-      const systems::Context<T> &context)const = 0;
+  virtual const T& get_mass(
+      const systems::Context<T> &context) const = 0;
 
   /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
   /// of this body measured from this body's frame origin `Bo` and expressed in
@@ -303,6 +303,17 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
         context, *this);
+  }
+
+  /// Returns A_WB_W, the spatial acceleration of `this` body B in the world
+  /// frame W expressed in frame W as a function of the state stored in context.
+  /// @note When cached values are out of sync with the state stored in context,
+  /// this method performs an expensive forward dynamics computation, whereas
+  /// once evaluated, successive calls to this method are inexpensive.
+  const SpatialAcceleration<T>& EvalSpatialAccelerationInWorld(
+      const systems::Context<T>& context) const {
+    const MultibodyPlant<T>& parent_plant = this->GetParentPlant();
+    return parent_plant.EvalBodySpatialAccelerationInWorld(context, *this);
   }
 
   /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:

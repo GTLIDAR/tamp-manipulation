@@ -59,7 +59,7 @@ std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Differentiate(
   return result;
 }
 
-std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Integration(
+std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Integrate(
     const Variable& var) const {
   auto var_to_degree_map = this->var_to_degree_map();
   auto it = var_to_degree_map.find(var);
@@ -78,6 +78,11 @@ std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Integration(
   result.emplace(ChebyshevBasisElement(var_to_degree_map),
                  -1.0 / (2 * degree - 2));
   return result;
+}
+
+void ChebyshevBasisElement::MergeBasisElementInPlace(
+    const ChebyshevBasisElement& other) {
+  this->DoMergeBasisElementInPlace(other);
 }
 
 std::pair<double, ChebyshevBasisElement> ChebyshevBasisElement::EvaluatePartial(

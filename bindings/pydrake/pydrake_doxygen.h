@@ -275,11 +275,6 @@ generate and open the docstring header:
     bazel build //bindings/pydrake:documentation_pybind.h
     $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
 
-Docstrings for attic components can be previewed in the following header:
-
-    bazel build //bindings/pydrake/attic:documentation_pybind.h
-    $EDITOR bazel-bin/bindings/pydrake/attic/documentation_pybind.h
-
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
 line corresponding to the symbol that the docstring was pulled from.
@@ -459,6 +454,32 @@ py::handle abstract_value_cls =
         cls_doc.AddProperty.doc)
 ...
 ```
+
+### Matrix-multiplication-like Methods
+
+For objects that may be represented by matrices or vectors (e.g.
+RigidTransform, RotationMatrix), the `*` operator (via `__mul__`) should *not*
+be bound because the `*` operator in NumPy implies elemnt-wise multiplication
+for arrays.
+
+For simplicity, we instead bind the explicitly named `.multiply()` method, and
+alias the `__matmul__` operator `@` to this function.
+
+@anchor PydrakeReturnVectorsOrMatrices
+#### Returning Vectors or Matrices
+
+Certain bound methods, like `RigidTransform.multiply()`, will have overloads
+that can multiply and return (a) other `RigidTransform` instances, (b) vectors,
+or (c) matrices (representing a list of vectors).
+
+In the cases of (a) and (c), `pybind11` provides sufficient mechanisms to
+provide an unambiguous output return type. However, for (b), `pybind11` will
+return `ndarray` with shape `(3,)`. This can cause an issue when users pass
+a vector of shape `(3, 1)` as input. Nominally, pybind11 will return a `(3,)`
+array, but the user may expect `(3, 1)` as an output. To accommodate this, you
+should use the drake::pydrake::WrapToMatchInputShape function.
+
+@sa https://github.com/RobotLocomotion/drake/issues/13885
 
 ## Python Subclassing of C++ Classes
 

@@ -189,26 +189,25 @@ TEST_F(SymbolicChebyshevBasisElementTest, Differentiate) {
   EXPECT_EQ(result8.at(ChebyshevBasisElement({{x_, 1}, {y_, 3}})), 8);
 }
 
-TEST_F(SymbolicChebyshevBasisElementTest, Integration) {
+TEST_F(SymbolicChebyshevBasisElementTest, Integrate) {
   // ∫1dx = T1(x)
-  const auto result1 = ChebyshevBasisElement().Integration(x_);
+  const auto result1 = ChebyshevBasisElement().Integrate(x_);
   EXPECT_EQ(result1.size(), 1);
   EXPECT_EQ(result1.at(ChebyshevBasisElement({{x_, 1}})), 1);
 
   // ∫T2(x)dy = T2(x)T1(y)
-  const auto result2 = ChebyshevBasisElement({{x_, 2}}).Integration(y_);
+  const auto result2 = ChebyshevBasisElement({{x_, 2}}).Integrate(y_);
   EXPECT_EQ(result2.size(), 1);
   EXPECT_EQ(result2.at(ChebyshevBasisElement({{x_, 2}, {y_, 1}})), 1);
 
   // ∫T2(x)dx = 1/6*T3(x) - 1/2*T1(x)
-  const auto result3 = ChebyshevBasisElement({{x_, 2}}).Integration(x_);
+  const auto result3 = ChebyshevBasisElement({{x_, 2}}).Integrate(x_);
   EXPECT_EQ(result3.size(), 2);
   EXPECT_EQ(result3.at(ChebyshevBasisElement({{x_, 3}})), 1. / 6);
   EXPECT_EQ(result3.at(ChebyshevBasisElement({{x_, 1}})), -1. / 2);
 
   // ∫T3(x)T2(y)dx = 1/8*T4(x)T2(y) - 1/4*T2(x)T2(y)
-  const auto result4 =
-      ChebyshevBasisElement({{x_, 3}, {y_, 2}}).Integration(x_);
+  const auto result4 = ChebyshevBasisElement({{x_, 3}, {y_, 2}}).Integrate(x_);
   EXPECT_EQ(result4.size(), 2);
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 4}, {y_, 2}})), 1. / 8);
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 2}, {y_, 2}})), -1. / 4);
@@ -296,6 +295,18 @@ TEST_F(SymbolicChebyshevBasisElementTest, EvaluatePartial) {
   std::tie(coeff, new_basis_element) = m1.EvaluatePartial(env);
   EXPECT_EQ(coeff, 17 * 26);
   EXPECT_EQ(new_basis_element, ChebyshevBasisElement(y_, 4));
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, MergeBasisElementInPlace) {
+  // Merge T₁(x)T₃(y) and T₁(x)T₂(z) gets T₂(x)T₃(y)T₂(z)
+  ChebyshevBasisElement basis_element1({{x_, 1}, {y_, 3}});
+  basis_element1.MergeBasisElementInPlace(
+      ChebyshevBasisElement({{x_, 1}, {z_, 2}}));
+  EXPECT_EQ(basis_element1.var_to_degree_map().size(), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(x_), 2);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(y_), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(z_), 2);
+  EXPECT_EQ(basis_element1.total_degree(), 7);
 }
 }  // namespace symbolic
 }  // namespace drake

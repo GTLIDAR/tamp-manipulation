@@ -69,6 +69,33 @@ namespace test {
   return !ExprLess(e1, e2);
 }
 
+template <typename BasisElement>
+[[nodiscard]] bool GenericPolyEqual(const GenericPolynomial<BasisElement>& p1,
+                                    const GenericPolynomial<BasisElement>& p2) {
+  return p1.EqualTo(p2);
+}
+
+template <typename BasisElement>
+[[nodiscard]] bool GenericPolyNotEqual(
+    const GenericPolynomial<BasisElement>& p1,
+    const GenericPolynomial<BasisElement>& p2) {
+  return !p1.EqualTo(p2);
+}
+
+template <typename BasisElement>
+[[nodiscard]] bool GenericPolyEqualAfterExpansion(
+    const GenericPolynomial<BasisElement>& p1,
+    const GenericPolynomial<BasisElement>& p2) {
+  return p1.EqualToAfterExpansion(p2);
+}
+
+template <typename BasisElement>
+[[nodiscard]] bool GenericPolyNotEqualAfterExpansion(
+    const GenericPolynomial<BasisElement>& p1,
+    const GenericPolynomial<BasisElement>& p2) {
+  return !p1.EqualToAfterExpansion(p2);
+}
+
 [[nodiscard]] inline bool PolyEqual(const Polynomial& p1,
                                       const Polynomial& p2) {
   return p1.EqualTo(p2);
