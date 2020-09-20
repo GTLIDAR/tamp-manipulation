@@ -74,36 +74,51 @@ void HandleQuery(
         iiwa_q[i] = query->prev_q[i];
     }
 
-    ConstraintRelaxingIk ik(
-        model_path_,
-        FLAGS_ee_name
-    );
-
     std::vector<VectorXd> q_sol;
-    std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
-    
-    for (int i = 0; i < query->n_wp; i++) {
-        ConstraintRelaxingIk::IkCartesianWaypoint wp;
-        const Eigen::Vector3d xyz(
-            query->desired_ee[i][0],
-            query->desired_ee[i][1],
-            query->desired_ee[i][2]
-        );
-        const math::RollPitchYaw<double> rpy(
-            query->desired_ee[i][3],
-            query->desired_ee[i][4],
-            query->desired_ee[i][5]
+    bool ik_feasible;
+    if (query->bypass_ik) {
+        ik_feasible = false;
+        q_sol.push_back(iiwa_q);
+        VectorXd q_goal = VectorXd::Zero(query->dim_q);
+        for (int n_wp = 0; n_wp < query->n_wp; n_wp++) {
+            for (int i = 0; i < query->dim_q; i++) {
+                q_goal[i] = query->q_goal[n_wp][i];
+            }
+            q_sol.push_back(q_goal);
+        }
+
+    } else {
+        ConstraintRelaxingIk ik(
+            model_path_,
+            FLAGS_ee_name
         );
 
-        wp.pose.set_translation(xyz);
-        wp.pose.set_rotation(rpy);
-        wp.constrain_orientation = query->constrain_orientation[i];
+        
+        std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
+        
+        for (int i = 0; i < query->n_wp; i++) {
+            ConstraintRelaxingIk::IkCartesianWaypoint wp;
+            const Eigen::Vector3d xyz(
+                query->desired_ee[i][0],
+                query->desired_ee[i][1],
+                query->desired_ee[i][2]
+            );
+            const math::RollPitchYaw<double> rpy(
+                query->desired_ee[i][3],
+                query->desired_ee[i][4],
+                query->desired_ee[i][5]
+            );
 
-        wp_vec.push_back(wp);
-        std::cout<<"WP added "<<xyz<<"\n";
+            wp.pose.set_translation(xyz);
+            wp.pose.set_rotation(rpy);
+            wp.constrain_orientation = query->constrain_orientation[i];
+
+            wp_vec.push_back(wp);
+            std::cout<<"WP added "<<xyz<<"\n";
+        }
+
+        ik_feasible = ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &q_sol);
     }
-
-    bool ik_feasible = ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &q_sol);
 
     lcmt_manipulator_traj traj;
     if (!ik_feasible) {

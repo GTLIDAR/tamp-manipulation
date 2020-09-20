@@ -2,6 +2,7 @@ package drake;
 
 struct lcmt_multi_wp_manip_query {
     string name; // name of action
+    boolean bypass_ik; // whether to bypass ik
 
     string option; // option for traj op
                    // "ik", "ddp", "admm"
@@ -13,6 +14,7 @@ struct lcmt_multi_wp_manip_query {
     double time_step; // time_step size for traj op
 
     double desired_ee[n_wp][6]; // xyz rpy of each waypoints
+    double q_goal[n_wp][dim_q];
     
     double gripper_force;
 
