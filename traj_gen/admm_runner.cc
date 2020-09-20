@@ -125,6 +125,10 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
 
     cout << "bias total" << endl << gtau_wb << endl;
+    for(unsigned int i=0;i<N;i++){
+      u_0[i].head(7) = gtau_wb;
+    }
+
     #if WHOLE_BODY
       KukaArm_TRK KukaArmModel(dt, N, xgoal, &plant_, action_name);
     #else
