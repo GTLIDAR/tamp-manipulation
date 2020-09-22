@@ -1,4 +1,4 @@
-#include "drake/traj_gen/ilqrsolver.h"
+#include "drake/traj_gen/ilqr_kkt/ilqr-kkt_solver.h"
 
 /* Debug */
 #include <iostream>
@@ -12,7 +12,7 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-ILQRSolver::ILQRSolver(KukaArm& iiwaDynamicModel, CostFunctionKukaArm& iiwaCostFunction, bool fullDDP, bool QPBox)
+ILQR_KKTSolver::ILQR_KKTSolver(KukaArm_Contact& iiwaDynamicModel, CostFunctionKukaArm_Contact& iiwaCostFunction, bool fullDDP, bool QPBox)
 {
     //TRACE("initialize dynamic model and cost function\n");
     dynamicModel = &iiwaDynamicModel;
@@ -47,7 +47,7 @@ ILQRSolver::ILQRSolver(KukaArm& iiwaDynamicModel, CostFunctionKukaArm& iiwaCostF
     //tOptSet Op = INIT_OPTSET;
 }
 
-void ILQRSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, commandVecTab_t initialTorque, unsigned int& iiwaN,
+void ILQR_KKTSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, commandVecTab_t initialTorque, unsigned int& iiwaN,
                        double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad)
 {
     // TODO: double check opt params
@@ -119,7 +119,7 @@ void ILQRSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, c
     debugging_print = 0;
 }
 
-void ILQRSolver::solveTrajectory()
+void ILQR_KKTSolver::solveTrajectory()
 {
     //==============
     // Checked!!v
@@ -308,7 +308,7 @@ void ILQRSolver::solveTrajectory()
     }
 }
 
-void ILQRSolver::initializeTraj()
+void ILQR_KKTSolver::initializeTraj()
 {
     xList[0] = Op.xInit;
     commandVec_t zeroCommand;
@@ -371,7 +371,7 @@ void ILQRSolver::initializeTraj()
     if(Op.debug_level > 0) TRACE("\n=========== begin iLQR ===========\n");
 }
 
-void ILQRSolver::standardizeParameters(tOptSet *o) {
+void ILQR_KKTSolver::standardizeParameters(tOptSet *o) {
     o->n_alpha = 11;
     o->tolFun = 1e-4;
     o->tolConstraint = 1e-7; // TODO: to be modified
@@ -394,7 +394,7 @@ void ILQRSolver::standardizeParameters(tOptSet *o) {
     o->print = 2;
 }
 
-void ILQRSolver::doBackwardPass()
+void ILQR_KKTSolver::doBackwardPass()
 {
     if(Op.regType == 1)
         lambdaEye = Op.lambda*stateMat_t::Identity();
@@ -509,7 +509,7 @@ void ILQRSolver::doBackwardPass()
     Op.g_norm = g_norm_sum/(static_cast<double>(Op.n_hor));
 }
 
-void ILQRSolver::doForwardPass()
+void ILQR_KKTSolver::doForwardPass()
 {
     updatedxList[0] = Op.xInit;
     int nargout = 2;
@@ -546,7 +546,7 @@ void ILQRSolver::doForwardPass()
     }
 }
 
-ILQRSolver::traj ILQRSolver::getLastSolvedTrajectory()
+ILQR_KKTSolver::traj ILQR_KKTSolver::getLastSolvedTrajectory()
 {
     lastTraj.xList = xList;
     // for(unsigned int i=0;i<N+1;i++)lastTraj.xList[i] += xgoal;//retrieve original state with xgoal
@@ -561,7 +561,7 @@ ILQRSolver::traj ILQRSolver::getLastSolvedTrajectory()
     return lastTraj;
 }
 
-bool ILQRSolver::isPositiveDefinite(const commandMat_t & Quu_p)
+bool ILQR_KKTSolver::isPositiveDefinite(const commandMat_t & Quu_p)
 {
     //Eigen::JacobiSVD<commandMat_t> svd_Quu (Quu, ComputeThinU | ComputeThinV);
     Eigen::VectorXcd singular_values = Quu_p.eigenvalues();

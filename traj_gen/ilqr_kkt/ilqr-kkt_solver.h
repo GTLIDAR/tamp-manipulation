@@ -1,11 +1,11 @@
 #pragma once
 
-#ifndef ILQRSOLVER_H
-#define ILQRSOLVER_H
+#ifndef ILQR_KKT_SOLVER_H
+#define ILQR_KKT_SOLVER_H
 
-#include "drake/traj_gen/config.h"
-#include "drake/traj_gen/kuka_arm.h"
-#include "drake/traj_gen/cost_function_kuka_arm.h"
+#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
+#include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
 #include <numeric>
 #include <sys/time.h>
 
@@ -38,7 +38,7 @@ namespace traj_gen {
 namespace kuka_iiwa_arm {
 // namespace {
 
-class ILQRSolver
+class ILQR_KKTSolver
 {
 public:
     struct traj
@@ -98,14 +98,14 @@ public:
     };
 
 public:
-    ILQRSolver(KukaArm& iiwaDynamicModel, CostFunctionKukaArm& iiwaCostFunction, bool fullDDP=0,bool QPBox=0);
+    ILQR_KKTSolver(KukaArm_Contact& iiwaDynamicModel, CostFunctionKukaArm_Contact& iiwaCostFunction, bool fullDDP=0,bool QPBox=0);
 private:
 protected:
     // attributes //
 public:
 private:
-    KukaArm* dynamicModel;
-    CostFunctionKukaArm* costFunction;
+    KukaArm_Contact* dynamicModel;
+    CostFunctionKukaArm_Contact* costFunction;
     unsigned int stateNb;
     unsigned int commandNb;
     stateVec_t xInit; //matrix of <statesize, 1> = essentially a vector

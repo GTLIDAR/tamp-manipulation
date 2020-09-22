@@ -1,10 +1,10 @@
-#include "drake/traj_gen/cost_function_kuka_arm.h"
+#include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
+CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N)
 {
     pos_scale = 10;
     vel_scale = 10;
@@ -35,47 +35,47 @@ CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
     cuu_new.resize(N+1);
 }
 
-stateMat_t& CostFunctionKukaArm::getQ()
+stateMat_t& CostFunctionKukaArm_Contact::getQ()
 {
     return Q;
 }
 
-stateMat_t& CostFunctionKukaArm::getQf()
+stateMat_t& CostFunctionKukaArm_Contact::getQf()
 {
     return Qf;
 }
 
-commandMat_t& CostFunctionKukaArm::getR()
+commandMat_t& CostFunctionKukaArm_Contact::getR()
 {
     return R;
 }
 
-stateVecTab_t& CostFunctionKukaArm::getcx()
+stateVecTab_t& CostFunctionKukaArm_Contact::getcx()
 {
     return cx_new;
 }
 
-commandVecTab_t& CostFunctionKukaArm::getcu()
+commandVecTab_t& CostFunctionKukaArm_Contact::getcu()
 {
     return cu_new;
 }
 
-stateMatTab_t& CostFunctionKukaArm::getcxx()
+stateMatTab_t& CostFunctionKukaArm_Contact::getcxx()
 {
     return cxx_new;
 }
 
-commandR_stateC_tab_t& CostFunctionKukaArm::getcux()
+commandR_stateC_tab_t& CostFunctionKukaArm_Contact::getcux()
 {
     return cux_new;
 }
 
-commandMatTab_t& CostFunctionKukaArm::getcuu()
+commandMatTab_t& CostFunctionKukaArm_Contact::getcuu()
 {
     return cuu_new;
 }
 
-double& CostFunctionKukaArm::getc()
+double& CostFunctionKukaArm_Contact::getc()
 {
     return c_new;
 }

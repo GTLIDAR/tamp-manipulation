@@ -1,22 +1,31 @@
 // #pragma once
 
-#ifndef KUKAARM_H
-#define KUKAARM_H
+#ifndef KUKAARM_CONTACT_H
+#define KUKAARM_CONTACT_H
 
-#include "drake/traj_gen/config.h"
-#include "drake/traj_gen/cost_function_kuka_arm.h"
+#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
 
 #include "drake/common/find_resource.h"
+#include "drake/common/drake_assert.h"
 
+// #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 #include <cstdio>
-#include <iostream>
 #include <Eigen/Dense>
 #include <math.h>
+#include <iostream>
+#include <memory>
+#include <fstream>
+#include <cmath>
+#include <vector>
+#include <string>
+#include <list>
 
 #define pi 3.141592653
 
@@ -33,22 +42,26 @@
 using namespace Eigen;
 using namespace std;
 
+// using drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::math::RigidTransformd;
 using drake::multibody::MultibodyForces;
+using drake::multibody::ModelInstanceIndex;
+using drake::math::RollPitchYaw;
+using drake::multibody::JacobianWrtVariable;
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-class KukaArm
+class KukaArm_Contact
 {
 public:
-    KukaArm();
-    KukaArm(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal);
-    KukaArm(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, MultibodyPlant<double>* plant);
-    ~KukaArm(){};
+    KukaArm_Contact();
+    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal);
+    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, multibody::MultibodyPlant<double>* plant);
+    ~KukaArm_Contact(){};
 private:
 protected:
     // attributes
@@ -125,9 +138,9 @@ protected:
 public:
     stateVec_t kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau);
 
-    void kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm*& costFunction);
-    void kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr,  const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm*& costFunction);
-    void kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm*& costFunction);
+    void kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
+    void kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr,  const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm_Contact*& costFunction);
+    void kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
     // void kuka_arm_dyn_cst_v3(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, stateTensTab_t& fxxList, stateTensTab_t& fxuList, stateR_commandC_Tens_t& fuuList, CostFunctionKukaArm*& costFunction);
     stateVec_t update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B);
     void grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B);
@@ -150,4 +163,4 @@ public:
 }  // namespace traj_gen
 }  // namespace drake
 
-#endif // KUKAARM_H
+#endif // KUKAARM_CONTACT_H

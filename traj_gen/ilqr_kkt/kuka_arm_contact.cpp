@@ -1,10 +1,10 @@
-#include "drake/traj_gen/kuka_arm.h"
+#include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-KukaArm::KukaArm(){}
+KukaArm_Contact::KukaArm_Contact(){}
 
 //const char* const kIiwaUrdf =
 //    "drake/manipulation/models/iiwa_description/urdf/"
@@ -25,7 +25,7 @@ const char* const kIiwaUrdf =
 // iiwa_dt = time step
 // iiwa_N = number of knots
 // iiwa_xgoal = final goal in state space (7pos, 7vel)
-KukaArm::KukaArm(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal)
+KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal)
 {
     //#####
     globalcnt = 0;
@@ -127,7 +127,7 @@ KukaArm::KukaArm(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal)
     }
 }
 
-KukaArm::KukaArm(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal,
+KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal,
     MultibodyPlant<double>* plant)
 {
     //#####
@@ -225,7 +225,7 @@ KukaArm::KukaArm(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal,
     }
 }
 
-stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau)
+stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau)
 {
 
     finalTimeProfile.counter0_ += 1;
@@ -244,22 +244,129 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         q_full.topRows(stateSize/2)=q;
         qd_full.topRows(stateSize/2)=qd;
 
+        // auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
+
+        // auto xyz = Eigen::Vector3d(0, 0, 0);
+
+        // math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
+
+        // auto context_ptr = plant_->CreateDefaultContext();
+        // auto context = context_ptr.get();
+        // auto object_model = plant_->GetModelInstanceByName("object");
+        // auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
+        // auto wsg_model = plant_->GetModelInstanceByName("wsg");
+
+        // plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link_cracker", object_model), X_WO);
+        // plant_->SetPositions(context, iiwa_model, q);
+        // plant_->SetVelocities(context, iiwa_model, qd);
+
+        // // Compute Mass matrix and Bias terms
+        // MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
+        // MatrixXd M_iiwa(plant_->num_velocities(iiwa_model), plant_->num_velocities(iiwa_model));
+        // VectorXd Cv(plant_->num_velocities());
+        // VectorXd Cv_iiwa(plant_->num_velocities(iiwa_model));
+
+        // plant_->CalcMassMatrix(*context, &M_);
+        // plant_->CalcBiasTerm(*context, &Cv);
+        // M_iiwa = M_.block<7, 7>(6, 6);
+        // Cv_iiwa = Cv.bottomRows(7);
+
+        // // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
+        // Vector3d contact_point;
+        // MatrixXd Jac(3, plant_->num_velocities());
+        // MatrixXd Jac_iiwa(3, plant_->num_velocities(iiwa_model));
+        // Vector3d Acc_Bias;
+
+        // contact_point << 0, 0, 0; 
+        // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
+        // ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame(), &Jac);
+        // Acc_Bias = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
+        // ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame());
+        // Jac_iiwa = Jac.middleCols(6, 7);
+
+        // MatrixXd M_J;
+        // M_J.setZero(plant_->num_velocities(iiwa_model)+3, plant_->num_velocities(iiwa_model)+3);
+        // M_J.block<plant_->num_velocities(iiwa_model), plant_->num_velocities(iiwa_model)>(0, 0) = M_iiwa;
+        // M_J.block<plant_->num_velocities(iiwa_model), 3>(0, plant_->num_velocities(iiwa_model)) = Jac_iiwa.transpose();
+        // M_J.block<3, plant_->num_velocities(iiwa_model)>(plant_->num_velocities(iiwa_model), 0) = Jac_iiwa;
+        
+        // VectorXd Bias_MJ(plant_->num_velocities(iiwa_model)+3);
+        // Bias_MJ.setZero();
+        // Bias_MJ.topRows(plant_->num_velocities(iiwa_model)) = tau - Cv_iiwa;
+        // Bias_MJ.bottomRows(3) = Acc_Bias;
+        
+        // // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
+        // //=============================================
+        // // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
+        // VectorXd Acc_total = M_J.inverse()*Bias_MJ;
+        // vd = Acc_total.topRows(plant_->num_velocities(iiwa_model));
+
+        auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
+
+        auto xyz = Eigen::Vector3d(1, 1, 1);
+
+        math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
+
         auto context_ptr = plant_->CreateDefaultContext();
         auto context = context_ptr.get();
-        plant_->SetPositions(context, q_full);
-        plant_->SetVelocities(context, qd_full);
+        auto object_model = plant_->GetModelInstanceByName("object");
+        auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
+        // auto wsg_model = plant_->GetModelInstanceByName("wsg");
 
-        MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
+        plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link_cracker", object_model), X_WO);
+        plant_->SetPositions(context, iiwa_model, q);
+        plant_->SetVelocities(context, iiwa_model, qd);
+
+        // Compute Mass matrix, Bias and gravititional terms
+        MatrixXd M_(15, 15);
+        MatrixXd M_iiwa(7, 7);
+        VectorXd Cv(15);
+        VectorXd Cv_iiwa(7);
+        VectorXd tau_g_iiwa;
+        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
+
         plant_->CalcMassMatrix(*context, &M_);
+        plant_->CalcBiasTerm(*context, &Cv);
+        M_iiwa = M_.block<7, 7>(6, 6);
+        Cv_iiwa = Cv.bottomRows(7);
+        tau_g_iiwa = tau_g.bottomRows(7);
 
-        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
+        // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
+        Vector3d contact_point;
+        MatrixXd Jac(3, 15);
+        MatrixXd Jac_iiwa(3, 7);
+        Vector3d Acc_Bias;
+
+        contact_point << 0, 0, 0; 
+        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
+        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame(), &Jac);
+        Acc_Bias = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
+        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame());
+        Jac_iiwa = Jac.middleCols(6, 7);
+
+        MatrixXd M_J;
+        M_J.setZero(10, 10);
+        M_J.block<7, 7>(0, 0) = M_iiwa;
+        M_J.block<7, 3>(0, 7) = Jac_iiwa.transpose();
+        M_J.block<3, 7>(7, 0) = Jac_iiwa;
+        
+        VectorXd Bias_MJ(10);
+        Bias_MJ.setZero();
+        Bias_MJ.topRows(7) = tau - Cv_iiwa;
+        Bias_MJ.bottomRows(3) = -Acc_Bias;
+        
+        // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
         //=============================================
-        vd = (M_.inverse()*(tau - bias_term_)).head(stateSize/2);
+        // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
+        VectorXd Acc_total = M_J.inverse()*Bias_MJ;
+        vd = Acc_total.topRows(7);
+
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
-            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
+            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)
+            +((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
         }
 
         if (globalcnt < 40)
@@ -277,14 +384,17 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_;
         plant_->CalcMassMatrix(*context, &M_);
 
-        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context);
+        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
+        VectorXd Cv(plant_->num_velocities()); 
+        plant_->CalcBiasTerm(*context, &Cv);
         //=============================================
-        vd = (M_.inverse()*(tau - bias_term_));
+        vd = (M_.inverse()*(tau - tau_g - Cv));
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
-            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
+            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)
+            +((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
         }
 
         if (globalcnt < 40)
@@ -297,13 +407,13 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
 }
 
 
-KukaArm::timeprofile KukaArm::getFinalTimeProfile()
+KukaArm_Contact::timeprofile KukaArm_Contact::getFinalTimeProfile()
 {
     return finalTimeProfile;
 }
 
-void KukaArm::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
-                                CostFunctionKukaArm*& costFunction){
+void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
+                                CostFunctionKukaArm_Contact*& costFunction){
     // // for a positive-definite quadratic, no control cost (indicated by the iLQG function using nans), is equivalent to u=0
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     unsigned int Nl = xList.size();
@@ -397,7 +507,8 @@ void KukaArm::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xLi
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-void KukaArm::kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr, const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm*& costFunction){
+void KukaArm_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr, 
+                                                    const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm_Contact*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     if(debugging_print) std::cout<<"nargout: "<<nargout<<"\n";
     unsigned int Nc = xList_curr.cols(); //xList_curr is 14x1 vector -> col=1
@@ -434,7 +545,7 @@ void KukaArm::kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& 
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-stateVec_t KukaArm::update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
+stateVec_t KukaArm_Contact::update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
     // 4th-order Runge-Kutta step
     if(debugging_print) TRACE_KUKA_ARM("update: 4th-order Runge-Kutta step\n");
 
@@ -442,9 +553,9 @@ stateVec_t KukaArm::update(const int& nargout, const stateVec_t& X, const comman
 
     // output of kuka arm dynamics is xdot = f(x,u)
     Xdot1 = kuka_arm_dynamics(X, U);
-     Xdot2 = kuka_arm_dynamics(X + 0.5*dt*Xdot1, U);
-     Xdot3 = kuka_arm_dynamics(X + 0.5*dt*Xdot2, U);
-     Xdot4 = kuka_arm_dynamics(X + dt*Xdot3, U);
+    Xdot2 = kuka_arm_dynamics(X + 0.5*dt*Xdot1, U);
+    Xdot3 = kuka_arm_dynamics(X + 0.5*dt*Xdot2, U);
+    Xdot4 = kuka_arm_dynamics(X + dt*Xdot3, U);
     stateVec_t X_new;
     X_new = X + (dt/6)*(Xdot1 + 2*Xdot2 + 2*Xdot3 + Xdot4);
     // Simple Euler Integration (for debug)
@@ -478,7 +589,7 @@ stateVec_t KukaArm::update(const int& nargout, const stateVec_t& X, const comman
         Du.setIdentity();
         Du = delta*Du;
 
-        // State perturbation?
+        // State perturbation
         for(unsigned int i=0;i<n;i++){
             Xp1 = kuka_arm_dynamics(X+Dx.col(i),U);
             Xm1 = kuka_arm_dynamics(X-Dx.col(i),U);
@@ -497,7 +608,7 @@ stateVec_t KukaArm::update(const int& nargout, const stateVec_t& X, const comman
             A4.col(i) = (Xp4 - Xm4)/(2*delta);
         }
 
-        // Control perturbation?
+        // Control perturbation
         for(unsigned int i=0;i<m;i++){
             Xp1 = kuka_arm_dynamics(X,U+Du.col(i));
             Xm1 = kuka_arm_dynamics(X,U-Du.col(i));
@@ -517,7 +628,8 @@ stateVec_t KukaArm::update(const int& nargout, const stateVec_t& X, const comman
         }
 
         A = (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)*(IdentityMat + A2 * dt/3)*(IdentityMat + A1 * dt/6);
-        B = B4 * dt/6 + (IdentityMat + A4 * dt/6) * B3 * dt/3 + (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)* B2 * dt/3 + (IdentityMat + (dt/6)*A4)*(IdentityMat + (dt/3)*A3)*(IdentityMat + (dt/3)*A2)*(dt/6)*B1;
+        B = B4 * dt/6 + (IdentityMat + A4 * dt/6) * B3 * dt/3 + (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)* B2 * dt/3 
+            + (IdentityMat + (dt/6)*A4)*(IdentityMat + (dt/3)*A3)*(IdentityMat + (dt/3)*A2)*(dt/6)*B1;
     }
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 
@@ -527,7 +639,7 @@ stateVec_t KukaArm::update(const int& nargout, const stateVec_t& X, const comman
     return X_new;
 }
 
-void KukaArm::grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
+void KukaArm_Contact::grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -557,7 +669,7 @@ void KukaArm::grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, st
 }
 
 // parameters are called by reference. Name doesn't matter
-void KukaArm::hessian(const stateVec_t& X, const commandVec_t& U, stateTens_t& fxx_p, stateR_stateC_commandD_t& fxu_p, stateR_commandC_commandD_t& fuu_p){
+void KukaArm_Contact::hessian(const stateVec_t& X, const commandVec_t& U, stateTens_t& fxx_p, stateR_stateC_commandD_t& fxu_p, stateR_commandC_commandD_t& fuu_p){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -601,39 +713,39 @@ void KukaArm::hessian(const stateVec_t& X, const commandVec_t& U, stateTens_t& f
     }
 }
 
-unsigned int KukaArm::getStateNb()
+unsigned int KukaArm_Contact::getStateNb()
 {
     return stateNb;
 }
 
-unsigned int KukaArm::getCommandNb()
+unsigned int KukaArm_Contact::getCommandNb()
 {
     return commandNb;
 }
 
-commandVec_t& KukaArm::getLowerCommandBounds()
+commandVec_t& KukaArm_Contact::getLowerCommandBounds()
 {
     return lowerCommandBounds;
 }
 
-commandVec_t& KukaArm::getUpperCommandBounds()
+commandVec_t& KukaArm_Contact::getUpperCommandBounds()
 {
     return upperCommandBounds;
 }
 
-stateMatTab_t& KukaArm::getfxList()
+stateMatTab_t& KukaArm_Contact::getfxList()
 {
     return fxList;
 }
 
-stateR_commandC_tab_t& KukaArm::getfuList()
+stateR_commandC_tab_t& KukaArm_Contact::getfuList()
 {
     return fuList;
 }
 
 
-void KukaArm::kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
-                                CostFunctionKukaArm*& costFunction){
+void KukaArm_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
+                                CostFunctionKukaArm_Contact*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     unsigned int Nl = xList.size();
 

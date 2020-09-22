@@ -53,7 +53,7 @@ public:
 
         const ModelInstanceIndex conn_model = 
             parser.AddModelFromFile(connectorPath, "connector");
-        const auto& iiwa_ee_frame = plant_.GetFrameByName("iiwa_frame_ee", iiwa_model);
+        const auto& iiwa_ee_frame = plant_.GetFrameByName("iiwa_frame_ee", plant_.GetModelInstanceByName("iiwa"));
         const auto& conn_frame = plant_.GetFrameByName("connector_link", conn_model);
         RigidTransformd X_EC(Eigen::Vector3d(0, 0, 0));
         plant_.WeldFrames(iiwa_ee_frame, conn_frame, X_EC);
@@ -108,6 +108,7 @@ public:
         // object_model_ids_.push_back(model_index);
 
         plant_.Finalize();
+        auto iiwa_model2 = plant_.GetModelInstanceByName("iiwa");
 
         auto context_ptr = plant_.CreateDefaultContext();
         auto context = context_ptr.get();
@@ -115,7 +116,7 @@ public:
         // VectorXd q_v_iiwa(14);
         // q_v_iiwa.setZero();
         
-        VectorXd q_v_arm(plant_.num_velocities(iiwa_model)+plant_.num_positions(iiwa_model));
+        VectorXd q_v_arm(plant_.num_velocities(iiwa_model2)+plant_.num_positions(iiwa_model));
         q_v_arm.setZero();
         // q_v_arm << 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 0, 0, 0, 0, 0, 0, 0;
         // cout << q_v_object << endl;
