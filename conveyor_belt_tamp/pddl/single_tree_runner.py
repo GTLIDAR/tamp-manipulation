@@ -24,10 +24,10 @@ TRAJ_OPTION = "refine"
 MULTI_WP = True
 
 def main():
-    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/throw_domain.pddl"
-    # problem_file = drake_path + "/conveyor_belt_tamp/pddl/throw_problem.pddl"
-    domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_10obj.pddl"
-    problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem_10obj.pddl"
+    domain_file = drake_path + "/conveyor_belt_tamp/pddl/throw_domain.pddl"
+    problem_file = drake_path + "/conveyor_belt_tamp/pddl/throw_problem.pddl"
+    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_10obj.pddl"
+    # problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem_10obj.pddl"
     # domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_7obj.pddl"
     # problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem_7obj.pddl"
     # domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain.pddl"
@@ -43,9 +43,13 @@ def main():
         geo_setup_file, traj_setup_file
     )
 
-    planner = CausalGraphTampPlanner(task, motion_planner)
-    planner.plan(option=TRAJ_OPTION)
-    planner.save_traj()
+    root = PddlTampNode.make_root_node(task.initial_state)
+    tree = PddlTree(root, task, motion_planner)
+
+    start = time.time()
+    (tree.goals, n_visited) = tree.hybrid_search(n_sols=1, option="refine")
+    planning_time = time.time() - start
+    tree.save_traj()
 
 if __name__=="__main__":
     main()

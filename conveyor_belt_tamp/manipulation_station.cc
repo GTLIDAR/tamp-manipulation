@@ -482,7 +482,8 @@ void ManipulationStation<T>::Finalize(
       break;
     }
     case Setup::kObjectSorting: {
-      q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      // q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
       break;
     }
   }

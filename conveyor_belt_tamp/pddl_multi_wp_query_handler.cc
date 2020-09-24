@@ -77,7 +77,8 @@ void HandleQuery(
     std::vector<VectorXd> q_sol;
     bool ik_feasible;
     if (query->bypass_ik) {
-        ik_feasible = false;
+        std::cout<<"Bypassing IK...\n";
+        ik_feasible = true;
         q_sol.push_back(iiwa_q);
         VectorXd q_goal = VectorXd::Zero(query->dim_q);
         for (int n_wp = 0; n_wp < query->n_wp; n_wp++) {
@@ -135,16 +136,6 @@ void HandleQuery(
     total_traj.n_time_steps = 0;
 
     for (size_t i = 0; i < q_sol.size()-1; i++) {
-        std::cout<<"IK Results"<<"\n";
-        std::cout<<"q_init ";
-        for (int j = 0; j < kNumJoints; j++) {
-            std::cout<<q_sol[i][j]<<" ";
-        }
-        std::cout<<"\nq_goal";
-        for (int j = 0; j < kNumJoints; j++) {
-            std::cout<<q_sol[i+1][j]<<" ";
-        }
-        std::cout<<"\n";
 
         if (query->option.compare("ddp")==0) {
             traj = 
@@ -185,6 +176,21 @@ void HandleQuery(
         traj.gripper_width = widths;
 
         AppendTrajectory(total_traj, traj);
+
+        if (isnan(traj.cost)) {
+            std::cout<<"This trajectory returns NaN cost!\n";
+            std::cout<<"IK Results"<<"\n";
+            std::cout<<"q_init ";
+            for (int j = 0; j < kNumJoints; j++) {
+                std::cout<<q_sol[i][j]<<" ";
+            }
+            std::cout<<"\nq_goal";
+            for (int j = 0; j < kNumJoints; j++) {
+                std::cout<<q_sol[i+1][j]<<" ";
+            }
+            std::cout<<"\n";
+            break;
+        }
     }
 
     lcm_.publish(FLAGS_result_channel, &total_traj);

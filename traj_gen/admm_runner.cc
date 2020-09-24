@@ -86,7 +86,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
 
     std::string urdf_;
-    auto plant_ = multibody::MultibodyPlant<double>(0.0);
+    auto plant_ = multibody::MultibodyPlant<double>(0.001);
     multibody::Parser parser(&plant_);
 
     const ModelInstanceIndex iiwa_model =
@@ -317,8 +317,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     ptr->dim_torques = 0;//kNumJoints;
     ptr->dim_states = kNumJoints; //disregard joint velocity
     ptr->n_time_steps = N*InterpolationScale;
-    ptr->cost = lastTraj.finalCost;
-
+    //ptr->cost = lastTraj.finalCost;
+    ptr->cost = final_cost[ADMMiterMax];
       //============================================
 
     for (int32_t i=0; i < ptr->n_time_steps; ++i) {

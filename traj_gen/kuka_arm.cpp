@@ -252,9 +252,39 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
 
-        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
+        for (int i=0; i < M_.rows(); i++) {
+            for (int j = 0; j < M_.cols(); j++) {
+                if (isnan(M_(i, j))) {
+                    if (globalcnt < 5) {
+                        std::cout<<"Mass Matrix contains NaN"<<"\n";
+                        std::cout<<M_<<"\n";
+                        // while (std::getc(stdin)==EOF) {}
+                    }
+
+                    break;
+                }
+            }
+        }
+
+
+        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
+        // tau_g.setZero();
+        VectorXd Cv(plant_->num_velocities());
+        Cv.setZero();
+        plant_->CalcBiasTerm(*context, &Cv);
+
+        // if (globalcnt % 10 == 0) {
+        //     std::cout<<"tau_g "<<tau_g<<"\n";
+        //     std::cout<<"Cv "<<Cv<<"\n";
+        //     std::cout<<"q_full\n";
+        //     std::cout<<q_full<<"\n";
+        //     std::cout<<"qd_full"<<"\n";
+        //     std::cout<<qd_full<<"\n";
+        //     std::cout<<"M-1"<<M_.inverse()<<"\n";
+        // }
+
         //=============================================
-        vd = (M_.inverse()*(tau - bias_term_)).head(stateSize/2);
+        vd = (M_.inverse()*(tau - tau_g - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){
@@ -277,9 +307,11 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_;
         plant_->CalcMassMatrix(*context, &M_);
 
-        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context);
+        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
+        VectorXd Cv(plant_->num_velocities());
+        plant_->CalcBiasTerm(*context, &Cv);
         //=============================================
-        vd = (M_.inverse()*(tau - bias_term_));
+        vd = (M_.inverse()*(tau - tau_g - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){
