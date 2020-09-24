@@ -82,7 +82,7 @@ public:
                         &TrajOptPublisher::HandleRobotTime, this);
     }
 
-    void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step){
+    void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step, double publish_rate){
         struct timeval tbegin,tend;
         double texec = 0.0;
         double dt = time_step;
@@ -148,9 +148,9 @@ public:
         commandVecTab_t u_0;
         u_0.resize(N);
         for(unsigned i=0;i<N;i++){
-          // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
+          u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
           // cout << "u_0: " << u_0[i].transpose() << endl;
-          u_0[i].setZero();
+          // u_0[i].setZero();
         }
         //======================================
         KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_);
@@ -294,7 +294,8 @@ public:
 
         drake::log()->info("Publishing trajectory to visualizer");
         plan_finished_ = false;
-        // unsigned int cur_step = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
+        // DRAKE_ASSERT(publish_rate )
+        // unsigned int cur_step = int((robot_time_.utime / 1000)*(0.001*publish_rate/(time_step/InterpolationScale)));
         // cout << "starting time: " << cur_step << endl;
 
         while(true){
@@ -305,7 +306,7 @@ public:
             // Note: utime is in microseconds
             iiwa_state.utime = robot_time_.utime;
             // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
-            step_ = int((robot_time_.utime / 1000)/5);
+            step_ = int((robot_time_.utime / 1000)*(0.001*publish_rate/(time_step/InterpolationScale)));
 
             std::cout << step_ << std::endl;
             
@@ -377,10 +378,11 @@ int do_main_kkt(){
     stateVec_t xinit,xgoal;
     double time_horizon = 2;
     double time_step = 0.001;
+    double publish_rate = 1.0;
     xinit << 0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     // xinit << 0, 0, 0, 0, 0, 0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     xgoal << 1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    pub.Run_test(xinit, xgoal, time_horizon, time_step);
+    pub.Run_test(xinit, xgoal, time_horizon, time_step, publish_rate);
 
     return 0;
 }
