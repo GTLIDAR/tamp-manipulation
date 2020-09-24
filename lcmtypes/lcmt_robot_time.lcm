@@ -1,0 +1,6 @@
+package drake;
+
+struct lcmt_robot_time {
+  // The timestamp in microseconds.
+  int64_t utime;
+}

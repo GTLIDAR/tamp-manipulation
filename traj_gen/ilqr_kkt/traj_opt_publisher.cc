@@ -13,8 +13,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_robot_time.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -50,22 +52,36 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
+const char* const kLcmStatusChannel = "IIWA_STATUS";
+const char* const kLcmTimeChannel = "IIWA_TIME";
+
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
+using examples::kuka_iiwa_arm::kIiwaLcmStatusPeriod;
 using multibody::ModelInstanceIndex;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using multibody::MultibodyForces;
 using multibody::BodyIndex;
 
-class ilqr_kkt_test
+class TrajOptPublisher
 {
 private:
+    LCM lcm_;
+    lcmt_robot_time robot_time_;
+    bool plan_finished_;
+    unsigned int step_;
     stateVecTab_t joint_state_traj;
     commandVecTab_t torque_traj;
     stateVecTab_t joint_state_traj_interp;
     commandVecTab_t torque_traj_interp;
 
 public:
+    explicit TrajOptPublisher()
+    {
+        lcm_.subscribe(kLcmTimeChannel,
+                        &TrajOptPublisher::HandleRobotTime, this);
+    }
+
     void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step){
         struct timeval tbegin,tend;
         double texec = 0.0;
@@ -185,7 +201,7 @@ public:
 
 
         cout << "lastTraj.xList[" << N << "]:" << lastTraj.xList[N].transpose() << endl;
-        cout << "lastTraj.uList[" << N-1 << "]:" << lastTraj.uList[N-1].transpose() << endl;
+        cout << "lastTraj.uList[" << N << "]:" << lastTraj.uList[N].transpose() << endl;
 
         cout << "lastTraj.xList[0]:" << lastTraj.xList[0].transpose() << endl;
         cout << "lastTraj.uList[0]:" << lastTraj.uList[0].transpose() << endl;
@@ -218,51 +234,98 @@ public:
 
         cout << "-------- DDP Trajectory Generation Finished! --------" << endl;
 
+        ////////////////////////// Was used for publishing to kuka_arm_planner ////////////////////////
         // need this for dynamic memory allocation (push_back)
-        auto ptr = std::make_unique<lcmt_manipulator_traj>();
+        // auto ptr = std::make_unique<lcmt_manipulator_traj>();
         
-        ptr->dim_torques = 0;//kNumJoints;
-        ptr->dim_states = kNumJoints; //disregard joint velocity
-        ptr->n_time_steps = N*InterpolationScale; 
-        ptr->cost = lastTraj.finalCost;
+        // ptr->dim_torques = 0;//kNumJoints;
+        // ptr->dim_states = kNumJoints; //disregard joint velocity
+        // ptr->n_time_steps = N*InterpolationScale; 
+        // ptr->cost = lastTraj.finalCost;
 
-        for (int32_t i=0; i < ptr->n_time_steps; ++i) {
-        // need new, cuz dynamic allocation or pointer
-        ptr->times_sec.push_back(static_cast<double>(time_step*i/InterpolationScale));
-        // cout << time_step*i/InterpolationScale << endl;
+        // for (int32_t i=0; i < ptr->n_time_steps; ++i) {
+        // // need new, cuz dynamic allocation or pointer
+        // ptr->times_sec.push_back(static_cast<double>(time_step*i/InterpolationScale));
+        // // cout << time_step*i/InterpolationScale << endl;
 
-        // cout << ptr->times_sec[i] << endl;
+        // // cout << ptr->times_sec[i] << endl;
 
-        auto ptr2 = std::make_unique<std::vector<double>>();
-        auto ptr2_st = std::make_unique<std::vector<double>>();
+        // auto ptr2 = std::make_unique<std::vector<double>>();
+        // auto ptr2_st = std::make_unique<std::vector<double>>();
 
-        for (int32_t j=0; j < ptr->dim_states; ++j) { 
-            //  ptr2->push_back(lastTraj.uList[i][j]);
-            // ptr2->push_back(gtau[j]);
+        // for (int32_t j=0; j < ptr->dim_states; ++j) { 
+        //     //  ptr2->push_back(lastTraj.uList[i][j]);
+        //     // ptr2->push_back(gtau[j]);
 
-            ptr2->push_back(0);
-            ptr2_st->push_back(joint_state_traj_interp[i][j]);
-        }
-        ptr->torques.push_back(*ptr2);
-        ptr->states.push_back(*ptr2_st);
-        }
+        //     ptr2->push_back(0);
+        //     ptr2_st->push_back(joint_state_traj_interp[i][j]);
+        // }
+        // ptr->torques.push_back(*ptr2);
+        // ptr->states.push_back(*ptr2_st);
+        // }
 
-        lcmt_manipulator_traj traj = *ptr;
-        std::vector<double> widths;
-        std::vector<double> forces;
-        forces.assign(traj.n_time_steps, FLAGS_gripper_force);
-        widths.assign(traj.n_time_steps, FLAGS_gripper_close_width);
+        // lcmt_manipulator_traj traj = *ptr;
+        // std::vector<double> widths;
+        // std::vector<double> forces;
+        // forces.assign(traj.n_time_steps, FLAGS_gripper_force);
+        // widths.assign(traj.n_time_steps, FLAGS_gripper_close_width);
 
-        traj.gripper_force = forces;
-        traj.gripper_width = widths;
+        // traj.gripper_force = forces;
+        // traj.gripper_width = widths;
 
-        std::cout<<"Press any key to continue...\n";
-        while (std::getc(stdin)==EOF) {}
+        // std::cout<<"Press any key to continue...\n";
+        // while (std::getc(stdin)==EOF) {}
 
-        LCM lcm_;
-        lcm_.publish(FLAGS_plan_channel, &traj);
-        std::cout<<"Trajectory Published\n";
+        // lcm_.publish(FLAGS_plan_channel, &traj);
+        // std::cout<<"Trajectory Published\n";
         // return *ptr;
+
+        //////////////////////////////////////////////////////////////////////////////////////////
+        lcmt_iiwa_status iiwa_state;
+        iiwa_state.num_joints = kIiwaArmNumJoints;
+        DRAKE_ASSERT(plant_.num_positions(iiwa_model) == kIiwaArmNumJoints);
+        iiwa_state.joint_position_measured.resize(kIiwaArmNumJoints, 0.);   
+        iiwa_state.joint_velocity_estimated.resize(kIiwaArmNumJoints, 0.);
+        iiwa_state.joint_position_commanded.resize(kIiwaArmNumJoints, 0.);
+        iiwa_state.joint_position_ipo.resize(kIiwaArmNumJoints, 0.);
+        iiwa_state.joint_torque_measured.resize(kIiwaArmNumJoints, 0.);
+        iiwa_state.joint_torque_commanded.resize(kIiwaArmNumJoints, 0.);
+        iiwa_state.joint_torque_external.resize(kIiwaArmNumJoints, 0.);
+
+        drake::log()->info("Publishing trajectory to visualizer");
+        plan_finished_ = false;
+        // unsigned int cur_step = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
+        // cout << "starting time: " << cur_step << endl;
+
+        while(true){
+            while (0 == lcm_.handleTimeout(10) || iiwa_state.utime == -1 
+            || plan_finished_) { }
+
+            // Update status time to simulation time
+            // Note: utime is in microseconds
+            iiwa_state.utime = robot_time_.utime;
+            // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
+            step_ = int((robot_time_.utime / 1000)/5);
+
+            std::cout << step_ << std::endl;
+            
+            if(step_ >= N*InterpolationScale)
+            {
+                drake::log()->info("Interpolated trajectory has been published");
+                plan_finished_ = true;
+                continue;
+            }
+
+
+            for (int32_t j=0; j < iiwa_state.num_joints; ++j) { 
+                iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][j];
+            }
+
+            lcm_.publish(kLcmStatusChannel, &iiwa_state);
+
+
+        }
+
     };
 
     void saveVector(const Eigen::MatrixXd & _vec, const char * _name){
@@ -301,17 +364,23 @@ public:
         }
     }
 
+private:
+    void HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+                      const lcmt_robot_time* robot_time) {
+        robot_time_ = *robot_time;
+    }
+
 };
 
 int do_main_kkt(){
-    ilqr_kkt_test test;
+    TrajOptPublisher pub;
     stateVec_t xinit,xgoal;
     double time_horizon = 2;
-    double time_step = 0.01;
+    double time_step = 0.001;
     xinit << 0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     // xinit << 0, 0, 0, 0, 0, 0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     xgoal << 1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    test.Run_test(xinit, xgoal, time_horizon, time_step);
+    pub.Run_test(xinit, xgoal, time_horizon, time_step);
 
     return 0;
 }

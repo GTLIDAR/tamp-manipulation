@@ -328,8 +328,8 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         plant_->CalcMassMatrix(*context, &M_);
         plant_->CalcBiasTerm(*context, &Cv);
         M_iiwa = M_.block<7, 7>(6, 6);
-        Cv_iiwa = Cv.bottomRows(7);
-        tau_g_iiwa = tau_g.bottomRows(7);
+        Cv_iiwa = Cv.middleRows<7>(6);
+        tau_g_iiwa = tau_g.middleRows<7>(6);
 
         // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
         Vector3d contact_point;
@@ -352,9 +352,12 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         
         VectorXd Bias_MJ(10);
         Bias_MJ.setZero();
-        Bias_MJ.topRows(7) = tau - Cv_iiwa;
+        Bias_MJ.topRows(7) = tau + tau_g_iiwa - Cv_iiwa;
         Bias_MJ.bottomRows(3) = -Acc_Bias;
         
+        cout << "Cv_iiwa: " << Cv_iiwa.transpose() << endl;
+        cout << "tau_g_iiwa: " << tau_g_iiwa.transpose() << endl;
+        cout << "tau: " << tau.transpose() << endl;
         // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
         //=============================================
         // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);

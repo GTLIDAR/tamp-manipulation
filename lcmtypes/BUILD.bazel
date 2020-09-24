@@ -279,6 +279,12 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "robot_time",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_robot_time.lcm"],
+)
+
+drake_lcm_cc_library(
     name = "support_data",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_support_data.lcm"],
@@ -439,6 +445,7 @@ LCMTYPES_CC = [
     ":motion_plan_query",
     ":combined_object_state",
     ":multi_wp_manip_query",
+    ":robot_time",
 ]
 
 # This rule should list every LCM type that is known to Drake or its external
