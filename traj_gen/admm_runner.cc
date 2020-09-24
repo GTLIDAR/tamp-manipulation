@@ -226,6 +226,10 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       lastTraj = testSolverKukaArm_init.getLastSolvedTrajectory();
       final_cost[i+1] = lastTraj.finalCost;
       // cout << "checkpoint 3" << endl;
+      if (isnan(lastTraj.finalCost)) {
+        std::cout<<"NaN Final Cost. Stopping ADMM...\n";
+        break;
+      }
     }
     gettimeofday(&tend,NULL);
 
