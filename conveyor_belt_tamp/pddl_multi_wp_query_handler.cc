@@ -61,6 +61,8 @@ private:
 std::string model_path_;
 real_lcm::LCM lcm_;
 lcmt_multi_wp_manip_query current_query_;
+lcmt_manipulator_traj traj_;
+lcmt_manipulator_traj total_traj_;
 
 void HandleQuery(
     const real_lcm::ReceiveBuffer*,
@@ -121,27 +123,27 @@ void HandleQuery(
         ik_feasible = ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &q_sol);
     }
 
-    lcmt_manipulator_traj traj;
+    // lcmt_manipulator_traj traj;
     if (!ik_feasible) {
         std::cout<<"IK infeasuble\n";
-        traj = GetInfCost();
-        lcm_.publish(FLAGS_result_channel, &traj);
+        traj_ = GetInfCost();
+        lcm_.publish(FLAGS_result_channel, &traj_);
         return;
     }
 
     std::cout<<"\n";
-    lcmt_manipulator_traj total_traj;
-    total_traj.dim_states = query->dim_q;
-    total_traj.dim_torques = 0;
-    total_traj.n_time_steps = 0;
+    // lcmt_manipulator_traj total_traj_;
+    total_traj_.dim_states = query->dim_q;
+    total_traj_.dim_torques = 0;
+    total_traj_.n_time_steps = 0;
 
     for (size_t i = 0; i < q_sol.size()-1; i++) {
 
         if (query->option.compare("ddp")==0) {
-            traj = 
+            traj_ = 
                 GetDDPRes(q_sol[i], q_sol[i+1], query->time_horizon[i], query->time_step);
         } else if (query->option.compare("admm")==0) {
-            traj = 
+            traj_ = 
                 GetADMMRes(q_sol[i], q_sol[i+1], query->time_horizon[i], query->time_step, query->name);
         } else {
             std::cout<<"Invalid Traj Op Option. Only support ddp or admm!\n";
@@ -149,20 +151,20 @@ void HandleQuery(
 
         std::vector<double> widths;
         std::vector<double> forces;
-        forces.assign(traj.n_time_steps, query->gripper_force);
+        forces.assign(traj_.n_time_steps, query->gripper_force);
         if (query->name.find("move")==0) {
-            widths.assign(traj.n_time_steps, query->prev_gripper_width);
+            widths.assign(traj_.n_time_steps, query->prev_gripper_width);
         } else if (query->name.find("wait")==0) {
-            widths.assign(traj.n_time_steps, query->prev_gripper_width);
+            widths.assign(traj_.n_time_steps, query->prev_gripper_width);
         } else if (query->name.find("release")==0) {
-            widths.assign(traj.n_time_steps, FLAGS_gripper_open_width);
+            widths.assign(traj_.n_time_steps, FLAGS_gripper_open_width);
         } else if (query->name.find("grasp")==0) {
-            widths.assign(traj.n_time_steps, FLAGS_gripper_close_width);
+            widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
         } else if (query->name.find("push")==0) {
-            widths.assign(traj.n_time_steps, FLAGS_gripper_close_width);
+            widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
         } else if (query->name.find("throw")==0) {
-            for (int j = 0; j < traj.n_time_steps; j++) {
-                if (j < traj.n_time_steps/5.) {
+            for (int j = 0; j < traj_.n_time_steps; j++) {
+                if (j < traj_.n_time_steps/5.) {
                     widths.push_back(FLAGS_gripper_close_width);
                 } else {
                     widths.push_back(FLAGS_gripper_open_width);
@@ -170,14 +172,14 @@ void HandleQuery(
             }
         } else {
             std::cout << "This shouldn't happen, Assigning gripper to previous state\n";
-            widths.assign(traj.n_time_steps, query->prev_gripper_width);
+            widths.assign(traj_.n_time_steps, query->prev_gripper_width);
         }
-        traj.gripper_force = forces;
-        traj.gripper_width = widths;
+        traj_.gripper_force = forces;
+        traj_.gripper_width = widths;
 
-        AppendTrajectory(total_traj, traj);
+        AppendTrajectory(total_traj_, traj_);
 
-        if (isnan(traj.cost)) {
+        if (isnan(traj_.cost)) {
             std::cout<<"This trajectory returns NaN cost!\n";
             std::cout<<"IK Results"<<"\n";
             std::cout<<"q_init ";
@@ -191,9 +193,10 @@ void HandleQuery(
             std::cout<<"\n";
             break;
         }
+        ClearTrajectory(traj_);
     }
 
-    lcm_.publish(FLAGS_result_channel, &total_traj);
+    lcm_.publish(FLAGS_result_channel, &total_traj_);
     for (size_t i = 0; i < q_sol.size()-1; i++) {
         std::cout<<"IK Results"<<"\n";
         std::cout<<"q_init ";
@@ -207,6 +210,7 @@ void HandleQuery(
         std::cout<<"\n";
     }
     std::cout << "--------"<<query->name<<" Trajectory Published to LCM! --------" << endl;
+    ClearTrajectory(total_traj_);
 }
 
 lcmt_manipulator_traj GetInfCost() {
@@ -279,6 +283,18 @@ void AppendTrajectory(lcmt_manipulator_traj &dest, lcmt_manipulator_traj &src) {
         dest.gripper_width.end(), src.gripper_width.begin(), src.gripper_width.end());
     dest.gripper_force.insert(
         dest.gripper_force.end(), src.gripper_force.begin(), src.gripper_force.end());
+}
+
+void ClearTrajectory(lcmt_manipulator_traj &traj) {
+    traj.n_time_steps = 0;
+    traj.dim_torques = 0;
+    traj.dim_states = 0;
+    traj.times_sec.clear();
+    traj.states.clear();
+    traj.torques.clear();
+    traj.gripper_width.clear();
+    traj.gripper_force.clear();
+    traj.cost = 0;
 }
 
 };
