@@ -44,7 +44,12 @@ def main():
     )
 
     planner = CausalGraphTampPlanner(task, motion_planner)
+
+    start = time.time()
     planner.plan(option=TRAJ_OPTION)
+    end = time.time()
+    print("Total Planning Time: ", end - start, "sec")
+    
     planner.save_traj()
 
 if __name__=="__main__":
