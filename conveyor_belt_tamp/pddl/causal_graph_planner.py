@@ -47,6 +47,7 @@ class CausalGraphTampPlanner(object):
         self.actions = []
         self.trees = []
         self.motion_planner = motion_planner
+        self.refinement_time = 0
 
 
     def _rank_subproblems(self, subproblems):
@@ -104,6 +105,7 @@ class CausalGraphTampPlanner(object):
             (tree.goals, n_visited) = tree.hybrid_search(
                 total_depth_limit=total_depth_limit, n_sols=1, option=option)
             total_n_visited += n_visited
+            self.refinement_time += tree.refinement_time
             print("Subtask Search Time:", time.time()-task_start)
             if len(tree.goals):
                 self.state = tree.goals[0].state
