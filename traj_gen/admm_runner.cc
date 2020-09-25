@@ -13,7 +13,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
-    unsigned int iterMax = 30;
+    unsigned int iterMax = 15;
     unsigned int ADMMiterMax = 10;
 
     if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
@@ -128,7 +128,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     u_0.resize(N);
     for(unsigned i=0;i<N;i++){
-      u_0[i].head(7) = gtau_wb;
+      u_0[i].head(7) = - gtau_wb;
       // u_0[i].setZero();
     }
     

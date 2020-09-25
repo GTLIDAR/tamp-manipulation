@@ -312,7 +312,7 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         //Set false for doing only gravity comp
         //     VectorX<double> gtau = robot_thread_->inverseDynamics(cache_, f_ext, qd_0, false);
         //=============================================
-        vd = (M_.inverse()*(tau - tau_g - Cv)).head(stateSize/2);
+        vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
         //    vd = M_.inverse()*(tau + bias_term_2 - bias_term_ );
         //    vd = M_.inverse()*(tau - bias_term_ + gtau);
         //    vd = M_.inverse()*(tau + gtau);
@@ -341,7 +341,7 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         Cv.setZero();
         plant_->CalcBiasTerm(*context, &Cv);
 
-        vd = (M_.inverse()*(tau - tau_g - Cv)).head(stateSize/2);
+        vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){
