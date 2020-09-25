@@ -1,6 +1,7 @@
 import pydrake.math as mut
 import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
+from pydrake.common import RandomGenerator
 from pydrake.common.cpp_param import List
 from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.common.value import Value
@@ -164,6 +165,13 @@ class TestMath(unittest.TestCase):
             X.multiply(other=RigidTransform()), RigidTransform)
         self.assertIsInstance(X @ RigidTransform(), RigidTransform)
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((X @ v).shape, (3,))
+        self.assertEqual((X @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((X @ vs).shape, (3, 2))
+        print(help(RigidTransform.multiply))
         # - Test vector multiplication.
         R_AB = RotationMatrix([
             [0., 1, 0],
@@ -273,6 +281,12 @@ class TestMath(unittest.TestCase):
         vlist_B = np.array([v_B, v_B]).T
         vlist_A = np.array([v_A, v_A]).T
         numpy_compare.assert_float_equal(R_AB.multiply(v_B=vlist_B), vlist_A)
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((R_AB @ v).shape, (3,))
+        self.assertEqual((R_AB @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((R_AB @ vs).shape, (3, 2))
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
@@ -332,6 +346,18 @@ class TestMath(unittest.TestCase):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
         self.assertAlmostEqual(np.linalg.det(R), 1.0)
         self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
+
+    def test_random_rotations(self):
+        g = RandomGenerator()
+        quat = mut.UniformlyRandomQuaternion(g)
+        self.assertIsInstance(quat, Quaternion_[float])
+        angle_axis = mut.UniformlyRandomAngleAxis(g)
+        self.assertIsInstance(angle_axis, AngleAxis_[float])
+        rot_mat = mut.UniformlyRandomRotationMatrix(g)
+        self.assertIsInstance(rot_mat, mut.RotationMatrix)
+        rpy = mut.UniformlyRandomRPY(g)
+        self.assertIsInstance(rpy, np.ndarray)
+        self.assertEqual(len(rpy), 3)
 
     def test_matrix_util(self):
         A = np.array([[1, 2], [3, 4]])

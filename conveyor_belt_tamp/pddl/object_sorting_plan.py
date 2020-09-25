@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 import time
-import sys
-import os
+from pathlib import Path
 from datetime import datetime
 import copy
 import json
@@ -10,11 +9,8 @@ import numpy as np
 
 from causal_graph_planner import CausalGraphTampPlanner
 
-pddl_path = "/home/zhigen/code/pddl_planning"
-if pddl_path not in sys.path:
-    sys.path.append(pddl_path)
+drake_path = str(Path(__file__).parent.parent.parent.absolute())
 
-drake_path = "/home/zhigen/code/drake"
 
 from causal_graph.tools import build_causal_graph, get_subproblems, generate_subtask
 from search_tree.tamp_node import PddlTampNode
@@ -28,6 +24,8 @@ TRAJ_OPTION = "refine"
 MULTI_WP = True
 
 def main():
+    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/throw_domain.pddl"
+    # problem_file = drake_path + "/conveyor_belt_tamp/pddl/throw_problem.pddl"
     domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_10obj.pddl"
     problem_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/problem_10obj.pddl"
     # domain_file = drake_path + "/conveyor_belt_tamp/pddl/object_sorting/domain_7obj.pddl"
@@ -46,7 +44,12 @@ def main():
     )
 
     planner = CausalGraphTampPlanner(task, motion_planner)
+
+    start = time.time()
     planner.plan(option=TRAJ_OPTION)
+    end = time.time()
+    print("Total Planning Time: ", end - start, "sec")
+    
     planner.save_traj()
 
 if __name__=="__main__":

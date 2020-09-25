@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-import os
-import sys
+from pathlib import Path
 from datetime import datetime
 import copy
 import json
@@ -18,14 +17,10 @@ from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
 from pydrake.math import RigidTransform, RollPitchYaw
 
-pddl_path = "/home/zhigen/code/pddl_planning"
-drake_path = "/home/zhigen/code/drake"
+drake_path = str(Path(__file__).parent.parent.parent.absolute())
 
 iiwa_path = "/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf"
 wsg_path = "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"
-
-if pddl_path not in sys.path:
-    sys.path.append(pddl_path)
 
 from causal_graph.tools import build_causal_graph, get_subproblems, generate_subtask
 from search_tree.tamp_node import PddlTampNode

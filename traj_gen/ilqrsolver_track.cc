@@ -518,6 +518,7 @@ void ILQRSolver_TRK::doForwardPass()
     x_unused.setZero();
     commandVec_t u_NAN_loc;
     u_NAN_loc << sqrt(-1.0); // sqrt(-1)=NaN. After this line, u_nan has nan for [0] and garbage for rest
+    // u_NAN_loc << 1;
     isUNan = 0;
 
     //[TODO: to be optimized]

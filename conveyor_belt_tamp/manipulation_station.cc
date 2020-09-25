@@ -191,7 +191,7 @@ void ManipulationStation<T>::AddManipulandFromFile(
 
 template <typename T>
 void ManipulationStation<T>::SetupObjectSortingStation(
-  const IiwaCollisionModel collision_model
+  const IiwaCollisionModel collision_model, const SchunkCollisionModel schunk_model
 ) {
   DRAKE_DEMAND(setup_==Setup::kNone);
   setup_ = Setup::kConveyorBelt;
@@ -245,12 +245,12 @@ void ManipulationStation<T>::SetupObjectSortingStation(
     RollPitchYaw<double>(0, 0, 0), Vector3d(-0.2, 0, kTableTopZInWorld));
   // add IIWA and WSG
   AddLidarIiwa(collision_model, X_WI);
-  AddLidarWsg();
+  AddLidarWsg(schunk_model);
 }
 
 template <typename T>
 void ManipulationStation<T>::SetupConveyorBeltStation(
-  const IiwaCollisionModel collision_model
+  const IiwaCollisionModel collision_model, const SchunkCollisionModel schunk_model
 ) {
   DRAKE_DEMAND(setup_==Setup::kNone);
   setup_ = Setup::kConveyorBelt;
@@ -344,8 +344,170 @@ void ManipulationStation<T>::SetupConveyorBeltStation(
     RollPitchYaw<double>(0, 0, 0), Vector3d(0.2, 0, kTableTopZInWorld));
   // add IIWA and WSG
   AddLidarIiwa(collision_model, X_WI);
-  AddLidarWsg();
+  AddLidarWsg(schunk_model);
 
+}
+
+
+template <typename T>
+void ManipulationStation<T>::SetupClutterClearingStation(
+    const std::optional<const math::RigidTransform<double>>& X_WCameraBody,
+    IiwaCollisionModel collision_model, SchunkCollisionModel schunk_model) {
+  DRAKE_DEMAND(setup_ == Setup::kNone);
+  setup_ = Setup::kClutterClearing;
+
+  // Add the bins.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/bin.sdf");
+
+    RigidTransform<double> X_WC(RotationMatrix<double>::MakeZRotation(M_PI_2),
+                                Vector3d(-0.145, -0.63, 0.075));
+    internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
+                                  Vector3d(0.5, -0.1, 0.075));
+    internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+  }
+
+  // Add the camera.
+  {
+    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+    // depth are slightly different. And we are not able to model that at the
+    // moment.
+    // RGB:
+    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+    // DEPTH:
+    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+    // For this camera, we are going to assume that fx = fy, and we can compute
+    // fov_y by: fy = height / 2 / tan(fov_y / 2)
+    const double kFocalY = 645.;
+    const int kHeight = 480;
+    const int kWidth = 848;
+    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
+    geometry::render::DepthCameraProperties camera_properties(
+        kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
+
+    RegisterRgbdSensor("0", plant_->world_frame(),
+                       X_WCameraBody.value_or(math::RigidTransform<double>(
+                           math::RollPitchYaw<double>(-0.3, 0.8, 1.5),
+                           Eigen::Vector3d(0, -1.5, 1.5))),
+                       camera_properties);
+  }
+
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg(schunk_model);
+}
+
+template <typename T>
+void ManipulationStation<T>::SetupManipulationClassStation(
+  IiwaCollisionModel collision_model,
+  SchunkCollisionModel schunk_model) {
+  DRAKE_DEMAND(setup_ == Setup::kNone);
+  setup_ = Setup::kManipulationClass;
+
+  // Add the table and 80/20 workcell frame.
+  {
+    const double dx_table_center_to_robot_base = 0.3257;
+    const double dz_table_top_robot_base = 0.0127;
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/"
+        "amazon_table_simplified.sdf");
+
+    RigidTransform<double> X_WT(
+        Vector3d(dx_table_center_to_robot_base, 0, -dz_table_top_robot_base));
+    internal::AddAndWeldModelFrom(sdf_path, "table", plant_->world_frame(),
+                                  "amazon_table", X_WT, plant_);
+  }
+
+  // Add the cupboard.
+  {
+    const double dx_table_center_to_robot_base = 0.3257;
+    const double dz_table_top_robot_base = 0.0127;
+    const double dx_cupboard_to_table_center = 0.43 + 0.15;
+    const double dz_cupboard_to_table_center = 0.02;
+    const double cupboard_height = 0.815;
+
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/cupboard.sdf");
+
+    RigidTransform<double> X_WC(
+        RotationMatrix<double>::MakeZRotation(M_PI),
+        Vector3d(dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
+                 dz_cupboard_to_table_center + cupboard_height / 2.0 -
+                     dz_table_top_robot_base));
+    internal::AddAndWeldModelFrom(sdf_path, "cupboard", plant_->world_frame(),
+                                  "cupboard_body", X_WC, plant_);
+  }
+
+  // Add the default iiwa/wsg models.
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg(schunk_model);
+
+  // Add default cameras.
+  {
+    std::map<std::string, RigidTransform<double>> camera_poses;
+    internal::get_camera_poses(&camera_poses);
+    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+    // depth are slightly different. And we are not able to model that at the
+    // moment.
+    // RGB:
+    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+    // DEPTH:
+    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+    // For this camera, we are going to assume that fx = fy, and we can compute
+    // fov_y by: fy = height / 2 / tan(fov_y / 2)
+    const double kFocalY = 645.;
+    const int kHeight = 480;
+    const int kWidth = 848;
+    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
+    geometry::render::DepthCameraProperties camera_properties(
+        kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
+    for (const auto& camera_pair : camera_poses) {
+      RegisterRgbdSensor(camera_pair.first, plant_->world_frame(),
+                         camera_pair.second, camera_properties);
+    }
+  }
+}
+
+template <typename T>
+void ManipulationStation<T>::SetupPlanarIiwaStation(
+  SchunkCollisionModel schunk_model) {
+  DRAKE_DEMAND(setup_ == Setup::kNone);
+  setup_ = Setup::kPlanarIiwa;
+
+  // Add the tables.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/kuka_iiwa_arm/models/table/"
+        "extra_heavy_duty_table_surface_only_collision.sdf");
+
+    const double table_height = 0.7645;
+    internal::AddAndWeldModelFrom(
+        sdf_path, "robot_table", plant_->world_frame(), "link",
+        RigidTransform<double>(Vector3d(0, 0, -table_height)), plant_);
+    internal::AddAndWeldModelFrom(
+        sdf_path, "work_table", plant_->world_frame(), "link",
+        RigidTransform<double>(Vector3d(0.75, 0, -table_height)), plant_);
+  }
+
+  // Add planar iiwa model.
+  {
+    std::string sdf_path = FindResourceOrThrow(
+        "drake/manipulation/models/iiwa_description/urdf/"
+        "planar_iiwa14_spheres_dense_elbow_collision.urdf");
+    const auto X_WI = RigidTransform<double>::Identity();
+    auto iiwa_instance = internal::AddAndWeldModelFrom(
+        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
+    RegisterIiwaControllerModel(
+        sdf_path, iiwa_instance, plant_->world_frame(),
+        plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
+  }
+
+  // Add the default wsg model.
+  AddDefaultWsg(schunk_model);
 }
 
 template <typename T>
@@ -484,7 +646,52 @@ void ManipulationStation<T>::Finalize(
       break;
     }
     case Setup::kObjectSorting: {
-      q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      // q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+      break;
+    }
+    case Setup::kManipulationClass: {
+      // Set the initial positions of the IIWA to a comfortable configuration
+      // inside the workspace of the station.
+      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+
+      std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.65),
+          y(-0.35, 0.35), z(0, 0.05);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto& body_index : object_ids_) {
+        const multibody::Body<T>& body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+      }
+      break;
+    }
+    case Setup::kClutterClearing: {
+      // Set the initial positions of the IIWA to a configuration right above
+      // the picking bin.
+      q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
+
+      std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
+          y(-0.8, -.55), z(0.3, 0.35);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto& body_index : object_ids_) {
+        const multibody::Body<T>& body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+      }
+      break;
+    }
+    case Setup::kPlanarIiwa: {
+      // Set initial positions of the IIWA, but now with only joints 2, 4,
+      // and 6.
+      q0_iiwa << 0.1, -1.2, 1.6;
+
+      std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.8),
+          y(0, 0), z(0, 0.05);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto& body_index : object_ids_) {
+        const multibody::Body<T>& body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+      }
       break;
     }
   }
@@ -581,7 +788,14 @@ void ManipulationStation<T>::Finalize(
         builder.template AddSystem<systems::Adder>(2, num_iiwa_positions);
     builder.Connect(iiwa_controller->get_output_port_control(),
                     adder->get_input_port(0));
-    builder.ExportInput(adder->get_input_port(1), "iiwa_feedforward_torque");
+    // Use a passthrough to make the port optional.  (Will provide zero values
+    // if not connected).
+    auto torque_passthrough = builder.template AddSystem<systems::PassThrough>(
+        Eigen::VectorXd::Zero(num_iiwa_positions));
+    builder.Connect(torque_passthrough->get_output_port(),
+                    adder->get_input_port(1));
+    builder.ExportInput(torque_passthrough->get_input_port(),
+                        "iiwa_feedforward_torque");
     builder.Connect(adder->get_output_port(), plant_->get_actuation_input_port(
                                                   iiwa_model_.model_instance));
 
@@ -897,8 +1111,6 @@ void ManipulationStation<T>::AddDefaultIiwa(
           "drake/manipulation/models/iiwa_description/iiwa7/"
           "iiwa7_with_box_collision.sdf");
       break;
-    default:
-      throw std::domain_error("Unrecognized collision_model.");
   }
   const auto X_WI = RigidTransform<double>::Identity();
   auto iiwa_instance = internal::AddAndWeldModelFrom(
@@ -910,9 +1122,21 @@ void ManipulationStation<T>::AddDefaultIiwa(
 
 // Add default wsg.
 template <typename T>
-void ManipulationStation<T>::AddDefaultWsg() {
-  const std::string sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+void ManipulationStation<T>::AddDefaultWsg(
+    const SchunkCollisionModel schunk_model) {
+  std::string sdf_path;
+  switch (schunk_model) {
+    case SchunkCollisionModel::kBox:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf"
+          "/schunk_wsg_50_no_tip.sdf");
+      break;
+    case SchunkCollisionModel::kBoxPlusFingertipSpheres:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf"
+          "/schunk_wsg_50_with_tip.sdf");
+      break;
+  }
   const multibody::Frame<T>& link7 =
       plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
   const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
@@ -953,9 +1177,21 @@ void ManipulationStation<T>::AddLidarIiwa(
 
 // Add default wsg.
 template <typename T>
-void ManipulationStation<T>::AddLidarWsg() {
-  const std::string wsg_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+void ManipulationStation<T>::AddLidarWsg(
+  const SchunkCollisionModel schunk_model) {
+  std::string wsg_sdf_path;
+  switch (schunk_model) {
+    case SchunkCollisionModel::kBox:
+      wsg_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf"
+          "/schunk_wsg_50_no_tip.sdf");
+      break;
+    case SchunkCollisionModel::kBoxPlusFingertipSpheres:
+      wsg_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf"
+          "/schunk_wsg_50_with_tip.sdf");
+      break;
+  }
   const std::string connector_urdf_path = FindResourceOrThrow(
     "drake/manipulation/models/kuka_connector_description/urdf/"
     "KukaConnector_no_world_joint.urdf"

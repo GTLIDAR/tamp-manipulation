@@ -48,6 +48,17 @@ drake_pybind_library(
     ],
 )
 
+drake_py_library(
+    name = "jupyter_widgets_py",
+    srcs = ["jupyter_widgets.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/common:jupyter_py",
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
@@ -108,7 +119,6 @@ drake_pybind_library(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common:cpp_template_py",
     ],
-    py_srcs = ["_plant_extra.py"],
 )
 
 drake_pybind_library(
@@ -156,6 +166,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 ]
 
 PY_LIBRARIES = [
+    ":jupyter_widgets_py",
     ":module_py",
 ]
 
@@ -186,6 +197,23 @@ filegroup(
     ]),
 )
 
+drake_jupyter_py_binary(
+    name = "examples/jupyter_widgets_examples",
+    add_test_rule = 1,
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":jupyter_widgets_py",
+        ":parsing_py",
+        ":plant_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:rendering_py",
+    ],
+)
+
 drake_py_unittest(
     name = "parsing_test",
     data = [
@@ -213,7 +241,6 @@ drake_py_unittest(
         ":parsing_py",
         ":plant_py",
         ":tree_py",
-        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",

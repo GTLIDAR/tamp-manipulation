@@ -228,6 +228,19 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
 
+        for (int i=0; i < M_.rows(); i++) {
+            for (int j = 0; j < M_.cols(); j++) {
+                if (isnan(M_(i, j))) {
+                    if (globalcnt < 5) {
+                        std::cout<<"Mass Matrix contains NaN"<<"\n";
+                        std::cout<<M_<<"\n";
+                        // while (std::getc(stdin)==EOF) {}
+                    }
+
+                    break;
+                }
+            }
+        }
         //===================
         // External Force
         //==================
@@ -275,7 +288,20 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         // VectorXd vdot(plant_->num_velocities());
         // vdot.setZero();
         // VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
-        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context);
+        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
+        VectorXd Cv(plant_->num_velocities());
+        Cv.setZero();
+        plant_->CalcBiasTerm(*context, &Cv);
+
+        // if (globalcnt % 10 == 0) {
+        //     std::cout<<"tau_g "<<tau_g<<"\n";
+        //     std::cout<<"Cv "<<Cv<<"\n";
+        //     std::cout<<"q_full\n";
+        //     std::cout<<q_full<<"\n";
+        //     std::cout<<"qd_full"<<"\n";
+        //     std::cout<<qd_full<<"\n";
+        //     std::cout<<"M-1"<<M_.inverse()<<"\n";
+        // }
 
         //gettimeofday(&tend_period,NULL);
         //finalTimeProfile.time_period4 += ((double)(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
@@ -286,7 +312,7 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         //Set false for doing only gravity comp
         //     VectorX<double> gtau = robot_thread_->inverseDynamics(cache_, f_ext, qd_0, false);
         //=============================================
-        vd = (M_.inverse()*(tau - bias_term_)).head(stateSize/2);
+        vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
         //    vd = M_.inverse()*(tau + bias_term_2 - bias_term_ );
         //    vd = M_.inverse()*(tau - bias_term_ + gtau);
         //    vd = M_.inverse()*(tau + gtau);
@@ -310,9 +336,12 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         MatrixXd M_;
         plant_->CalcMassMatrix(*context, &M_);
 
-        VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context);
+        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
+        VectorXd Cv(plant_->num_velocities());
+        Cv.setZero();
+        plant_->CalcBiasTerm(*context, &Cv);
 
-        vd = (M_.inverse()*(tau - bias_term_));
+        vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){
@@ -501,17 +530,18 @@ stateVec_t KukaArm_TRK::update(const int& nargout, const stateVec_t& X, const co
     Xdot4 = kuka_arm_dynamics(X + dt*Xdot3, U);
     stateVec_t X_new;
     X_new = X + (dt/6)*(Xdot1 + 2*Xdot2 + 2*Xdot3 + Xdot4);
-    // Simple Euler Integration (for debug)
-//    X_new = X + (dt)*Xdot1;
 
-    if ((globalcnt%4 == 0) && (globalcnt<40)) {
-        // cout << "X " << endl << X << endl;
-        // cout << "Xdot1 " << endl << Xdot1 << endl;
-        // cout << "Xdot2 " << endl << Xdot2 << endl;
-        // cout << "Xdot3 " << endl << Xdot3 << endl;
-        // cout << "Xdot4 " << endl << Xdot4 << endl;
-        // cout << "X_NEW: " << endl << X_new << endl;
-    }
+    // Simple Euler Integration (for debug)
+    // X_new = X + (dt)*Xdot1;
+
+    // if ((globalcnt%4 == 0) && (globalcnt<40)) {
+    //     cout << "X " << endl << X << endl;
+    //     cout << "Xdot1 " << endl << Xdot1 << endl;
+    //     cout << "Xdot2 " << endl << Xdot2 << endl;
+    //     cout << "Xdot3 " << endl << Xdot3 << endl;
+    //     cout << "Xdot4 " << endl << Xdot4 << endl;
+    //     cout << "X_NEW: " << endl << X_new << endl;
+    // }
 
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 

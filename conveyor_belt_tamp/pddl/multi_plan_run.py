@@ -75,7 +75,7 @@ def main():
             planning_time = time.time() - start
 
             fp = open(save_folder+"time_result.csv", "a")
-            fp.write(str(i+1)+"_obj_cg, "+str(planning_time)+"\n")
+            fp.write(str(i+1)+"_obj, "+str(planning_time)+", "+ str(planner.refinement_time)+"\n")
             fp.close()
             planner.save_traj(save_folder, str(i+1)+"_obj_cg.json")
         except RuntimeError:
@@ -91,7 +91,7 @@ def main():
             total_depth_limit=(i+1)*5, n_sols=1, option=TRAJ_OPTION)
         planning_time = time.time() - start
         fp = open(save_folder+"time_result.csv", "a")
-        fp.write(str(i+1)+"_obj, "+str(planning_time)+"\n")
+        fp.write(str(i+1)+"_obj, "+str(planning_time)+", "+ str(tree.refinement_time)+"\n")
         fp.close()
         tree.save_traj(foldername=save_folder, filename=str(i+1)+"_obj.json")
 

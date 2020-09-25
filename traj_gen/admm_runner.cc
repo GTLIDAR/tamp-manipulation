@@ -13,8 +13,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
-    unsigned int iterMax = 20;
-    unsigned int ADMMiterMax = 10;
+    unsigned int iterMax = 15;
+    unsigned int ADMMiterMax = 5;
 
     if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
       iterMax = 50;
@@ -86,7 +86,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
 
     std::string urdf_;
-    auto plant_ = multibody::MultibodyPlant<double>(0.0);
+    auto plant_ = multibody::MultibodyPlant<double>(0.001);
     multibody::Parser parser(&plant_);
 
     const ModelInstanceIndex iiwa_model =
@@ -125,10 +125,13 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
 
     cout << "bias total" << endl << gtau_wb << endl;
-    for(unsigned int i=0;i<N;i++){
-      u_0[i].head(7) = gtau_wb;
-    }
 
+    u_0.resize(N);
+    for(unsigned i=0;i<N;i++){
+      u_0[i].head(7) = - gtau_wb;
+      // u_0[i].setZero();
+    }
+    
     #if WHOLE_BODY
       KukaArm_TRK KukaArmModel(dt, N, xgoal, &plant_, action_name);
     #else
@@ -223,6 +226,10 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       lastTraj = testSolverKukaArm_init.getLastSolvedTrajectory();
       final_cost[i+1] = lastTraj.finalCost;
       // cout << "checkpoint 3" << endl;
+      if (isnan(lastTraj.finalCost)) {
+        std::cout<<"NaN Final Cost. Stopping ADMM...\n";
+        break;
+      }
     }
     gettimeofday(&tend,NULL);
 
@@ -314,8 +321,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     ptr->dim_torques = 0;//kNumJoints;
     ptr->dim_states = kNumJoints; //disregard joint velocity
     ptr->n_time_steps = N*InterpolationScale;
-    ptr->cost = lastTraj.finalCost;
-
+    //ptr->cost = lastTraj.finalCost;
+    ptr->cost = final_cost[ADMMiterMax];
       //============================================
 
     for (int32_t i=0; i < ptr->n_time_steps; ++i) {

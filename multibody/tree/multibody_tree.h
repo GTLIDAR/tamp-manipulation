@@ -413,14 +413,16 @@ class MultibodyTree {
   const JointType<T>& AddJoint(
       std::unique_ptr<JointType<T>> joint);
 
-  /// This method helps to create a Joint of type `JointType` between two
-  /// bodies.
-  /// The two bodies connected by this Joint object are referred to as the
-  /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
-  /// sometimes used synonymously to describe the relationship between inboard
-  /// and outboard bodies in multibody models, this usage is wholly unrelated
-  /// and implies nothing about the inboard-outboard relationship between the
-  /// bodies.
+  /// This method adds a Joint of type `JointType` between two bodies.
+  /// The two bodies connected by this Joint object are referred to as _parent_
+  /// and _child_ bodies. The parent/child ordering defines the sign conventions
+  /// for the generalized coordinates and the coordinate ordering for multi-DOF
+  /// joints.  Our use of the terms _parent_ and _child_ does 𝐧𝐨𝐭 describe the
+  /// inboard/outboard relationship between bodies as our usage of inboard/
+  /// outboard is more general and is also meaningful for multibody systems
+  /// with loops, such as four-bar linkages.  However, when possible the
+  /// _parent_ body is made inboard and the _child_ outboard in the tree.
+  ///
   /// As explained in the Joint class's documentation, in Drake we define a
   /// frame F attached to the parent body P with pose `X_PF` and a frame M
   /// attached to the child body B with pose `X_BM`. This method helps create
@@ -637,6 +639,11 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
+  Body<T>& get_mutable_body(BodyIndex body_index) {
+    DRAKE_THROW_UNLESS(body_index < num_bodies());
+    return *owned_bodies_[body_index];
+  }
+
   /// See MultibodyPlant method.
   const Joint<T>& get_joint(JointIndex joint_index) const {
     DRAKE_THROW_UNLESS(joint_index < num_joints());
@@ -658,6 +665,11 @@ class MultibodyTree {
 
   /// See MultibodyPlant method.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
+    DRAKE_THROW_UNLESS(frame_index < num_frames());
+    return *frames_[frame_index];
+  }
+
+  Frame<T>& get_mutable_frame(FrameIndex frame_index) {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
   }
@@ -692,6 +704,12 @@ class MultibodyTree {
 
   const ForceElement<T>& get_force_element(
       ForceElementIndex force_element_index) const {
+    DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
+    return *owned_force_elements_[force_element_index];
+  }
+
+  ForceElement<T>& get_mutable_force_element(
+      ForceElementIndex force_element_index) {
     DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
     return *owned_force_elements_[force_element_index];
   }
@@ -1477,35 +1495,51 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       VelocityKinematicsCache<T>* vc) const;
 
-  /// Computes the spatial inertia M_Bo_W(q) for each body B in the model about
+  /// Computes the spatial inertia M_B_W(q) for each body B in the model about
   /// its frame origin Bo and expressed in the world frame W.
   /// @param[in] context
   ///   The context storing the state of the model.
-  /// @param[out] M_B_W_cache
-  ///   For each body in the model, entry Body::node_index() in M_B_W_cache
+  /// @param[out] M_B_W_all
+  ///   For each body in the model, entry Body::node_index() in M_B_W_all
   ///   contains the updated spatial inertia `M_B_W(q)` for that body. On input
   ///   it must be a valid pointer to a vector of size num_bodies().
-  /// @throws std::exception if M_B_W_cache is nullptr or if its size is not
+  /// @throws std::exception if M_B_W_all is nullptr or if its size is not
   /// num_bodies().
-  void CalcSpatialInertiaInWorldCache(
+  void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* M_B_W_cache) const;
+      std::vector<SpatialInertia<T>>* M_B_W_all) const;
 
-  /// Computes the bias term `Fb_Bo_W(q, v)` for each body in the model.
+  /// Computes the composite body inertia Mc_B_W(q) for each body B in the
+  /// model about its frame origin Bo and expressed in the world frame W.
+  /// The composite body inertia is the effective mass properties B would have
+  /// if every joint outboard of B was welded in its current configuration.
+  /// @param[in] context
+  ///   The context storing the state of the model.
+  /// @param[out] Mc_B_W_all
+  ///   For each body in the model, entry Body::node_index() in M_B_W_all
+  ///   contains the updated composite body inertia `Mc_B_W(q)` for that body.
+  ///   On input it must be a valid pointer to a vector of size num_bodies().
+  /// @throws std::exception if Mc_B_W_all is nullptr or if its size is not
+  /// num_bodies().
+  void CalcCompositeBodyInertiasInWorld(
+      const systems::Context<T>& context,
+      std::vector<SpatialInertia<T>>* Mc_B_W_all) const;
+
+  /// Computes the bias force `Fb_Bo_W(q, v)` for each body in the model.
   /// For a body B, this is the bias term `Fb_Bo_W` in the equation
   /// `F_BBo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
   /// about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   /// `F_BBo_W` is the spatial force applied on B about Bo, expressed in W.
   /// @param[in] context
   ///   The context storing the state of the model.
-  /// @param[out] Fb_Bo_W_cache
-  ///   For each body in the model, entry Body::node_index() in Fb_Bo_W_cache
+  /// @param[out] Fb_Bo_W_all
+  ///   For each body in the model, entry Body::node_index() in Fb_Bo_W_all
   ///   contains the updated bias term `Fb_Bo_W(q, v)` for that body. On input
   ///   it must be a valid pointer to a vector of size num_bodies().
   /// @throws std::exception if Fb_Bo_W_cache is nullptr or if its size is not
   /// num_bodies().
-  void CalcDynamicBiasCache(const systems::Context<T>& context,
-                            std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const;
+  void CalcDynamicBiasForces(const systems::Context<T>& context,
+                             std::vector<SpatialForce<T>>* Fb_Bo_W_all) const;
 
   /// Computes all the kinematic quantities that depend on the generalized
   /// accelerations that is, the generalized velocities' time derivatives, and
@@ -2030,19 +2064,19 @@ class MultibodyTree {
   /// Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard
   /// body P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and
   /// mobilities, respectively. See @ref abi_computing_accelerations for further
-  /// details. On output `Ab_WB_cache[body_node_index]`
+  /// details. On output `Ab_WB_all[body_node_index]`
   /// contains `Ab_WB` for the body with node index `body_node_index`.
-  void CalcSpatialAccelerationBiasCache(
+  void CalcSpatialAccelerationBias(
       const systems::Context<T>& context,
-      std::vector<SpatialAcceleration<T>>* Ab_WB_cache)
+      std::vector<SpatialAcceleration<T>>* Ab_WB_all)
       const;
 
   /// Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
-  /// for each articulated body B. On output `Zb_Bo_W_cache[body_node_index]`
+  /// for each articulated body B. On output `Zb_Bo_W_all[body_node_index]`
   /// contains `Zb_Bo_W` for the body B with node index `body_node_index`.
-  void CalcArticulatedBodyForceBiasCache(
+  void CalcArticulatedBodyForceBias(
       const systems::Context<T>& context,
-      std::vector<SpatialForce<T>>* Zb_Bo_W_cache) const;
+      std::vector<SpatialForce<T>>* Zb_Bo_W_all) const;
 
   /// @}
 
@@ -2521,23 +2555,55 @@ class MultibodyTree {
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // Shift bias spatial acceleration from the origin Ao of body A to a
-  // point Bp of (fixed to) a frame B, where frame B is fixed/welded to body A.
-  // @param[in] context The state of the multibody system.
-  // @param[in] frame_B The frame on which point Bp is fixed/welded.
-  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to a point
-  // Bp (regarded as fixed to B), expressed in frame_B.
-  // @param[in] body_A The body on which frame_B is fixed/welded.
-  // @param[in] A𝑠Bias_WA_W Point Ao's spatial acceleration bias in frame W
-  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
-  // @returns  A𝑠Bias_WBp_W Point Bp's spatial acceleration bias in frame W
-  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
-  SpatialAcceleration<T> ShiftSpatialAccelerationBiasInWorld(
+  // For a frame Fp that is fixed/welded to a frame_F, this method computes
+  // A_AFp_E, Fp's spatial acceleration in a body_A, expressed in a frame_E.
+  // @param[in] context Contains the state of the multibody system.
+  // @param[in] frame_F Frame Fp is fixed/welded to frame_F and frame_F is
+  //  fixed/welded to a body_B.
+  // @param[in] p_FoFp_F Position vector from Fo (frame_F's origin) to the
+  //   the origin of frame_Fp, expressed in frame_F.
+  // @param[in] body_A The rigid body whose body-frame measures A_AFp_E.
+  // @param[in] frame_E The frame in which A_AFp_E is expressed on output.
+  // @param[in] A_WB_W The spatial acceleration of body_B in world frame W,
+  //   expressed in W (body_B is the body to which frame_F is fixed/welded).
+  // @param[in] A_WA_W The spatial acceleration of body_A in world frame W,
+  //   expressed in W.
+  // @returns A_AFp_E Fp's spatial acceleration in body_A, expressed in frame_E.
+  // @note To use this method for a bias spatial acceleration in world frame W,
+  // expressed in W with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), instead pass
+  // A𝑠Bias_WB_W (body_B's bias spatial acceleration in W expressed in W) and
+  // A𝑠Bias_WA_W (body_A's bias spatial acceleration in W expressed in W),
+  // in which case the method returns A𝑠Bias_AFp_E (Fp's bias spatial
+  // acceleration in body_A, expressed in frame_E, with respect to speeds 𝑠.
+  SpatialAcceleration<T> CalcSpatialAccelerationHelper(
       const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Body<T>& body_A,
+      const Frame<T>& frame_E,
+      const SpatialAcceleration<T>& A_WB_W,
+      const SpatialAcceleration<T>& A_WA_W) const;
+
+  // For a frame Bp fixed/welded to both a frame_B and a body_A, this method
+  // shifts spatial acceleration in the world frame W from body_A to frame_Bp.
+  // @param[in] frame_B A frame that is fixed/welded to body_A.
+  //            frame_Bp is fixed to frame_B, shifted by p_BoBp_B.
+  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to the
+  //            origin of frame_Bp, expressed in frame_B.
+  // @param[in] A_WA_W body_A's spatial acceleration in W, expressed in W.
+  // @param[in] pc Contains the position kinematics for this multibody system.
+  // @param[in] pc Contains the velocity kinematics for this multibody system.
+  // @returns A_WBp_W Frame Bp's spatial acceleration in W, expressed in W.
+  // @note To use this method for a bias spatial acceleration, instead pass
+  // A𝑠Bias_WAo_W (body_A's bias spatial acceleration in W expressed in W with
+  // respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v)). It then returns A𝑠Bias_WBp_W (point
+  // Bp's bias spatial acceleration in W, expressed in W with respect to 𝑠).
+  SpatialAcceleration<T> ShiftSpatialAccelerationInWorld(
       const Frame<T>& frame_B,
       const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
-      const SpatialAcceleration<T>& AsBias_WA_W) const;
+      const SpatialAcceleration<T>& A_WA_W,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc) const;
 
   // For all bodies, calculate bias spatial acceleration in the world frame W.
   // @param[in] context The state of the multibody system.
@@ -2589,6 +2655,12 @@ class MultibodyTree {
     return tree_system_->EvalSpatialInertiaInWorldCache(context);
   }
 
+  const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalCompositeBodyInertiaInWorldCache(context);
+  }
+
   // Evaluates the cache entry stored in context with the bias term
   // Fb_Bo_W(q, v) for each body. These will be updated as needed.
   const std::vector<SpatialForce<T>>& EvalDynamicBiasCache(
@@ -2605,10 +2677,10 @@ class MultibodyTree {
   }
 
   // See CalcArticulatedBodyForceBiasCache() for details.
-  const std::vector<SpatialForce<T>>& EvalArticulatedBodyVelocityBiasCache(
+  const std::vector<SpatialForce<T>>& EvalArticulatedBodyForceBiasCache(
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
-    return tree_system_->EvalArticulatedBodyVelocityBiasCache(context);
+    return tree_system_->EvalArticulatedBodyForceBiasCache(context);
   }
 
   // Given the state of this model in `context` and a known vector
@@ -2855,7 +2927,7 @@ class MultibodyTree {
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.
-  std::vector<const Frame<T>*> frames_;
+  std::vector<Frame<T>*> frames_;
 
   // The gravity field force element.
   UniformGravityFieldElement<T>* gravity_field_{nullptr};

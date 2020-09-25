@@ -14,6 +14,7 @@ drake_cc_test(
     name = "cassie_bench",
     srcs = ["test/cassie_bench.cc"],
     data = ["cassie_v2.urdf"],
+    linkstatic = True,
     deps = [
         "//common:essential",
         "//common:find_resource",
@@ -28,7 +29,16 @@ sh_test(
     name = "record_results",
     size = "small",
     srcs = ["record_results.sh"],
-    data = [":cassie_bench"],
+    # Debug-configured test runs are nice for coverage, but not very useful
+    # otherwise. Don't waste too much time on them.
+    args = select({
+        "//tools/cc_toolchain:debug": ["--benchmark_repetitions=1"],
+        "//conditions:default": [],
+    }),
+    data = [
+        ":cassie_bench",
+        "//tools/workspace/cc:identify_compiler",
+    ],
     tags = ["no_valgrind_tools"],
 )
 

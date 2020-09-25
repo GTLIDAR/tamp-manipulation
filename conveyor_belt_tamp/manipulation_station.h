@@ -25,8 +25,17 @@ using math::RigidTransform;
 /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
+/// Determines which schunk model is used for the ManipulationStation.
+/// - kBox loads a model with a box collision geometry. This model is for those
+///   who want simplified collision behavior.
+/// - kBoxPlusFingertipSpheres loads a Schunk model with collision
+///   spheres that models the indentations at tip of the fingers, in addition
+///   to the box collision geometry on the fingers.
+enum class SchunkCollisionModel { kBox, kBoxPlusFingertipSpheres };
+
 /// Determines which manipulation station is simulated.
-enum class Setup { kNone, kConveyorBelt , kObjectSorting};
+enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa
+                  , kConveyorBelt , kObjectSorting };
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -44,32 +53,35 @@ enum class Setup { kNone, kConveyorBelt , kObjectSorting};
 /// structure for IIWA and several RGBD cameras.  Alternative Setup___()
 /// methods are provided, as well.
 ///
-/// @system{ ManipulationStation,
-///   @input_port{iiwa_position}
-///   @input_port{iiwa_feedforward_torque}
-///   @input_port{wsg_position}
-///   @input_port{wsg_force_limit},
-///   @output_port{iiwa_position_commanded}
-///   @output_port{iiwa_position_measured}
-///   @output_port{iiwa_velocity_estimated}
-///   @output_port{iiwa_state_estimated}
-///   @output_port{iiwa_torque_commanded}
-///   @output_port{iiwa_torque_measured}
-///   @output_port{iiwa_torque_external}
-///   @output_port{wsg_state_measured}
-///   @output_port{wsg_force_measured}
-///   @output_port{camera_[NAME]_rgb_image}
-///   @output_port{camera_[NAME]_depth_image}
-///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
-///   @output_port{...}
-///   @output_port{camera_[NAME]_rgb_image}
-///   @output_port{camera_[NAME]_depth_image}
-///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
-///   @output_port{<b style="color:orange">pose_bundle</b>}
-///   @output_port{<b style="color:orange">contact_results</b>}
-///   @output_port{<b style="color:orange">plant_continuous_state</b>}
-///   @output_port{<b style="color:orange">geometry_poses</b>}
-/// }
+/// @system
+/// name: ManipulationStation
+/// input_ports:
+/// - iiwa_position
+/// - iiwa_feedforward_torque (optional)
+/// - wsg_position
+/// - wsg_force_limit (optional)
+/// output_ports:
+/// - iiwa_position_commanded
+/// - iiwa_position_measured
+/// - iiwa_velocity_estimated
+/// - iiwa_state_estimated
+/// - iiwa_torque_commanded
+/// - iiwa_torque_measured
+/// - iiwa_torque_external
+/// - wsg_state_measured
+/// - wsg_force_measured
+/// - camera_[NAME]_rgb_image
+/// - camera_[NAME]_depth_image
+/// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - ...
+/// - camera_[NAME]_rgb_image
+/// - camera_[NAME]_depth_image
+/// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - <b style="color:orange">pose_bundle</b>
+/// - <b style="color:orange">contact_results</b>
+/// - <b style="color:orange">plant_continuous_state</b>
+/// - <b style="color:orange">geometry_poses</b>
+/// @endsystem
 ///
 /// Each pixel in the output image from `depth_image` is a 16bit unsigned
 /// short in millimeters.
@@ -114,7 +126,7 @@ enum class Setup { kNone, kConveyorBelt , kObjectSorting};
 /// To add objects into the environment for the robot to manipulate, use,
 /// e.g.:
 /// @code
-/// StationSimulation<double> station;
+/// ManipulationStation<double> station;
 /// Parser parser(&station.get_mutable_multibody_plant(),
 ///                &station.get_mutable_scene_graph());
 /// parser.AddModelFromFile("my.sdf", "my_model");
@@ -140,11 +152,51 @@ class ManipulationStation : public systems::Diagram<T> {
   explicit ManipulationStation(double time_step = 0.002);
 
   void SetupObjectSortingStation(
-    IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision
+    IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision,
+    SchunkCollisionModel schunk_model = SchunkCollisionModel::kBoxPlusFingertipSpheres
   );
 
   void SetupConveyorBeltStation(
-    IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+    IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision,
+    SchunkCollisionModel schunk_model = SchunkCollisionModel::kBoxPlusFingertipSpheres
+  );
+
+  /// Adds a default iiwa, wsg, two bins, and a camera, then calls
+  /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
+  /// the appropriate arguments.
+  /// @note Must be called before Finalize().
+  /// @note Only one of the `Setup___()` methods should be called.
+  /// @param X_WCameraBody Transformation between the world and the camera body.
+  /// @param collision_model Determines which sdf is loaded for the IIWA.
+  /// @param schunk_model Determines which sdf is loaded for the Schunk.
+  void SetupClutterClearingStation(
+      const std::optional<const math::RigidTransformd>& X_WCameraBody = {},
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision,
+      SchunkCollisionModel schunk_model = SchunkCollisionModel::kBox);
+
+  /// Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT
+  /// Intelligent Robot Manipulation class, then calls
+  /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
+  /// the appropriate arguments.
+  /// @note Must be called before Finalize().
+  /// @note Only one of the `Setup___()` methods should be called.
+  /// @param collision_model Determines which sdf is loaded for the IIWA.
+  /// @param schunk_model Determines which sdf is loaded for the Schunk.
+  void SetupManipulationClassStation(
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision,
+      SchunkCollisionModel schunk_model = SchunkCollisionModel::kBox);
+
+  /// Adds a version of the iiwa with joints that would result in
+  /// out-of-plane rotations welded in a fixed orientation, reducing the
+  /// total degrees of freedom of the arm to 3.  This arm lives in the X-Z
+  /// plane.  Also adds the WSG planar gripper and two tables to form the
+  /// workspace.  Note that additional floating base objects (aka
+  /// manipulands) will still potentially move in 3D.
+  /// @note Must be called before Finalize().
+  /// @note Only one of the `Setup___()` methods should be called.
+  /// @param schunk_model Determines which sdf is loaded for the Schunk.
+  void SetupPlanarIiwaStation(
+      SchunkCollisionModel schunk_model = SchunkCollisionModel::kBox);
 
   /// Sets the default State for the chosen setup.
   /// @param context A const reference to the ManipulationStation context.
@@ -446,10 +498,10 @@ class ManipulationStation : public systems::Diagram<T> {
   void MakeIiwaControllerModel();
 
   void AddDefaultIiwa(const IiwaCollisionModel collision_model);
-  void AddDefaultWsg();
+  void AddDefaultWsg(const SchunkCollisionModel schunk_model);
 
   void AddLidarIiwa(const IiwaCollisionModel collision_model, const RigidTransform<double> X_WI);
-  void AddLidarWsg();
+  void AddLidarWsg(const SchunkCollisionModel schunk_model);
 
   // These are only valid until Finalize() is called.
   std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;

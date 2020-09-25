@@ -13,7 +13,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     unsigned int N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 10; //100;
+    unsigned int iterMax = 15; //100;
 
     #if useILQRSolver
         ILQRSolver::traj lastTraj;
@@ -69,7 +69,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
         commandVecTab_t u_0;
         u_0.resize(N);
         for(unsigned i=0;i<N;i++){
-          u_0[i].head(7) = gtau_wb;
+          u_0[i].head(7) = - gtau_wb;
         }
         //======================================
         #if WHOLE_BODY

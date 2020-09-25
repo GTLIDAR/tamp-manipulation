@@ -119,18 +119,18 @@ class RobotPlanRunner {
             iiwa_command_.joint_position.resize(iiwa_command_.num_joints);
             iiwa_command_.joint_torque.resize(iiwa_command_.num_torques);
 
-            // if (manip_traj_.dim_torques) {
-            //     iiwa_command_.joint_position = iiwa_status_.joint_position_measured;
-            //     for (int i=0; i<kNumIiwaJoints; i++) {
-            //         iiwa_command_.joint_torque[i] =
-            //             manip_traj_.torques[cur_traj_idx_][i+kIiwaTorqueStartIdx];
-            //     }
-            // } else {
-            for (int i=0; i<kNumIiwaJoints; i++) {
-                iiwa_command_.joint_position[i] =
-                    manip_traj_.states[cur_traj_idx_][i+kIiwaTorqueStartIdx];
+            if (manip_traj_.dim_torques) {
+                iiwa_command_.joint_position = iiwa_status_.joint_position_measured;
+                for (int i=0; i<kNumIiwaJoints; i++) {
+                    iiwa_command_.joint_torque[i] =
+                        manip_traj_.torques[cur_traj_idx_][i+kIiwaTorqueStartIdx];
+                }
+            } else {
+                for (int i=0; i<kNumIiwaJoints; i++) {
+                    iiwa_command_.joint_position[i] =
+                        manip_traj_.states[cur_traj_idx_][i+kIiwaTorqueStartIdx];
+                }
             }
-            // }
 
             lcm_.publish(kLcmCommandChannel, &iiwa_command_);
 

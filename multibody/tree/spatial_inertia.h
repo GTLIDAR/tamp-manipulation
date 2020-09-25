@@ -447,8 +447,9 @@ class SpatialInertia {
   /// stores the spatial vector in F⁶ result of multiplying `this` spatial
   /// inertia with the j-th column of `Mmatrix`.
   template <typename Derived>
-  Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> operator*(
-      const Eigen::MatrixBase<Derived>& Mmatrix) const {
+  Eigen::Matrix<T, 6, Derived::ColsAtCompileTime, 0, 6,
+                Derived::MaxColsAtCompileTime>
+  operator*(const Eigen::MatrixBase<Derived>& Mmatrix) const {
     static_assert(is_eigen_scalar_same<Derived, T>::value,
                   "Derived must be templated on the same scalar type as this "
                   "spatial inertia.");
@@ -460,7 +461,9 @@ class SpatialInertia {
     const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
     const Matrix3<T> I_SP_E = CalcRotationalInertia().CopyToFullMatrix3();
 
-    Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> F_Bo_E(6, Mmatrix.cols());
+    Eigen::Matrix<T, 6, Derived::ColsAtCompileTime, 0, 6,
+                  Derived::MaxColsAtCompileTime>
+        F_Bo_E(6, Mmatrix.cols());
 
     // Rotational component.
     F_Bo_E.template topRows<3>() =
@@ -514,7 +517,7 @@ class SpatialInertia {
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.
 /// Especially useful for debugging.
 /// @relates SpatialInertia
-template <typename T> inline
+template <typename T>
 std::ostream& operator<<(std::ostream& o,
                          const SpatialInertia<T>& M) {
   return o << std::endl

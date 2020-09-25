@@ -24,6 +24,7 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_engine_ospray_factory.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/scene_graph.h"
@@ -112,6 +113,33 @@ void def_geometry_render(py::module m) {
       doc.MakeRenderEngineVtk.doc);
 
   {
+    using Class = OsprayMode;
+    constexpr auto& cls_doc = doc.OsprayMode;
+    py::enum_<Class>(m, "OsprayMode", cls_doc.doc)
+        .value("kRayTracer", Class::kRayTracer, cls_doc.kRayTracer.doc)
+        .value("kPathTracer", Class::kPathTracer, cls_doc.kPathTracer.doc);
+  }
+
+  {
+    using Class = RenderEngineOsprayParams;
+    constexpr auto& cls_doc = doc.RenderEngineOsprayParams;
+    py::class_<Class>(m, "RenderEngineOsprayParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("mode", &Class::mode, cls_doc.mode.doc)
+        .def_readwrite("default_diffuse", &Class::default_diffuse,
+            cls_doc.default_diffuse.doc)
+        .def_readwrite("background_color", &Class::background_color,
+            cls_doc.background_color.doc)
+        .def_readwrite("samples_per_pixel", &Class::samples_per_pixel,
+            cls_doc.samples_per_pixel.doc)
+        .def_readwrite(
+            "use_shadows", &Class::use_shadows, cls_doc.use_shadows.doc);
+  }
+
+  m.def("MakeRenderEngineOspray", &MakeRenderEngineOspray, py::arg("params"),
+      doc.MakeRenderEngineOspray.doc);
+
+  {
     py::class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
     render_label
         .def(py::init<int>(), py::arg("value"), doc.RenderLabel.ctor.doc_1args)
@@ -173,6 +201,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetSourceName.doc)
         .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
             cls_doc.GetFrameId.doc)
+        .def("GetGeometries", &Class::GetGeometries, py::arg("frame_id"),
+            py::arg("role") = std::nullopt, cls_doc.GetGeometries.doc)
         .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
             py::arg("frame_id"), py::arg("role"), py::arg("name"),
             cls_doc.GetGeometryIdByName.doc)
@@ -839,15 +869,36 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init(), doc.GeometrySet.ctor.doc);
   }
 
-  py::class_<ProximityProperties, GeometryProperties>(
-      m, "ProximityProperties", doc.ProximityProperties.doc)
-      .def(py::init(), doc.ProximityProperties.ctor.doc);
-  py::class_<IllustrationProperties, GeometryProperties>(
-      m, "IllustrationProperties", doc.IllustrationProperties.doc)
-      .def(py::init(), doc.IllustrationProperties.ctor.doc);
-  py::class_<PerceptionProperties, GeometryProperties>(
-      m, "PerceptionProperties", doc.PerceptionProperties.doc)
-      .def(py::init(), doc.PerceptionProperties.ctor.doc);
+  // ProximityProperties
+  {
+    py::class_<ProximityProperties, GeometryProperties> cls(
+        m, "ProximityProperties", doc.ProximityProperties.doc);
+    cls.def(py::init(), doc.ProximityProperties.ctor.doc)
+        .def(py::init<const ProximityProperties&>(), py::arg("other"),
+            "Creates a copy of the properties");
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // IllustrationProperties
+  {
+    py::class_<IllustrationProperties, GeometryProperties> cls(
+        m, "IllustrationProperties", doc.IllustrationProperties.doc);
+    cls.def(py::init(), doc.IllustrationProperties.ctor.doc)
+        .def(py::init<const IllustrationProperties&>(), py::arg("other"),
+            "Creates a copy of the properties");
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // PerceptionProperties
+  {
+    py::class_<PerceptionProperties, GeometryProperties> cls(
+        m, "PerceptionProperties", doc.PerceptionProperties.doc);
+    cls.def(py::init(), doc.PerceptionProperties.ctor.doc)
+        .def(py::init<const PerceptionProperties&>(), py::arg("other"),
+            "Creates a copy of the properties");
+    DefCopyAndDeepCopy(&cls);
+  }
+
   m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,
       py_rvp::reference_internal, py::arg("diffuse"),
       doc.MakePhongIllustrationProperties.doc);
