@@ -22,6 +22,8 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/common/find_resource.h"
 #include "drake/traj_gen/ilqr_kkt/robot_time_sender.h"
+#include "drake/traj_gen/ilqr_kkt/object/object_status_sender.h"
+#include "drake/traj_gen/ilqr_kkt/object/object_status_receiver.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
@@ -34,6 +36,7 @@
 #include "drake/lcmt_generic_string_msg.hpp"
 #include "drake/lcmt_combined_object_state.hpp"
 #include "drake/lcmt_robot_time.hpp"
+#include "drake/lcmt_object_status.hpp"
 
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -47,10 +50,14 @@ using drake::examples::kuka_iiwa_arm::IiwaStatusSender;
 using drake::examples::kuka_iiwa_arm::kIiwaLcmStatusPeriod;
 using drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
 
-// using drake::manipulation::schunk_wsg::SchunkWsgStatusSender;
-// using drake::manipulation::schunk_wsg::SchunkWsgStatusReceiver;
-// using drake::manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod;
-// using drake::manipulation::schunk_wsg::kSchunkWsgNumPositions;
+using drake::manipulation::schunk_wsg::SchunkWsgStatusSender;
+using drake::manipulation::schunk_wsg::SchunkWsgStatusReceiver;
+using drake::manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod;
+using drake::manipulation::schunk_wsg::kSchunkWsgNumPositions;
+
+using drake::traj_gen::kuka_iiwa_arm::ObjectStatusReceiver;
+using drake::traj_gen::kuka_iiwa_arm::ObjectStatusSender;
+using drake::traj_gen::kuka_iiwa_arm::kObjectLcmStatusPeriod;
 
 using drake::traj_gen::kuka_iiwa_arm::RobotTimeSender;
 
@@ -84,11 +91,11 @@ void DoMain(){
 
     std::string kIiwaUrdf = 
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
-    // std::string schunkPath = 
-    //     FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-    // std::string connectorPath = 
-    //     FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
-    // const std::string box_sdf_path0 = "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf";
+    std::string schunkPath = 
+        FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_ball_contact.sdf");
+    std::string connectorPath = 
+        FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
+    const std::string box_sdf_path0 = "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf";
     
     const ModelInstanceIndex iiwa_model = 
         parser.AddModelFromFile(kIiwaUrdf, "iiwa");
@@ -96,30 +103,31 @@ void DoMain(){
     RigidTransformd X_WI(Eigen::Vector3d(0, 0, 0));
     plant_.WeldFrames(plant_.world_frame(), iiwa_base_frame, X_WI);
 
-    // const ModelInstanceIndex conn_model = 
-    //     parser.AddModelFromFile(connectorPath, "connector");
-    // const auto& iiwa_ee_frame = plant_.GetFrameByName("iiwa_frame_ee", iiwa_model);
-    // const auto& conn_frame = plant_.GetFrameByName("connector_link", conn_model);
-    // RigidTransformd X_EC(Eigen::Vector3d(0, 0, 0));
-    // plant_.WeldFrames(iiwa_ee_frame, conn_frame, X_EC);
+    const ModelInstanceIndex conn_model = 
+        parser.AddModelFromFile(connectorPath, "connector");
+    const auto& iiwa_ee_frame = plant_.GetFrameByName("iiwa_frame_ee", iiwa_model);
+    const auto& conn_frame = plant_.GetFrameByName("connector_link", conn_model);
+    RigidTransformd X_EC(Eigen::Vector3d(0, 0, 0));
+    plant_.WeldFrames(iiwa_ee_frame, conn_frame, X_EC);
 
-    // const ModelInstanceIndex wsg_model = 
-    //     parser.AddModelFromFile(schunkPath, "wsg");
-    // const auto& wsg_frame = plant_.GetFrameByName("body", wsg_model);
-    // RigidTransformd X_EG(RollPitchYaw<double>(0, 0, M_PI_2),
-    //                             Vector3d(0, 0, 0.0175));
-    // plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
+    const ModelInstanceIndex wsg_model = 
+        parser.AddModelFromFile(schunkPath, "wsg");
+    const auto& wsg_frame = plant_.GetFrameByName("body", wsg_model);
+    RigidTransformd X_EG(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                    Vector3d(0, 0, 0.053));
+    plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
     // const ModelInstanceIndex object_model =
-    // parser.AddModelFromFile(FindResourceOrThrow(box_sdf_path0), "object");
+    parser.AddModelFromFile(FindResourceOrThrow(box_sdf_path0), "object");
 
     plant_.Finalize();
 
-    unsigned int num_robots = 0;
-    num_robots++;
+    unsigned int num_robots = 3;
     std::vector<int> all_joints;
     all_joints.resize(num_robots,0);
-    all_joints[0] = kIiwaArmNumJoints;
+    all_joints[0] = 7;
+    all_joints[1] = kIiwaArmNumJoints;
+    all_joints[2] = kSchunkWsgNumPositions;
     // ------------------------- SYSTEM CREATION ---------------------------------
     // Create LCM
     auto lcm = builder.AddSystem<drake::systems::lcm::LcmInterfaceSystem>();
@@ -139,12 +147,21 @@ void DoMain(){
     iiwa_time_sender->set_name("iiwa_time_sender");
 
     // wsg lcm
-    // auto wsg_status_sub = builder.AddSystem(
-    // systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_schunk_wsg_status>(
-    //   "WSG_STATUS", lcm));
-    // wsg_status_sub->set_name("wsg_state_subscriber");
-    // auto wsg_status_rec = builder.AddSystem<SchunkWsgStatusReceiver>();
-    // wsg_status_rec->set_name("wsg_status_receiver");
+    auto wsg_status_sub = builder.AddSystem(
+    systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_schunk_wsg_status>(
+      "WSG_STATUS", lcm));
+    wsg_status_sub->set_name("wsg_state_subscriber");
+    auto wsg_status_rec = builder.AddSystem<SchunkWsgStatusReceiver>();
+    wsg_status_rec->set_name("wsg_status_receiver");
+    
+    // object lcm
+    auto object_state_subscriber = builder.AddSystem(
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_object_status>(
+          "OBJECT_STATUS", lcm));
+    object_state_subscriber->set_name("object_state_subscriber");
+    auto object_state_receiver =
+        builder.AddSystem<ObjectStatusReceiver>(7);
+    object_state_receiver->set_name("object_state_receiver");
 
     // Plug in all plant state quantities
     std::vector<int> mux_sizes;
@@ -158,18 +175,25 @@ void DoMain(){
     // Robot states to geometry visualization system
     auto robot_to_pose =
             builder.AddSystem<MultibodyPositionToGeometryPose<double>>(plant_);
-
+    // iiwa
     builder.Connect(iiwa_status_sub->get_output_port(),
-                  iiwa_status_rec->get_input_port());
+                    iiwa_status_rec->get_input_port());
     builder.Connect(iiwa_status_rec->get_position_measured_output_port(),
-                    plant_states_mux->get_input_port(0));
+                    plant_states_mux->get_input_port(1));
     builder.Connect(iiwa_time_sender->get_output_port(),
                     iiwa_time_pub->get_input_port());
 
-    // builder.Connect(wsg_status_sub->get_output_port(),
-    //                 wsg_status_rec->get_status_input_port());
-    // builder.Connect(wsg_status_rec->get_gripper_position_output_port(),
-    //                 plant_states_mux->get_input_port(wsg_id));
+    // wsg
+    builder.Connect(wsg_status_sub->get_output_port(),
+                    wsg_status_rec->get_status_input_port());
+    builder.Connect(wsg_status_rec->get_state_output_port(),
+                    plant_states_mux->get_input_port(2));
+
+    // obj
+    builder.Connect(object_state_subscriber->get_output_port(),
+                    object_state_receiver->get_input_port());
+    builder.Connect(object_state_receiver->get_position_measured_output_port(),
+                    plant_states_mux->get_input_port(0));
 
     // Visualization connections
     builder.Connect(plant_states_mux->get_output_port(0),
@@ -182,7 +206,13 @@ void DoMain(){
     auto diagram = builder.Build();
     auto context = diagram->CreateDefaultContext();
 
-    // Set initial states
+    // TODO: Set initial states for object and kuka (just for better visualization)
+    // Eigen::VectorXd init_multi_object_state(7);
+    // for(int i = 0; i < 7; i++)
+    // {
+    //     init_multi_object_state[i] = root["multi_object_position_1"][temp][i].asDouble();
+    // }
+    // multi_object_state_receiver->SetInitialPosition(init_multi_object_state);
 
     // Set up simulator.
     auto simulator = std::make_unique<Simulator<double>>(*diagram, std::move(context));

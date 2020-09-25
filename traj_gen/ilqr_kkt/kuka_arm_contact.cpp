@@ -391,7 +391,7 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         VectorXd Cv(plant_->num_velocities()); 
         plant_->CalcBiasTerm(*context, &Cv);
         //=============================================
-        vd = (M_.inverse()*(tau - tau_g - Cv));
+        vd = (M_.inverse()*(tau + tau_g - Cv));
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){

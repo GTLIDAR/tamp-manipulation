@@ -364,6 +364,14 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "object",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_object_status.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "panda",
     lcm_package = "drake",
     lcm_srcs = [
@@ -422,6 +430,7 @@ LCMTYPES_CC = [
     ":jaco",
     ":joint_pd_override",
     ":manipulator_plan_move_end_effector",
+    ":object",
     ":panda",
     ":piecewise_polynomial",
     ":planar_manipuland_status",

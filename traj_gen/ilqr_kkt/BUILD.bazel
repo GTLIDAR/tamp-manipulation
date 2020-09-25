@@ -173,6 +173,7 @@ drake_cc_binary(
         "@gflags",
         "@jsoncpp",
         "@lcm",
+        "//traj_gen/ilqr_kkt/object:object",
         "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//examples/kuka_iiwa_arm:iiwa_common",

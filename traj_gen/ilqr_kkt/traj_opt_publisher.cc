@@ -17,6 +17,8 @@
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_robot_time.hpp"
+#include "drake/lcmt_object_status.hpp"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -97,7 +99,7 @@ public:
         std::string kIiwaUrdf = 
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
         std::string schunkPath = 
-          FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+          FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_ball_contact.sdf");
         std::string connectorPath = 
           FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
         const std::string box_sdf_path0 = "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf";
@@ -122,8 +124,8 @@ public:
         const ModelInstanceIndex wsg_model = 
           parser.AddModelFromFile(schunkPath, "wsg");
         const auto& wsg_frame = plant_.GetFrameByName("body", wsg_model);
-        RigidTransformd X_EG(RollPitchYaw<double>(0, 0, M_PI_2),
-                                    Vector3d(0, 0, 0.0175));
+        RigidTransformd X_EG(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                        Vector3d(0, 0, 0.053));
         plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
         const ModelInstanceIndex object_model =
@@ -148,9 +150,9 @@ public:
         commandVecTab_t u_0;
         u_0.resize(N);
         for(unsigned i=0;i<N;i++){
-          u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
+          // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
           // cout << "u_0: " << u_0[i].transpose() << endl;
-          // u_0[i].setZero();
+          u_0[i].setZero();
         }
         //======================================
         KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_);
@@ -378,7 +380,7 @@ int do_main_kkt(){
     stateVec_t xinit,xgoal;
     double time_horizon = 2;
     double time_step = 0.001;
-    double publish_rate = 1.0;
+    double publish_rate = 0.5;
     xinit << 0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     // xinit << 0, 0, 0, 0, 0, 0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     xgoal << 1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
