@@ -85,7 +85,7 @@ public:
                         &TrajOptPublisher::HandleRobotTime, this);
     }
 
-    void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step, double publish_rate){
+    void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step, double realtime_rate){
         struct timeval tbegin,tend;
         double texec = 0.0;
         double dt = time_step;
@@ -320,7 +320,7 @@ public:
             // Note: utime is in microseconds
             iiwa_state.utime = robot_time_.utime;
             // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
-            step_ = int((robot_time_.utime / 1000)*(0.001*publish_rate/(time_step/InterpolationScale)));
+            step_ = int((robot_time_.utime / 1000)*(0.001*realtime_rate/(time_step/InterpolationScale)));
 
             std::cout << step_ << std::endl;
             
@@ -409,13 +409,13 @@ int do_main_kkt(){
     stateVec_t xinit,xgoal;
     double time_horizon = 2;
     double time_step = 0.001;
-    double publish_rate = 0.2;
+    double realtime_rate = 0.2;
     xinit << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
     0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
 
     xgoal << 1, 0, 0, 0, 0.48, 0.2, 0.25, 0, 0, 0, 0, 0, 0,
     1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    pub.Run_test(xinit, xgoal, time_horizon, time_step, publish_rate);
+    pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate);
 
     return 0;
 }
