@@ -13,7 +13,7 @@
 #define DISABLE_QPBOX 1
 #define ENABLE_FULLDDP 0
 #define DISABLE_FULLDDP 1
-#define WHOLE_BODY 1
+#define INCLUDE_OBJECT 1
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD
@@ -21,15 +21,15 @@
 #define NUMBER_OF_THREAD 1 //12
 #endif
 
-// #if WHOLE_BODY
-// #define stateSize 18 
-// #define commandSize 9 
-// #define fullstatecommandSize 27 
-// #else
+#if INCLUDE_OBJECT
+#define stateSize 27 // object: 7+6; kuka: 7+7 (the joints for wsg cannot be optimized)
+#define commandSize 7 
+#define fullstatecommandSize 34 // add the size of torques
+#else
 #define stateSize 14
 #define commandSize 7
 #define fullstatecommandSize 21
-// #endif
+#endif
 
 // #define TimeHorizon 2
 // #define TimeStep 0.005

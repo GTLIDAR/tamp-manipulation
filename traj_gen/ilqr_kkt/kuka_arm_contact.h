@@ -15,6 +15,7 @@
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/quaternion.h"
 
 #include <cstdio>
 #include <Eigen/Dense>
@@ -49,6 +50,7 @@ using drake::math::RigidTransformd;
 using drake::multibody::MultibodyForces;
 using drake::multibody::ModelInstanceIndex;
 using drake::math::RollPitchYaw;
+using drake::math::CalculateQuaternionDtFromAngularVelocityExpressedInB;
 using drake::multibody::JacobianWrtVariable;
 
 namespace drake {

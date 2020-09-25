@@ -6,20 +6,47 @@ namespace kuka_iiwa_arm {
 
 CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N)
 {
-    pos_scale = 10;
-    vel_scale = 10;
-    pos_f_scale = 1000;//0.001;
-    vel_f_scale = 10;//10;
-    torqoe_scale = 1;//100;
+    
 
     // initial, final costs (pos ,vel)
     // torque cost
     // l = sigma(xQx+uRu) + xfQfxf
-    QDiagElementVec << pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100,
-                        vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10;
-    QfDiagElementVec << pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0,
-                        vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0;
-    RDiagElementVec << torqoe_scale*0.005, torqoe_scale*0.005, torqoe_scale*0.007, torqoe_scale*0.007, torqoe_scale*0.02, torqoe_scale*0.02, torqoe_scale*0.05;
+    if(INCLUDE_OBJECT){
+        // num_state = 27; object=7+6; kuka=7+7
+        double pos_obj_scale = 10;
+        double vel_obj_scale = 10;
+        double pos_obj_f_scale = 1000;//0.001;
+        double vel_obj_f_scale = 10;//10;
+        double torqoe_scale = 1;//100;
+        
+        double pos_iiwa_scale = 1;
+        double vel_iiwa_scale = 1;
+        double pos_iiwa_f_scale = 100;//0.001;
+        double vel_iiwa_f_scale = 1;//10;
+
+        QDiagElementVec << pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100,
+                            vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10,
+                            pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100,
+                            vel_iiwa_scale*10, vel_iiwa_scale*10, vel_iiwa_scale*10, vel_iiwa_scale*10, vel_iiwa_scale*10, vel_iiwa_scale*10, vel_iiwa_scale*10;
+        QfDiagElementVec << pos_obj_f_scale*1000.0, pos_obj_f_scale*1000.0, pos_obj_f_scale*1000.0, pos_obj_f_scale*1000.0, pos_obj_f_scale*1000.0, pos_obj_f_scale*1000.0, pos_obj_f_scale*1000.0,
+                            vel_obj_f_scale*100.0, vel_obj_f_scale*100.0, vel_obj_f_scale*100.0, vel_obj_f_scale*100.0, vel_obj_f_scale*100.0, vel_obj_f_scale*100.0, vel_obj_f_scale*100.0,
+                            pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0,
+                            vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0;
+        RDiagElementVec << torqoe_scale*0.005, torqoe_scale*0.005, torqoe_scale*0.007, torqoe_scale*0.007, torqoe_scale*0.02, torqoe_scale*0.02, torqoe_scale*0.05;
+    }
+    else{
+        double pos_scale = 10;
+        double vel_scale = 10;
+        double pos_f_scale = 1000;//0.001;
+        double vel_f_scale = 10;//10;
+        double torqoe_scale = 1;//100;
+
+        QDiagElementVec << pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100, pos_scale*100,
+                            vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10;
+        QfDiagElementVec << pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0,
+                            vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0;
+        RDiagElementVec << torqoe_scale*0.005, torqoe_scale*0.005, torqoe_scale*0.007, torqoe_scale*0.007, torqoe_scale*0.02, torqoe_scale*0.02, torqoe_scale*0.05;
+    }
 
     Q = QDiagElementVec.asDiagonal();
     Qf = QfDiagElementVec.asDiagonal();

@@ -233,73 +233,117 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
     if(finalTimeProfile.counter0_ == 10)
         gettimeofday(&tbegin_period,NULL);
 
-    q << X.head(stateSize/2);
-    qd << X.tail(stateSize/2);
 
-    if(WHOLE_BODY){
+    if(INCLUDE_OBJECT){
+        // object: 7+6; kuka: 7+7 (the joints for wsg cannot be optimized)
+        VectorXd q_obj = X.topRows(7);
+        Vector4d qua_obj = X.topRows(4); // w, x, y, z
+        VectorXd pos_obj = X.middleRows<3>(4);
+
+        VectorXd qd_obj = X.middleRows<6>(7);
+        Vector3<double> ang_d_obj = X.middleRows<3>(7);
+        VectorXd pos_d_obj = X.middleRows<3>(10);
+
+        VectorXd q_iiwa = X.middleRows<7>(13);
+        VectorXd qd_iiwa = X.bottomRows(7);
+
+        Eigen::Matrix<double,9,1> q_iiwa_full;
+        Eigen::Matrix<double,9,1> qd_iiwa_full;
+        q_iiwa_full.setZero();
+        qd_iiwa_full.setZero();
+        q_iiwa_full.topRows(7)=q_iiwa;
+        qd_iiwa_full.topRows(7)=qd_iiwa;
+
+        Quaternion<double> qua_obj_eigen(qua_obj);
+
+        math::RigidTransform<double> X_WO(qua_obj_eigen, pos_obj);
+
+        auto context_ptr = plant_->CreateDefaultContext();
+        auto context = context_ptr.get();
+        auto object_model = plant_->GetModelInstanceByName("object");
+        auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
+        // auto wsg_model = plant_->GetModelInstanceByName("wsg");
+
+        plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link_cracker", object_model), X_WO);
+        plant_->SetPositions(context, iiwa_model, q_iiwa);
+        plant_->SetVelocities(context, iiwa_model, qd_iiwa);
+
+        // Compute Mass matrix, Bias and gravititional terms
+        MatrixXd M_(15, 15);
+        // MatrixXd M_iiwa(7, 7);
+        VectorXd Cv(15);
+        // VectorXd Cv_iiwa(7);
+        // VectorXd tau_g_iiwa;
+        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
+
+        plant_->CalcMassMatrix(*context, &M_);
+        plant_->CalcBiasTerm(*context, &Cv);
+        // M_iiwa = M_.block<7, 7>(6, 6);
+        // Cv_iiwa = Cv.middleRows<7>(6);
+        // tau_g_iiwa = tau_g.middleRows<7>(6);
+
+        // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
+        Vector3d contact_point;
+        MatrixXd Jac(3, 15);
+        // MatrixXd Jac_iiwa(3, 7);
+        Vector3d Acc_Bias;
+
+        contact_point << 0, 0, 0; 
+        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
+        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame(), &Jac); // the second last argument seems doesn't matter?
+        Acc_Bias = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
+        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame());
+        // Jac_iiwa = Jac.middleCols(6, 7);
+
+        MatrixXd M_J;
+        M_J.setZero(18, 18);
+        M_J.block<15, 15>(0, 0) = M_;
+        M_J.block<15, 3>(0, 15) = Jac.transpose();
+        M_J.block<3, 15>(15, 0) = Jac;
+        
+        VectorXd Bias_MJ(18);
+        Bias_MJ.setZero();
+        Bias_MJ.topRows(15) = tau_g - Cv;
+        Bias_MJ.middleRows<7>(6) += tau;
+        Bias_MJ.bottomRows(3) = -Acc_Bias;
+        
+        // cout << "Cv_iiwa: " << Cv_iiwa.transpose() << endl;
+        // cout << "tau_g_iiwa: " << tau_g_iiwa.transpose() << endl;
+        // cout << "tau: " << tau.transpose() << endl;
+        // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
+        //=============================================
+        // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
+        VectorXd Acc_total = M_J.inverse()*Bias_MJ;
+        VectorXd ang_dd_obj = Acc_total.topRows(3);
+        VectorXd pos_dd_obj = Acc_total.middleRows<3>(3);
+        VectorXd qdd_iiwa = Acc_total.middleRows<7>(6);
+
+        // angular velocity cannot be directly integrated because orientation is not commutive
+        VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
+        Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
+
+        if(finalTimeProfile.counter0_ == 10){
+            gettimeofday(&tend_period,NULL);
+            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)
+            +((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
+        }
+
+        if (globalcnt < 40)
+            globalcnt += 1;
+
+        // vdot is newly calculated using q, qdot, u
+        // (qdot, vdot) = f((q, qdot), u) ??? Makes sense??
+    }
+    else{
+        q << X.head(stateSize/2);
+        qd << X.tail(stateSize/2);
+
         Eigen::Matrix<double,stateSize/2+2,1> q_full;
         Eigen::Matrix<double,stateSize/2+2,1> qd_full;
         q_full.setZero();
         qd_full.setZero();
         q_full.topRows(stateSize/2)=q;
         qd_full.topRows(stateSize/2)=qd;
-
-        // auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
-
-        // auto xyz = Eigen::Vector3d(0, 0, 0);
-
-        // math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
-
-        // auto context_ptr = plant_->CreateDefaultContext();
-        // auto context = context_ptr.get();
-        // auto object_model = plant_->GetModelInstanceByName("object");
-        // auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
-        // auto wsg_model = plant_->GetModelInstanceByName("wsg");
-
-        // plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link_cracker", object_model), X_WO);
-        // plant_->SetPositions(context, iiwa_model, q);
-        // plant_->SetVelocities(context, iiwa_model, qd);
-
-        // // Compute Mass matrix and Bias terms
-        // MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
-        // MatrixXd M_iiwa(plant_->num_velocities(iiwa_model), plant_->num_velocities(iiwa_model));
-        // VectorXd Cv(plant_->num_velocities());
-        // VectorXd Cv_iiwa(plant_->num_velocities(iiwa_model));
-
-        // plant_->CalcMassMatrix(*context, &M_);
-        // plant_->CalcBiasTerm(*context, &Cv);
-        // M_iiwa = M_.block<7, 7>(6, 6);
-        // Cv_iiwa = Cv.bottomRows(7);
-
-        // // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
-        // Vector3d contact_point;
-        // MatrixXd Jac(3, plant_->num_velocities());
-        // MatrixXd Jac_iiwa(3, plant_->num_velocities(iiwa_model));
-        // Vector3d Acc_Bias;
-
-        // contact_point << 0, 0, 0; 
-        // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
-        // ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame(), &Jac);
-        // Acc_Bias = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
-        // ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame());
-        // Jac_iiwa = Jac.middleCols(6, 7);
-
-        // MatrixXd M_J;
-        // M_J.setZero(plant_->num_velocities(iiwa_model)+3, plant_->num_velocities(iiwa_model)+3);
-        // M_J.block<plant_->num_velocities(iiwa_model), plant_->num_velocities(iiwa_model)>(0, 0) = M_iiwa;
-        // M_J.block<plant_->num_velocities(iiwa_model), 3>(0, plant_->num_velocities(iiwa_model)) = Jac_iiwa.transpose();
-        // M_J.block<3, plant_->num_velocities(iiwa_model)>(plant_->num_velocities(iiwa_model), 0) = Jac_iiwa;
-        
-        // VectorXd Bias_MJ(plant_->num_velocities(iiwa_model)+3);
-        // Bias_MJ.setZero();
-        // Bias_MJ.topRows(plant_->num_velocities(iiwa_model)) = tau - Cv_iiwa;
-        // Bias_MJ.bottomRows(3) = Acc_Bias;
-        
-        // // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
-        // //=============================================
-        // // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
-        // VectorXd Acc_total = M_J.inverse()*Bias_MJ;
-        // vd = Acc_total.topRows(plant_->num_velocities(iiwa_model));
 
         auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
 
@@ -364,34 +408,6 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         VectorXd Acc_total = M_J.inverse()*Bias_MJ;
         vd = Acc_total.topRows(7);
 
-        Xdot_new << qd, vd;
-
-        if(finalTimeProfile.counter0_ == 10){
-            gettimeofday(&tend_period,NULL);
-            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)
-            +((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
-        }
-
-        if (globalcnt < 40)
-            globalcnt += 1;
-
-        // vdot is newly calculated using q, qdot, u
-        // (qdot, vdot) = f((q, qdot), u) ??? Makes sense??
-    }
-    else{
-        auto context_ptr = plant_->CreateDefaultContext();
-        auto context = context_ptr.get();
-        plant_->SetPositions(context, q);
-        plant_->SetVelocities(context, qd);
-
-        MatrixXd M_;
-        plant_->CalcMassMatrix(*context, &M_);
-
-        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
-        VectorXd Cv(plant_->num_velocities()); 
-        plant_->CalcBiasTerm(*context, &Cv);
-        //=============================================
-        vd = (M_.inverse()*(tau + tau_g - Cv));
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){

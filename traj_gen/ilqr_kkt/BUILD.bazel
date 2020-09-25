@@ -96,36 +96,36 @@ drake_cc_binary(
 )
 
 
-drake_cc_binary(
-    name = "ilqr-kkt_test",
-    srcs = ["ilqr-kkt_test.cc",
-            "config-kkt.h",],
-    visibility = ["//visibility:public"],
-    data = [
-        "//examples/kuka_iiwa_arm:models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-        "//manipulation/models/kuka_connector_description:models",
-        "//manipulation/models/ycb:models",
-    ],
-    deps = [
-        "//examples/kuka_iiwa_arm:iiwa_common",
-        "//examples/kuka_iiwa_arm:iiwa_lcm",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
-        "@gflags",
-        "@lcm",
-        "//lcmtypes:generic_string_msg",
-        "//traj_gen/ilqr_kkt:cost_function_kuka_arm_contact",
-        "//traj_gen/ilqr_kkt:ilqr-kkt_solver",
-        "//traj_gen/ilqr_kkt:kuka_arm_contact",
-        "//common:find_resource",
-        "//multibody/plant",
-        "//multibody/parsing",
-        "//math:geometric_transform",
-    ],
-    copts = COPTS,
-)
+# drake_cc_binary(
+#     name = "ilqr-kkt_test",
+#     srcs = ["ilqr-kkt_test.cc",
+#             "config-kkt.h",],
+#     visibility = ["//visibility:public"],
+#     data = [
+#         "//examples/kuka_iiwa_arm:models",
+#         "//manipulation/models/iiwa_description:models",
+#         "//manipulation/models/wsg_50_description:models",
+#         "//manipulation/models/kuka_connector_description:models",
+#         "//manipulation/models/ycb:models",
+#     ],
+#     deps = [
+#         "//examples/kuka_iiwa_arm:iiwa_common",
+#         "//examples/kuka_iiwa_arm:iiwa_lcm",
+#         "@lcmtypes_bot2_core",
+#         "@lcmtypes_robotlocomotion",
+#         "@gflags",
+#         "@lcm",
+#         "//lcmtypes:generic_string_msg",
+#         "//traj_gen/ilqr_kkt:cost_function_kuka_arm_contact",
+#         "//traj_gen/ilqr_kkt:ilqr-kkt_solver",
+#         "//traj_gen/ilqr_kkt:kuka_arm_contact",
+#         "//common:find_resource",
+#         "//multibody/plant",
+#         "//multibody/parsing",
+#         "//math:geometric_transform",
+#     ],
+#     copts = COPTS,
+# )
 
 drake_cc_binary(
     name = "traj_opt_publisher",

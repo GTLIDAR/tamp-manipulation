@@ -55,6 +55,7 @@ namespace traj_gen {
 namespace kuka_iiwa_arm {
 
 const char* const kLcmStatusChannel = "IIWA_STATUS";
+const char* const kLcmObjectStatusChannel = "OBJECT_STATUS";
 const char* const kLcmTimeChannel = "IIWA_TIME";
 
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
@@ -91,7 +92,7 @@ public:
         unsigned int N = int(time_horizon/time_step);
         double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
         double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-        unsigned int iterMax = 1; //100;    
+        unsigned int iterMax = 10; //100;    
 
         ILQR_KKTSolver::traj lastTraj;
         //=============================================
@@ -152,7 +153,8 @@ public:
         for(unsigned i=0;i<N;i++){
           // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
           // cout << "u_0: " << u_0[i].transpose() << endl;
-          u_0[i].setZero();
+          // u_0[i].setZero();
+          u_0[i] << 1, 1, 1, 1, 1, 1, 1;
         }
         //======================================
         KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_);
@@ -284,7 +286,9 @@ public:
 
         //////////////////////////////////////////////////////////////////////////////////////////
         lcmt_iiwa_status iiwa_state;
+        lcmt_object_status object_state;
         iiwa_state.num_joints = kIiwaArmNumJoints;
+        object_state.num_joints = 7;
         DRAKE_ASSERT(plant_.num_positions(iiwa_model) == kIiwaArmNumJoints);
         iiwa_state.joint_position_measured.resize(kIiwaArmNumJoints, 0.);   
         iiwa_state.joint_velocity_estimated.resize(kIiwaArmNumJoints, 0.);
@@ -293,6 +297,14 @@ public:
         iiwa_state.joint_torque_measured.resize(kIiwaArmNumJoints, 0.);
         iiwa_state.joint_torque_commanded.resize(kIiwaArmNumJoints, 0.);
         iiwa_state.joint_torque_external.resize(kIiwaArmNumJoints, 0.);
+
+        object_state.joint_position_measured.resize(7, 0.);   
+        object_state.joint_velocity_estimated.resize(7, 0.);
+        object_state.joint_position_commanded.resize(7, 0.);
+        object_state.joint_position_ipo.resize(7, 0.);
+        object_state.joint_torque_measured.resize(7, 0.);
+        object_state.joint_torque_commanded.resize(7, 0.);
+        object_state.joint_torque_external.resize(7, 0.);
 
         drake::log()->info("Publishing trajectory to visualizer");
         plan_finished_ = false;
@@ -319,14 +331,31 @@ public:
                 continue;
             }
 
-
+            // pass the interpolated traj to lcm
             for (int32_t j=0; j < iiwa_state.num_joints; ++j) { 
-                iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][j];
+                iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
             }
 
             lcm_.publish(kLcmStatusChannel, &iiwa_state);
 
+            for (int joint = 0; joint < 7; joint++) 
+            {
+              // if(joint == 0)
+              // {
+              //   // Must set quaternion w to a non-zero value when rest are 0
+              //   object_state.joint_position_measured[joint] = 1;
+              // }
+              // else if(joint < 4)
+              // {
+              //   object_state.joint_position_measured[joint] = 0;
+              // }
+              // else
+              // {
+                object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
+              // }
+            }
 
+            lcm_.publish(kLcmObjectStatusChannel, &object_state);
         }
 
     };
@@ -380,10 +409,12 @@ int do_main_kkt(){
     stateVec_t xinit,xgoal;
     double time_horizon = 2;
     double time_step = 0.001;
-    double publish_rate = 0.5;
-    xinit << 0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    // xinit << 0, 0, 0, 0, 0, 0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    xgoal << 1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    double publish_rate = 0.2;
+    xinit << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
+    0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+
+    xgoal << 1, 0, 0, 0, 0.48, 0.2, 0.25, 0, 0, 0, 0, 0, 0,
+    1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     pub.Run_test(xinit, xgoal, time_horizon, time_step, publish_rate);
 
     return 0;
