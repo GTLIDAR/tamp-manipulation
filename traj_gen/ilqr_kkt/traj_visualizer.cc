@@ -92,7 +92,7 @@ void DoMain(){
     std::string kIiwaUrdf = 
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
     std::string schunkPath = 
-        FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_ball_contact.sdf");
+        FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
     std::string connectorPath = 
         FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
     const std::string box_sdf_path0 = "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf";

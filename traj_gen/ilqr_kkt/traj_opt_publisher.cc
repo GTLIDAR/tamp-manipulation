@@ -100,7 +100,7 @@ public:
         std::string kIiwaUrdf = 
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
         std::string schunkPath = 
-          FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_ball_contact.sdf");
+          FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
         std::string connectorPath = 
           FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
         const std::string box_sdf_path0 = "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf";
@@ -153,8 +153,8 @@ public:
         for(unsigned i=0;i<N;i++){
           // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
           // cout << "u_0: " << u_0[i].transpose() << endl;
-          // u_0[i].setZero();
-          u_0[i] << 1, 1, 1, 1, 1, 1, 1;
+          u_0[i].setZero();
+          // u_0[i] << 1, 1, 1, 1, 1, 1, 1;
         }
         //======================================
         KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_);
@@ -163,7 +163,7 @@ public:
         testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
         // run one or multiple times and then average
-        unsigned int Num_run = 0;
+        unsigned int Num_run = 1;
         gettimeofday(&tbegin,NULL);
         for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
         if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -408,13 +408,16 @@ int do_main_kkt(){
     TrajOptPublisher pub;
     stateVec_t xinit,xgoal;
     double time_horizon = 2;
-    double time_step = 0.001;
+    double time_step = 0.01;
     double realtime_rate = 0.2;
     xinit << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
     0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    // 0, 0, 0, 0, 0, 0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
 
-    xgoal << 1, 0, 0, 0, 0.48, 0.2, 0.25, 0, 0, 0, 0, 0, 0,
-    1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    // xgoal << 1, 0, 0, 0, 0.48, 0.2, 0.25, 0, 0, 0, 0, 0, 0,
+    // 1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    xgoal << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
+    0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate);
 
     return 0;

@@ -273,7 +273,7 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         // MatrixXd M_iiwa(7, 7);
         VectorXd Cv(15);
         // VectorXd Cv_iiwa(7);
-        // VectorXd tau_g_iiwa;
+        VectorXd tau_g_iiwa;
         VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
 
         plant_->CalcMassMatrix(*context, &M_);
@@ -306,10 +306,17 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         Bias_MJ.topRows(15) = tau_g - Cv;
         Bias_MJ.middleRows<7>(6) += tau;
         Bias_MJ.bottomRows(3) = -Acc_Bias;
+
+        // VectorXd Bias_MJ2(18);
+        // Bias_MJ2.setZero();
+        // Bias_MJ2.topRows(15) = tau_g - Cv;
+        // Bias_MJ2.bottomRows(3) = -Acc_Bias;
         
-        // cout << "Cv_iiwa: " << Cv_iiwa.transpose() << endl;
+        // cout << "Cv: " << Cv.transpose() << endl;
         // cout << "tau_g_iiwa: " << tau_g_iiwa.transpose() << endl;
         // cout << "tau: " << tau.transpose() << endl;
+        // cout << "Bias_MJ: " << Bias_MJ.transpose() << endl;
+        // cout << "Bias_MJ2: " << Bias_MJ2.transpose() << endl;
         // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
         //=============================================
         // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
@@ -321,6 +328,14 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         // angular velocity cannot be directly integrated because orientation is not commutive
         VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
         Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
+        
+        for (int j = 0; j < Xdot_new.cols(); j++) {
+            if (isnan(Xdot_new(j))) {
+                std::cout<<"New Xdot contains NaN"<<"\n";
+                std::cout<<Xdot_new<<"\n";
+                break;
+            }
+        }
 
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);

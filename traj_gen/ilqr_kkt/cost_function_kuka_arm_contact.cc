@@ -15,7 +15,7 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N)
         // num_state = 27; object=7+6; kuka=7+7
         double pos_obj_scale = 10;
         double vel_obj_scale = 10;
-        double pos_obj_f_scale = 1000;//0.001;
+        double pos_obj_f_scale = 100;//0.001;
         double vel_obj_f_scale = 10;//10;
         double torqoe_scale = 1;//100;
         
