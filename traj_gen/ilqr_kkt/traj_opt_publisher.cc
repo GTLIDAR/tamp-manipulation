@@ -56,6 +56,7 @@ namespace kuka_iiwa_arm {
 
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmObjectStatusChannel = "OBJECT_STATUS";
+const char* const kLcmSchunkStatusChannel = "WSG_STATUS";
 const char* const kLcmTimeChannel = "IIWA_TIME";
 
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
@@ -92,7 +93,7 @@ public:
         unsigned int N = int(time_horizon/time_step);
         double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
         double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-        unsigned int iterMax = 10; //100;    
+        unsigned int iterMax = 30; //100;    
 
         ILQR_KKTSolver::traj lastTraj;
         //=============================================
@@ -154,7 +155,7 @@ public:
           // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
           // cout << "u_0: " << u_0[i].transpose() << endl;
           u_0[i].setZero();
-          // u_0[i] << 1, 1, 1, 1, 1, 1, 1;
+          // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
         }
         //======================================
         KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_);
@@ -163,7 +164,7 @@ public:
         testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
         // run one or multiple times and then average
-        unsigned int Num_run = 1;
+        unsigned int Num_run = 0;
         gettimeofday(&tbegin,NULL);
         for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
         if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -205,7 +206,7 @@ public:
 
 
         cout << "lastTraj.xList[" << N << "]:" << lastTraj.xList[N].transpose() << endl;
-        cout << "lastTraj.uList[" << N << "]:" << lastTraj.uList[N].transpose() << endl;
+        cout << "lastTraj.uList[" << N-1 << "]:" << lastTraj.uList[N-1].transpose() << endl;
 
         cout << "lastTraj.xList[0]:" << lastTraj.xList[0].transpose() << endl;
         cout << "lastTraj.uList[0]:" << lastTraj.uList[0].transpose() << endl;
@@ -286,6 +287,7 @@ public:
 
         //////////////////////////////////////////////////////////////////////////////////////////
         lcmt_iiwa_status iiwa_state;
+        lcmt_schunk_wsg_status wsg_status;
         lcmt_object_status object_state;
         iiwa_state.num_joints = kIiwaArmNumJoints;
         object_state.num_joints = 7;
@@ -297,7 +299,16 @@ public:
         iiwa_state.joint_torque_measured.resize(kIiwaArmNumJoints, 0.);
         iiwa_state.joint_torque_commanded.resize(kIiwaArmNumJoints, 0.);
         iiwa_state.joint_torque_external.resize(kIiwaArmNumJoints, 0.);
+        
+        //////////////// !!!!!!!!!! /////////////////////
+        // Warning: just for visualization since the gripper_position_output_port has been depricated in latest drake update
+        // actual_position_mm = finger1 -- negative
+        // actual_speed_mm_per_s = finger2 -- positive
+        // maximum width = 110
 
+        wsg_status.actual_position_mm = -25;
+        wsg_status.actual_speed_mm_per_s = 25;
+        
         object_state.joint_position_measured.resize(7, 0.);   
         object_state.joint_velocity_estimated.resize(7, 0.);
         object_state.joint_position_commanded.resize(7, 0.);
@@ -311,24 +322,32 @@ public:
         // DRAKE_ASSERT(publish_rate )
         // unsigned int cur_step = int((robot_time_.utime / 1000)*(0.001*publish_rate/(time_step/InterpolationScale)));
         // cout << "starting time: " << cur_step << endl;
+        bool start_publish = false;
+        unsigned int start_time;
 
         while(true){
             while (0 == lcm_.handleTimeout(10) || iiwa_state.utime == -1 
             || plan_finished_) { }
 
+            if(!start_publish){
+              start_time = robot_time_.utime;     
+              cout << "start_time: " << start_time << endl; 
+              start_publish = true;
+            }
+
             // Update status time to simulation time
             // Note: utime is in microseconds
             iiwa_state.utime = robot_time_.utime;
+            wsg_status.utime = robot_time_.utime;
             // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
-            step_ = int((robot_time_.utime / 1000)*(0.001*realtime_rate/(time_step/InterpolationScale)));
-
+            step_ = int(((robot_time_.utime-start_time) / 1000)*(0.001*realtime_rate/(time_step/InterpolationScale)));
             std::cout << step_ << std::endl;
             
             if(step_ >= N*InterpolationScale)
             {
                 drake::log()->info("Interpolated trajectory has been published");
                 plan_finished_ = true;
-                continue;
+                break;
             }
 
             // pass the interpolated traj to lcm
@@ -337,6 +356,7 @@ public:
             }
 
             lcm_.publish(kLcmStatusChannel, &iiwa_state);
+            
 
             for (int joint = 0; joint < 7; joint++) 
             {
@@ -356,6 +376,7 @@ public:
             }
 
             lcm_.publish(kLcmObjectStatusChannel, &object_state);
+            lcm_.publish(kLcmSchunkStatusChannel, &wsg_status);
         }
 
     };
@@ -407,17 +428,17 @@ private:
 int do_main_kkt(){
     TrajOptPublisher pub;
     stateVec_t xinit,xgoal;
-    double time_horizon = 2;
-    double time_step = 0.01;
+    double time_horizon = 1.0;
+    double time_step = 0.005;
     double realtime_rate = 0.2;
     xinit << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
     0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     // 0, 0, 0, 0, 0, 0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
 
-    // xgoal << 1, 0, 0, 0, 0.48, 0.2, 0.25, 0, 0, 0, 0, 0, 0,
-    // 1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    xgoal << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
-    0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    xgoal << 1, 0, 0, 0, 0.48, 0.2, 0.25, 0, 0, 0, 0, 0, 0,
+    1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    // xgoal << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
+    // 0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
     pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate);
 
     return 0;

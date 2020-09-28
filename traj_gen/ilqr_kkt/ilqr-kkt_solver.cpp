@@ -190,8 +190,8 @@ void ILQR_KKTSolver::solveTrajectory()
             backPassDone = 1;
         }
 
-        cout << "Quu= " << Quu << endl;
-        cout << "QuuInv= " << QuuInv << endl;
+        // cout << "Quu= " << Quu << endl;
+        // cout << "QuuInv= " << QuuInv << endl;
         // check for termination due to small gradient
         // TODO: add constraint tolerance check
         if(Op.g_norm < Op.tolGrad && Op.lambda < 1e-5){
@@ -217,8 +217,8 @@ void ILQR_KKTSolver::solveTrajectory()
                 // cout << "precost " << accumulate(costList.begin(), costList.end(), 0.0) << endl;
                 // cout << "newcost " << accumulate(costListNew.begin(), costListNew.end(), 0.0) << endl;
                 // cout << "Dv0 " << dV(0) << " || Dv1 " << dV(1) << endl;
-                cout << "dcost " << Op.dcost << endl;
-                cout << "dexp " << Op.expected << endl;
+                // cout << "dcost " << Op.dcost << endl;
+                // cout << "dexp " << Op.expected << endl;
 
                 double z;
                 if(Op.expected > 0) {

@@ -15,7 +15,7 @@
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");

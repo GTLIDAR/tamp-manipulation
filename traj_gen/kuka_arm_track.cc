@@ -317,7 +317,14 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         //    vd = M_.inverse()*(tau - bias_term_ + gtau);
         //    vd = M_.inverse()*(tau + gtau);
         Xdot_new << qd, vd;
-
+        for (int j = 0; j < Xdot_new.rows(); j++) {
+            if (isnan(Xdot_new(j))) {
+                std::cout<<"New Xdot contains NaN"<<"\n";
+                // std::cout<<Xdot_new.transpose()<<"\n";
+                break;
+            }
+        }
+        
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
             finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;

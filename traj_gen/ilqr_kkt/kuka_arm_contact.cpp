@@ -249,10 +249,13 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
 
         Eigen::Matrix<double,9,1> q_iiwa_full;
         Eigen::Matrix<double,9,1> qd_iiwa_full;
+        VectorXd qd_full(15);
         q_iiwa_full.setZero();
         qd_iiwa_full.setZero();
         q_iiwa_full.topRows(7)=q_iiwa;
         qd_iiwa_full.topRows(7)=qd_iiwa;
+        qd_full.topRows(6) = qd_obj;
+        qd_full.bottomRows(9) = qd_iiwa_full;
 
         Quaternion<double> qua_obj_eigen(qua_obj);
 
@@ -305,7 +308,7 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         Bias_MJ.setZero();
         Bias_MJ.topRows(15) = tau_g - Cv;
         Bias_MJ.middleRows<7>(6) += tau;
-        Bias_MJ.bottomRows(3) = -Acc_Bias;
+        Bias_MJ.bottomRows(3) = -Acc_Bias - 200*Jac*qd_full;
 
         // VectorXd Bias_MJ2(18);
         // Bias_MJ2.setZero();
@@ -320,7 +323,8 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
         //=============================================
         // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
-        VectorXd Acc_total = M_J.inverse()*Bias_MJ;
+        MatrixXd M_JInv = M_J.inverse();
+        VectorXd Acc_total = M_JInv*Bias_MJ;
         VectorXd ang_dd_obj = Acc_total.topRows(3);
         VectorXd pos_dd_obj = Acc_total.middleRows<3>(3);
         VectorXd qdd_iiwa = Acc_total.middleRows<7>(6);
@@ -329,12 +333,26 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
         Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
         
-        for (int j = 0; j < Xdot_new.cols(); j++) {
+        for (int j = 0; j < Xdot_new.rows(); j++) {
             if (isnan(Xdot_new(j))) {
                 std::cout<<"New Xdot contains NaN"<<"\n";
-                std::cout<<Xdot_new<<"\n";
+                // std::cout<<Xdot_new.transpose()<<"\n";
                 break;
             }
+        }
+
+        bool nan_true = false;
+        for(int i = 0; i < M_JInv.rows(); i++){
+            for (int j = 0; j < M_JInv.cols(); j++) {
+                if (isnan(M_JInv(i,j))) {
+                    std::cout<<"M_J's inverse contains NaN"<<"\n";
+                    // std::cout<<transpose()<<"\n";
+                    nan_true = true;
+                    break;
+                }
+
+            }
+            if(nan_true){break;}
         }
 
         if(finalTimeProfile.counter0_ == 10){
