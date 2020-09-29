@@ -24,6 +24,8 @@
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 
 #include "drake/lcmt_generic_string_msg.hpp"
 
@@ -36,7 +38,17 @@
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
 DEFINE_double(gripper_force, 50, "force for gripper");
+DEFINE_double(table_width, 0.7112, "Width of table supporting kuka arm");
+DEFINE_double(belt_width, 0.4, "Width of conveyor belt");
+DEFINE_double(default_iiwa_x, 0.2, "X position of iiwa base");
+DEFINE_double(kConveyorBeltTopZInWorld, 0.736 + 0.02 / 2, "height of belt");
 DEFINE_string(plan_channel, "COMMITTED_ROBOT_PLAN", "Plan channels for plan");
+DEFINE_string(
+    KukaIiwaUrdf,
+    "drake/manipulation/models/iiwa_description/urdf/iiwa7.urdf",
+    "file name of iiwa7 urdf"
+);
+DEFINE_string(ee_name, "iiwa_link_ee", "Name of the end effector link");
 
 using namespace std;
 using namespace Eigen;
@@ -66,6 +78,7 @@ using math::RigidTransformd;
 using math::RollPitchYaw;
 using multibody::MultibodyForces;
 using multibody::BodyIndex;
+using manipulation::planner::ConstraintRelaxingIk;
 
 class TrajOptPublisher
 {
@@ -104,7 +117,7 @@ public:
           FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
         std::string connectorPath = 
           FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
-        const std::string box_sdf_path0 = "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf";
+        const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
 
         std::string urdf_;
         auto plant_ = multibody::MultibodyPlant<double>(0.0);
@@ -164,7 +177,7 @@ public:
         testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
         // run one or multiple times and then average
-        unsigned int Num_run = 0;
+        unsigned int Num_run = 1;
         gettimeofday(&tbegin,NULL);
         for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
         if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -218,7 +231,7 @@ public:
           auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
           auto xyz = Eigen::Vector3d(0, 0, 0);
           math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
-          plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link_cracker", object_model), X_WO);
+          plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
           plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].topRows(7));
           plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
           const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
@@ -322,25 +335,25 @@ public:
         // DRAKE_ASSERT(publish_rate )
         // unsigned int cur_step = int((robot_time_.utime / 1000)*(0.001*publish_rate/(time_step/InterpolationScale)));
         // cout << "starting time: " << cur_step << endl;
-        bool start_publish = false;
-        unsigned int start_time;
+        // bool start_publish = false;
+        // unsigned int start_time;
 
         while(true){
             while (0 == lcm_.handleTimeout(10) || iiwa_state.utime == -1 
             || plan_finished_) { }
 
-            if(!start_publish){
-              start_time = robot_time_.utime;     
-              cout << "start_time: " << start_time << endl; 
-              start_publish = true;
-            }
+            // if(!start_publish){
+            //   start_time = robot_time_.utime;     
+            //   cout << "start_time: " << start_time << endl; 
+            //   start_publish = true;
+            // }
 
             // Update status time to simulation time
             // Note: utime is in microseconds
             iiwa_state.utime = robot_time_.utime;
             wsg_status.utime = robot_time_.utime;
             // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
-            step_ = int(((robot_time_.utime-start_time) / 1000)*(0.001*realtime_rate/(time_step/InterpolationScale)));
+            step_ = int(((robot_time_.utime) / 1000)*(0.001*realtime_rate/(time_step/InterpolationScale)));
             std::cout << step_ << std::endl;
             
             if(step_ >= N*InterpolationScale)
@@ -360,19 +373,7 @@ public:
 
             for (int joint = 0; joint < 7; joint++) 
             {
-              // if(joint == 0)
-              // {
-              //   // Must set quaternion w to a non-zero value when rest are 0
-              //   object_state.joint_position_measured[joint] = 1;
-              // }
-              // else if(joint < 4)
-              // {
-              //   object_state.joint_position_measured[joint] = 0;
-              // }
-              // else
-              // {
                 object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
-              // }
             }
 
             lcm_.publish(kLcmObjectStatusChannel, &object_state);
@@ -428,17 +429,76 @@ private:
 int do_main_kkt(){
     TrajOptPublisher pub;
     stateVec_t xinit,xgoal;
-    double time_horizon = 1.0;
+    double time_horizon = 0.5;
     double time_step = 0.005;
-    double realtime_rate = 0.2;
-    xinit << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
-    0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    // 0, 0, 0, 0, 0, 0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    double realtime_rate = 0.05;
 
-    xgoal << 1, 0, 0, 0, 0.48, 0.2, 0.25, 0, 0, 0, 0, 0, 0,
-    1.0,1.0,1.0,1.0,1.0,1.0,1.0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
-    // xgoal << 1, 0, 0, 0, 0.48, 0, 0.25, 0, 0, 0, 0, 0, 0,
-    // 0, 0.6, 0, -1.75, 0, 1.0, 0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0;
+    std::string kIiwaUrdf = 
+          FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
+    std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
+    //waypoint (0)
+    ConstraintRelaxingIk::IkCartesianWaypoint wp0;
+    const Eigen::Vector3d xyz0(
+        (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+        0.0,
+        0.3
+    );
+    const math::RollPitchYaw<double> rpy0(
+        0,
+        1.57079632679,
+        -1.57079632679
+    );
+
+    wp0.pose.set_translation(xyz0);
+    wp0.pose.set_rotation(rpy0);
+    wp0.constrain_orientation = true;
+    wp_vec.push_back(wp0);
+
+    // waypoint (1)
+    ConstraintRelaxingIk::IkCartesianWaypoint wp1;
+    const Eigen::Vector3d xyz1(
+        0.4,
+        0.0,
+        0.5
+    );
+    const math::RollPitchYaw<double> rpy1(
+        0,
+        1.57079632679,
+        -1.57079632679
+    );
+
+    wp1.pose.set_translation(xyz1);
+    wp1.pose.set_rotation(rpy1);
+    wp1.constrain_orientation = true;
+    wp_vec.push_back(wp1);
+
+    Eigen::VectorXd iiwa_q(7);
+    iiwa_q << -0.133372, 0.251457, -0.0461879, -1.21048, 0.0324702, 0.928553, -0.190112; //warm-start for grasping from top
+
+    ConstraintRelaxingIk ik(
+        kIiwaUrdf,
+        FLAGS_ee_name
+    );
+
+    std::vector<Eigen::VectorXd> ik_res;
+    if(!ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &ik_res)){
+      cout << "infeasible" << endl;
+    }
+    for (unsigned int y=0; y<ik_res.size(); y++){
+      cout << ik_res[y].transpose() << endl;
+    }
+    cout << "Finished" << endl;
+    
+    xinit.setZero();
+    xinit.topRows(13) << 1, 0, 0, 0, 
+    (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
+    xinit.middleRows<7>(13) = ik_res[1];
+
+    xgoal.setZero();
+    xgoal.topRows(13) << 1, 0, 0, 0, 
+    (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
+    xgoal.middleRows<7>(13) = ik_res[2];
+    
     pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate);
 
     return 0;

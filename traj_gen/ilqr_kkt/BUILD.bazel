@@ -137,7 +137,7 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/kuka_connector_description:models",
-        "//manipulation/models/ycb:models",
+        "//conveyor_belt_tamp:models",
     ],
     deps = [
         "//examples/kuka_iiwa_arm:iiwa_common",
@@ -154,6 +154,7 @@ drake_cc_binary(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
+        "//manipulation/planner:constraint_relaxing_ik",
     ],
     copts = COPTS,
 )
@@ -166,7 +167,7 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/kuka_connector_description:models",
-        "//manipulation/models/ycb:models",
+        "//conveyor_belt_tamp:models",
 
     ],
     deps = [

@@ -253,6 +253,7 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         q_iiwa_full.setZero();
         qd_iiwa_full.setZero();
         q_iiwa_full.topRows(7)=q_iiwa;
+        q_iiwa_full.bottomRows(2) << -0.025, 0.025;
         qd_iiwa_full.topRows(7)=qd_iiwa;
         qd_full.topRows(6) = qd_obj;
         qd_full.bottomRows(9) = qd_iiwa_full;
@@ -265,11 +266,13 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         auto context = context_ptr.get();
         auto object_model = plant_->GetModelInstanceByName("object");
         auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
-        // auto wsg_model = plant_->GetModelInstanceByName("wsg");
+        auto wsg_model = plant_->GetModelInstanceByName("wsg");
 
-        plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link_cracker", object_model), X_WO);
+        plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link", object_model), X_WO);
         plant_->SetPositions(context, iiwa_model, q_iiwa);
         plant_->SetVelocities(context, iiwa_model, qd_iiwa);
+        plant_->SetPositions(context, wsg_model, q_iiwa_full.bottomRows(2));
+        plant_->SetVelocities(context, wsg_model, qd_iiwa_full.bottomRows(2));
 
         // Compute Mass matrix, Bias and gravititional terms
         MatrixXd M_(15, 15);
@@ -286,34 +289,48 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         // tau_g_iiwa = tau_g.middleRows<7>(6);
 
         // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
-        Vector3d contact_point;
-        MatrixXd Jac(3, 15);
-        // MatrixXd Jac_iiwa(3, 7);
-        Vector3d Acc_Bias;
+        const int num_cps = 2;
+        Vector3d contact_point_left;
+        Vector3d contact_point_right;
+        // Vector3d contact_point_left2;
+        // Vector3d contact_point_right2;
+        MatrixXd Jac(3*num_cps, 15);
+        MatrixXd Jac_left(3, 15);
+        MatrixXd Jac_right(3, 15);
+        Vector3d Acc_Bias_left;
+        Vector3d Acc_Bias_right;
+        
+        // std::vector<MatrixXd> Jac_stack;
+        // for(unsigned int i=0; i<num_cps; i++){
+        //    MatrixXd Jac_temp(3, 15);
+        // }
+        contact_point_left << 0, 0, 0; 
+        contact_point_right << 0, 0, 0; 
+        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact2", wsg_model), contact_point_left
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+        Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact2", wsg_model), contact_point_left
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-        contact_point << 0, 0, 0; 
-        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
-        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame(), &Jac); // the second last argument seems doesn't matter?
-        Acc_Bias = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
-        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame());
+        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact2", wsg_model), contact_point_right
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+        Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact2", wsg_model), contact_point_right
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
         // Jac_iiwa = Jac.middleCols(6, 7);
+        Jac.block<3, 15>(0, 0) = Jac_left;
+        Jac.block<3, 15>(3, 0) = Jac_right;
 
         MatrixXd M_J;
-        M_J.setZero(18, 18);
+        M_J.setZero(15+3*num_cps, 15+3*num_cps);
         M_J.block<15, 15>(0, 0) = M_;
-        M_J.block<15, 3>(0, 15) = Jac.transpose();
-        M_J.block<3, 15>(15, 0) = Jac;
+        M_J.block<15, 3*num_cps>(0, 15) = Jac.transpose();
+        M_J.block<3*num_cps, 15>(15, 0) = Jac;
         
-        VectorXd Bias_MJ(18);
+        VectorXd Bias_MJ(15+3*num_cps);
         Bias_MJ.setZero();
         Bias_MJ.topRows(15) = tau_g - Cv;
         Bias_MJ.middleRows<7>(6) += tau;
-        Bias_MJ.bottomRows(3) = -Acc_Bias - 200*Jac*qd_full;
-
-        // VectorXd Bias_MJ2(18);
-        // Bias_MJ2.setZero();
-        // Bias_MJ2.topRows(15) = tau_g - Cv;
-        // Bias_MJ2.bottomRows(3) = -Acc_Bias;
+        Bias_MJ.middleRows<3>(15) = -Acc_Bias_left - 500*Jac_left*qd_full;
+        Bias_MJ.bottomRows(3) = -Acc_Bias_right - 500*Jac_right*qd_full;
         
         // cout << "Cv: " << Cv.transpose() << endl;
         // cout << "tau_g_iiwa: " << tau_g_iiwa.transpose() << endl;
@@ -354,6 +371,11 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
             }
             if(nan_true){break;}
         }
+
+        // if(nan_true){
+        //     cout << "Bias_MJ: " << Bias_MJ.transpose() << endl;
+        //     cout << "Matrix M_J: " << M_J << endl;
+        // }
 
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);

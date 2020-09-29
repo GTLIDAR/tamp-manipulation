@@ -312,6 +312,90 @@
         </surface>
       </collision>
     </link>
+    <link name="left_ball_contact1">
+    <pose>-0.003 0.065 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="left_ball_contact2">
+    <pose>-0.003 0.052 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="right_ball_contact1">
+    <pose>0.003 0.065 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="right_ball_contact2">
+    <pose>0.003 0.052 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
     <joint name="left_finger_sliding_joint" type="prismatic">
       <parent>body</parent>
       <child>left_finger</child>
@@ -379,6 +463,34 @@
           </suspension>
         </ode>
       </physics>
+    </joint>
+    <joint name="left_finger_contact_ball1" type="fixed">
+      <parent>left_finger</parent>
+      <child>left_ball_contact1</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="left_finger_contact_ball2" type="fixed">
+      <parent>left_finger</parent>
+      <child>left_ball_contact2</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="right_finger_contact_ball1" type="fixed">
+      <parent>right_finger</parent>
+      <child>right_ball_contact1</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="right_finger_contact_ball2" type="fixed">
+      <parent>right_finger</parent>
+      <child>right_ball_contact2</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
     </joint>
     <static>0</static>
     <allow_auto_disable>1</allow_auto_disable>
