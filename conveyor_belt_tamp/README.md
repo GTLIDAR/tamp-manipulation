@@ -38,9 +38,10 @@ bazel build //conveyor_belt_tamp/...
 ## run static object sorting planner
 ```
 cd /path/to/drake
-
 ./bazel-bin/conveyor_belt_tamp/pddl_multi_wp_query_handler
-python3 conveyor_belt_tamp/pddl/object_sorting_plan.py
+
+cd /path/to/drake/conveyor_belt_tamp/pddl
+python3 object_sorting_plan.py
 ```
 
 ## run result from static object sorting planner
@@ -51,7 +52,11 @@ find the result json file you need to run, change JSON_FILENAME variable in json
 run in this order
 ```
 ./bazel-bin/tools/drake_visualizer
+
 ./bazel-bin/conveyor_belt_tamp/kuka_planner_runner
-python3 conveyor_belt_tamp/pddl/json_traj_runner.py
+
+cd /path/to/drake/conveyor_belt_tamp/pddl/
+python3 json_traj_runner.py
+
 ./bazel-bin/conveyor_belt_tamp/object_sorting_simulation
 ```
