@@ -256,77 +256,77 @@ int do_main(int argc, char* argv[]) {
     station->AddManipulandFromFile(box_urdf_path, X_W3);
     }
 
-    // // box_8
-    // {
-    // const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box7.urdf";
+    // box_8
+    {
+    const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box7.urdf";
     
-    // auto rpy = math::RollPitchYawd(Eigen::Vector3d(
-    //     object_init_pos["box_8"][3].asDouble(),
-    //     object_init_pos["box_8"][4].asDouble(),
-    //     object_init_pos["box_8"][5].asDouble()
-    // ));
+    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+        object_init_pos["box_8"][3].asDouble(),
+        object_init_pos["box_8"][4].asDouble(),
+        object_init_pos["box_8"][5].asDouble()
+    ));
 
-    // auto xyz = Eigen::Vector3d(
-    //     object_init_pos["box_8"][0].asDouble() + xAdditionalOffset,
-    //     object_init_pos["box_8"][1].asDouble() + yAdditionalOffset,
-    //     object_init_pos["box_8"][2].asDouble() + kConveyorBeltTopZInWorld
-    // );
+    auto xyz = Eigen::Vector3d(
+        object_init_pos["box_8"][0].asDouble() + xAdditionalOffset,
+        object_init_pos["box_8"][1].asDouble() + yAdditionalOffset,
+        object_init_pos["box_8"][2].asDouble() + kConveyorBeltTopZInWorld
+    );
 
-    // math::RigidTransform<double> X_W3(
-    //     math::RotationMatrix<double>(rpy),
-    //     xyz
-    // );
+    math::RigidTransform<double> X_W3(
+        math::RotationMatrix<double>(rpy),
+        xyz
+    );
     
-    // station->AddManipulandFromFile(box_urdf_path, X_W3);
-    // }
+    station->AddManipulandFromFile(box_urdf_path, X_W3);
+    }
 
-    // // box_9
-    // {
-    // const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box8.urdf";
+    // box_9
+    {
+    const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box8.urdf";
     
-    // auto rpy = math::RollPitchYawd(Eigen::Vector3d(
-    //     object_init_pos["box_9"][3].asDouble(),
-    //     object_init_pos["box_9"][4].asDouble(),
-    //     object_init_pos["box_9"][5].asDouble()
-    // ));
+    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+        object_init_pos["box_9"][3].asDouble(),
+        object_init_pos["box_9"][4].asDouble(),
+        object_init_pos["box_9"][5].asDouble()
+    ));
 
-    // auto xyz = Eigen::Vector3d(
-    //     object_init_pos["box_9"][0].asDouble() + xAdditionalOffset,
-    //     object_init_pos["box_9"][1].asDouble() + yAdditionalOffset,
-    //     object_init_pos["box_9"][2].asDouble() + kConveyorBeltTopZInWorld
-    // );
+    auto xyz = Eigen::Vector3d(
+        object_init_pos["box_9"][0].asDouble() + xAdditionalOffset,
+        object_init_pos["box_9"][1].asDouble() + yAdditionalOffset,
+        object_init_pos["box_9"][2].asDouble() + kConveyorBeltTopZInWorld
+    );
 
-    // math::RigidTransform<double> X_W3(
-    //     math::RotationMatrix<double>(rpy),
-    //     xyz
-    // );
+    math::RigidTransform<double> X_W3(
+        math::RotationMatrix<double>(rpy),
+        xyz
+    );
     
-    // station->AddManipulandFromFile(box_urdf_path, X_W3);
-    // }
+    station->AddManipulandFromFile(box_urdf_path, X_W3);
+    }
 
-    // // box_10
-    // {
-    // const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box9.urdf";
+    // box_10
+    {
+    const std::string box_urdf_path = "drake/conveyor_belt_tamp/models/boxes/black_box9.urdf";
     
-    // auto rpy = math::RollPitchYawd(Eigen::Vector3d(
-    //     object_init_pos["box_10"][3].asDouble(),
-    //     object_init_pos["box_10"][4].asDouble(),
-    //     object_init_pos["box_10"][5].asDouble()
-    // ));
+    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+        object_init_pos["box_10"][3].asDouble(),
+        object_init_pos["box_10"][4].asDouble(),
+        object_init_pos["box_10"][5].asDouble()
+    ));
 
-    // auto xyz = Eigen::Vector3d(
-    //     object_init_pos["box_10"][0].asDouble() + xAdditionalOffset,
-    //     object_init_pos["box_10"][1].asDouble() + yAdditionalOffset,
-    //     object_init_pos["box_10"][2].asDouble() + kConveyorBeltTopZInWorld
-    // );
+    auto xyz = Eigen::Vector3d(
+        object_init_pos["box_10"][0].asDouble() + xAdditionalOffset,
+        object_init_pos["box_10"][1].asDouble() + yAdditionalOffset,
+        object_init_pos["box_10"][2].asDouble() + kConveyorBeltTopZInWorld
+    );
 
-    // math::RigidTransform<double> X_W3(
-    //     math::RotationMatrix<double>(rpy),
-    //     xyz
-    // );
+    math::RigidTransform<double> X_W3(
+        math::RotationMatrix<double>(rpy),
+        xyz
+    );
     
-    // station->AddManipulandFromFile(box_urdf_path, X_W3);
-    // }
+    station->AddManipulandFromFile(box_urdf_path, X_W3);
+    }
 
     }
 

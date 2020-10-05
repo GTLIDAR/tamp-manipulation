@@ -14,11 +14,16 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 5;
+    unsigned int ADMMiterMax = 10;
+
+    if (time_horizon<=1.5) {
+      iterMax = 20;
+      ADMMiterMax = 30;
+    }
 
     if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
       iterMax = 50;
-      ADMMiterMax = 5;
+      ADMMiterMax = 15;
     }
 
 
@@ -144,8 +149,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double pos_weight;
     double vel_weight;
     double torque_weight;
-    pos_weight = 0;
-    vel_weight = 20;
+    pos_weight = 5;
+    vel_weight = 30;
     torque_weight = 0;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight, vel_weight, torque_weight, N); //postion/velocity/torque weights
@@ -358,7 +363,7 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
       torque_limit = 30;
     } else {
       joint_limit = 3.0;
-      vel_limit = 1.5;
+      vel_limit = 0.25;
       torque_limit = 30;
     }
 

@@ -112,6 +112,8 @@ class CausalGraphTampPlanner(object):
                 root = PddlTampNode.make_root_node(self.state)
                 root.traj = tree.goals[0].traj
                 root.time = tree.goals[0].time
+                root.final_ee = tree.goals[0].parent.move_query.desired_ee[-1]
+                root.placed_object = tree.goals[0].placed_object
 
                 self.trajectories.extend(tree.get_traj(tree.goals[0]))
                 self.actions.extend(tree.get_sol(tree.goals[0]))
