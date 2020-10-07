@@ -39,7 +39,7 @@ const int32_t kNumJoints = 7;
 
 #define BOXWEIGHT 0.122
 
-#define UDP_TRAJ_DIR "/home/zhigen/drake/traj_gen/trajectory/"
+#define UDP_TRAJ_DIR "/home/ziyi/code/drake/traj_gen/trajectory_data/"
 const char* const kLcmQueryResultsChannel = "TREE_SEARCH_QUERY_RESULTS";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 

@@ -96,8 +96,9 @@ void DoMain(){
     std::string connectorPath = 
         FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
     // const std::string box_sdf_path0 = "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf";
-    const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
-    
+    // const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
+    const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf";
+
     const ModelInstanceIndex iiwa_model = 
         parser.AddModelFromFile(kIiwaUrdf, "iiwa");
     const auto& iiwa_base_frame = plant_.GetFrameByName("iiwa_link_0", iiwa_model);

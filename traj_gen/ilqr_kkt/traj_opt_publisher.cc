@@ -117,7 +117,8 @@ public:
           FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
         std::string connectorPath = 
           FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
-        const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
+        // const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
+        const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf";
 
         std::string urdf_;
         auto plant_ = multibody::MultibodyPlant<double>(0.0);
@@ -165,7 +166,7 @@ public:
         commandVecTab_t u_0;
         u_0.resize(N);
         for(unsigned i=0;i<N;i++){
-          // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
+        //   u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
           // cout << "u_0: " << u_0[i].transpose() << endl;
           u_0[i].setZero();
           // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
@@ -429,9 +430,9 @@ private:
 int do_main_kkt(){
     TrajOptPublisher pub;
     stateVec_t xinit,xgoal;
-    double time_horizon = 0.5;
+    double time_horizon = 1.0;
     double time_step = 0.005;
-    double realtime_rate = 0.05;
+    double realtime_rate = 0.2;
 
     std::string kIiwaUrdf = 
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
@@ -439,16 +440,22 @@ int do_main_kkt(){
     //waypoint (0)
     ConstraintRelaxingIk::IkCartesianWaypoint wp0;
     const Eigen::Vector3d xyz0(
-        (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+        // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+        // 0.0,
+        // 0.3
         0.0,
-        0.3
+        0.55,
+        0.0816099
     );
     const math::RollPitchYaw<double> rpy0(
-        0,
-        1.57079632679,
-        -1.57079632679
+        // 0,
+        // 1.57079632679,
+        // 1.57079632679
+        1.42092e-12,
+        0.0292037,
+        4.26875e-12
     );
-
+    // rpy0.To
     wp0.pose.set_translation(xyz0);
     wp0.pose.set_rotation(rpy0);
     wp0.constrain_orientation = true;
@@ -457,14 +464,20 @@ int do_main_kkt(){
     // waypoint (1)
     ConstraintRelaxingIk::IkCartesianWaypoint wp1;
     const Eigen::Vector3d xyz1(
-        0.4,
-        0.0,
-        0.5
+        // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+        // -0.3,
+        // 0.8
+        0.5,
+        0.55,
+        0.0816099
     );
     const math::RollPitchYaw<double> rpy1(
-        0,
-        1.57079632679,
-        -1.57079632679
+        // 0,
+        // 1.57079632679,
+        // 1.57079632679
+        1.42092e-12,
+        0.0292037,
+        4.26875e-12
     );
 
     wp1.pose.set_translation(xyz1);
@@ -490,13 +503,17 @@ int do_main_kkt(){
     cout << "Finished" << endl;
     
     xinit.setZero();
+    // xinit.topRows(13) << 1, 0, 0, 0, 
+    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
     xinit.topRows(13) << 1, 0, 0, 0, 
-    (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
+    0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     xinit.middleRows<7>(13) = ik_res[1];
 
     xgoal.setZero();
+    // xgoal.topRows(13) << 1, 0, 0, 0, 
+    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, -0.3, 0.59, 0, 0, 0, 0, 0, 0;
     xgoal.topRows(13) << 1, 0, 0, 0, 
-    (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
+    0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     xgoal.middleRows<7>(13) = ik_res[2];
     
     pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate);
