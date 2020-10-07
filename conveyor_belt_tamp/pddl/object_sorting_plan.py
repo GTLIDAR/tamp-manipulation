@@ -38,6 +38,8 @@ def main():
 
     geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/object_sorting/geo_setup.json"
     traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/object_sorting/traj_setup.json"
+    # geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/object_sorting_multi_sol/geo_setup.json"
+    # traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/object_sorting_multi_sol/traj_setup.json"
 
     motion_planner = MultiWPStaionaryManipMotionPlanRunner(
         geo_setup_file, traj_setup_file
@@ -47,10 +49,13 @@ def main():
 
     start = time.time()
     planner.plan(option=TRAJ_OPTION)
+    # planner.plan_multiple(n_sols=-1, total_depth_limit=-1, option="ddp", show=False)
     end = time.time()
     print("Total Planning Time: ", end - start, "sec")
     
     planner.save_traj()
+    print("Branching Factors", planner.branching_factor)
+    print("Tree Size", planner.num_nodes)
 
 if __name__=="__main__":
     main()

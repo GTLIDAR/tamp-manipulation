@@ -48,6 +48,8 @@ class CausalGraphTampPlanner(object):
         self.trees = []
         self.motion_planner = motion_planner
         self.refinement_time = 0
+        self.branching_factor = []
+        self.num_nodes = []
 
 
     def _rank_subproblems(self, subproblems):
@@ -63,10 +65,13 @@ class CausalGraphTampPlanner(object):
             ranked_subproblems.append(subproblems[r])
         return ranked_subproblems
 
-    def save_traj(self, foldername=None, filename=None):
+    def save_traj(self, traj=None, foldername=None, filename=None):
         """ save trajectory
         """
-        if not self.trajectories:
+        if traj is None:
+            traj = self.trajectories
+
+        if not traj:
             print("No available trajectory.")
             return
 
@@ -82,7 +87,51 @@ class CausalGraphTampPlanner(object):
             filename = "traj"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
 
         with open(foldername+filename, 'w') as out:
-            json.dump(self.trajectories, out)
+            json.dump(traj, out)
+
+    def save_actions(self, actions=None, foldername=None, filename=None):
+        """ save actions
+        """
+
+        if not actions:
+            print("No available solution.")
+            return
+
+        if foldername is None:
+            foldername = drake_path + "/conveyor_belt_tamp/results/"
+        
+        try:
+            os.stat(foldername)
+        except:
+            os.makedirs(foldername)
+
+        if filename is None:
+            filename = "actions"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
+
+        with open(foldername+filename, 'w') as out:
+            json.dump(actions, out)
+    
+    def save_action_costs(self, costs=None, foldername=None, filename=None):
+        """ save actions
+        """
+
+        if not costs:
+            print("No available solution.")
+            return
+
+        if foldername is None:
+            foldername = drake_path + "/conveyor_belt_tamp/results/"
+        
+        try:
+            os.stat(foldername)
+        except:
+            os.makedirs(foldername)
+
+        if filename is None:
+            filename = "actions"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
+
+        with open(foldername+filename, 'w') as out:
+            json.dump(costs, out)
 
     def plan(self, total_depth_limit=-1, option="ddp", show=True):
         """ Runs plan that uses causal graph to generate subproblems first
@@ -105,15 +154,19 @@ class CausalGraphTampPlanner(object):
             (tree.goals, n_visited) = tree.hybrid_search(
                 total_depth_limit=total_depth_limit, n_sols=1, option=option)
             total_n_visited += n_visited
+            (num_nodes, bf) = tree.get_branching_factor()
+            self.num_nodes.append(num_nodes)
+            self.branching_factor.append(bf)
             self.refinement_time += tree.refinement_time
             print("Subtask Search Time:", time.time()-task_start)
             if len(tree.goals):
                 self.state = tree.goals[0].state
-                root = PddlTampNode.make_root_node(self.state)
-                root.traj = tree.goals[0].traj
-                root.time = tree.goals[0].time
-                root.final_ee = tree.goals[0].parent.move_query.desired_ee[-1]
-                root.placed_object = tree.goals[0].placed_object
+                # root = PddlTampNode.make_root_node(self.state)
+                # root.traj = tree.goals[0].traj
+                # root.time = tree.goals[0].time
+                # root.final_ee = tree.goals[0].parent.move_query.desired_ee[-1]
+                # root.placed_object = tree.goals[0].placed_object
+                root = self._get_next_root_node(tree.goals[0])
 
                 self.trajectories.extend(tree.get_traj(tree.goals[0]))
                 self.actions.extend(tree.get_sol(tree.goals[0]))
@@ -126,10 +179,94 @@ class CausalGraphTampPlanner(object):
         print("Total time:", time.time()-start)
         print("Solution:")
         for op in self.actions:
-            print(op.name)
+            print(op)
 
         return (self.trajectories, self.actions)
+    
+    def plan_multiple(self, n_sols=-1, total_depth_limit=-1, option="ddp", show=True):
+        foldername = drake_path + "/conveyor_belt_tamp/results/" + datetime.now().strftime("%Y%m%dT%H%M%S") + "/"
+        try:
+            os.stat(foldername)
+        except:
+            os.makedirs(foldername)
+        
+        fp = open(foldername+"result.csv", "w")
+        fp.write("idx, time, cost\n")
+        fp.close
+        
+        
+        subproblems = get_subproblems(self.causal_graph, self.task, show=show)
+        subproblems = self._rank_subproblems(subproblems)
+        subtasks = []
+        for sp in subproblems:
+            subtasks.append(generate_subtask(self.task, sp, self.state))
 
+        total_n_visited = 0
+        n_goals = 0
+        start = time.time()
+        print("# Subproblem:", len(subtasks))
+        root = PddlTampNode.make_root_node(self.state)
+        tree = PddlTree(root, subtasks[0], self.motion_planner)
+        
+        problem_stack = [(tree, [], [], [], 0)] # (search tree, previous traj, previous actions, cost vector subtask idx)
+
+        while len(problem_stack):
+            tree, prev_traj, prev_actions, prev_costs, st_idx = problem_stack.pop()
+            
+            print("Starting new task")
+            print(tree.task)
+            print("total nodes visited", total_n_visited)
+            print("planning time: ", time.time()-start)
+
+            (tree.goals, n_visited) = tree.hybrid_search(
+                total_depth_limit=total_depth_limit, n_sols=n_sols, option=option)
+            total_n_visited += n_visited
+            (num_nodes, bf) = tree.get_branching_factor()
+            self.num_nodes.append(num_nodes)
+            self.branching_factor.append(bf)
+            print("# Goal found in subtask:", len(tree.goals))
+            print("Subtask completed", str(st_idx)+"/"+str(len(subtasks)-1))
+            if len(tree.goals):
+                for g in tree.goals:
+                    costs = prev_costs.copy()
+                    costs.extend(tree.get_cost_seq(g))
+                    traj = prev_traj.copy()
+                    traj.extend(tree.get_traj(g))
+                    actions = prev_actions.copy()
+                    actions.extend(tree.get_sol(g))
+                    if (st_idx >= len(subtasks)-1): # goal reached
+                        n_goals += 1
+                        planning_time = time.time()-start
+                        fp = open(foldername+"result.csv", "a")
+                        fp.write(str(n_goals)+", "+str(planning_time)+", "+str(costs[-1])+"\n")
+                        fp.close()
+                        self.save_traj(traj=traj, foldername=foldername, filename="traj"+str(n_goals)+".json")
+                        self.save_actions(actions=actions, foldername=foldername, filename="actions"+str(n_goals)+".json")
+                        self.save_action_costs(costs=costs, foldername=foldername, filename="costs"+str(n_goals)+".json")
+    
+                    
+                        if n_goals >= n_sols >=0:
+                            return
+
+                    else: # goal not reached
+                        root = self._get_next_root_node(g)
+                        tree = PddlTree(root, subtasks[st_idx+1], self.motion_planner)
+                        p = (tree, traj, actions, costs, st_idx+1)
+                        problem_stack.append(p)
+
+
+    def _get_next_root_node(self, prev_goal):
+        """ Setup next root for search given previous goal node
+        """
+        init_state = prev_goal.state
+        root = PddlTampNode.make_root_node(init_state)
+        root.traj = prev_goal.traj
+        root.time = prev_goal.time
+        root.final_ee = prev_goal.parent.move_query.desired_ee[-1]
+        root.placed_object = prev_goal.placed_object
+        root.g = prev_goal.g
+
+        return root
 
 def main():
     domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"

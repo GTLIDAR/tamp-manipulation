@@ -29,6 +29,7 @@ const char* const kLcmSchunkWsgCommandChannel = "SCHUNK_WSG_COMMAND";
 
 const int kNumIiwaJoints = 7;
 const int kIiwaTorqueStartIdx = 0; // in case torque vector is expanded in future
+const int trajTimeScale = 1;
 
 class RobotPlanRunner {
     public:
@@ -91,6 +92,7 @@ class RobotPlanRunner {
             }
 
             cur_traj_time_sec_ = (iiwa_status_.utime - start_utime_)/1e6;
+            cur_traj_time_sec_ *= trajTimeScale;
             if (cur_traj_idx_ % 10 == 0) {
                 std::cout<<"Total length: "<<manip_traj_.times_sec.size()<<"\n";
                 std::cout<<"Cur Idx: "<<cur_traj_idx_<<"\n";

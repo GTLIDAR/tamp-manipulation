@@ -14,7 +14,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 10;
+    unsigned int ADMMiterMax = 20;
 
     if (time_horizon<=1.5) {
       iterMax = 20;
@@ -362,7 +362,7 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
       vel_limit = 0.5;
       torque_limit = 30;
     } else {
-      joint_limit = 3.0;
+      joint_limit = 2.75;
       vel_limit = 0.25;
       torque_limit = 30;
     }
