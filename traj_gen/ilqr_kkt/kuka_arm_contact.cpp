@@ -25,8 +25,9 @@ const char* const kIiwaUrdf =
 // iiwa_dt = time step
 // iiwa_N = number of knots
 // iiwa_xgoal = final goal in state space (7pos, 7vel)
-KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal)
+KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, string action_name)
 {
+    action_name_ = action_name;
     //#####
     globalcnt = 0;
     //#####
@@ -128,8 +129,9 @@ KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec
 }
 
 KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal,
-    MultibodyPlant<double>* plant)
+    MultibodyPlant<double>* plant, string action_name)
 {
+    action_name_ = action_name;
     //#####
     globalcnt = 0;
     //#####
@@ -317,8 +319,7 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         const int num_cps = 2;
         Vector3d contact_point_left;
         Vector3d contact_point_right;
-        // Vector3d contact_point_left2;
-        // Vector3d contact_point_right2;
+
         MatrixXd Jac(3*num_cps, 15);
         MatrixXd Jac_left(3, 15);
         MatrixXd Jac_right(3, 15);
@@ -332,26 +333,38 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         
         contact_point_left << 0, 0, 0; 
         contact_point_right << 0, 0, 0; 
-        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
-        Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+        if (action_name_.compare("push")==0){
+            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+            Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
-        Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+            Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+        }
+        else{
+            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+            Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-        // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_left); // the second last argument seems doesn't matter?
-        // Acc_Bias_down_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+            Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-        // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_right); // the second last argument seems doesn't matter?
-        // Acc_Bias_down_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
-        // Jac_iiwa = Jac.middleCols(6, 7);
+            // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_left); // the second last argument seems doesn't matter?
+            // Acc_Bias_down_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+
+            // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_right); // the second last argument seems doesn't matter?
+            // Acc_Bias_down_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+        }
         Jac.block<3, 15>(0, 0) = Jac_left;
         Jac.block<3, 15>(3, 0) = Jac_right;
         // Jac.block<3, 15>(6, 0) = Jac_down_left;
@@ -364,14 +377,18 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
 
         VectorXd Bias_MJ(15);
         VectorXd Acc_Bias(3*num_cps);
-        VectorXd dry_friction(6);
-        // dry_friction << 0, 0, 0, -5.0, 0, 0;
+
         Bias_MJ.setZero();
         Bias_MJ = - Cv;
-        // Bias_MJ.middleRows<6>(0) += dry_friction;
-        // Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
+        Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
+        
+        if (action_name_.compare("push")==0){        
+            VectorXd dry_friction(6);
+            dry_friction << 0, 0, 0, -5.0, 0, 0;
+            Bias_MJ.middleRows<6>(0) += dry_friction;
+        }
         Bias_MJ.middleRows<7>(6) += tau;
-        // Bias_MJ(5, 0) = 0.0;
+
         Acc_Bias.middleRows<3>(0) = -Acc_Bias_left - 500*Jac_left*qd_full;
         Acc_Bias.middleRows<3>(3) = -Acc_Bias_right - 500*Jac_right*qd_full;
         // Acc_Bias.middleRows<3>(6) = -Acc_Bias_down_left - 500*Jac_down_left*qd_full;
@@ -397,7 +414,9 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
         VectorXd Acc_total = M_Inv * (Bias_MJ + Jac.transpose() * force);
         VectorXd ang_dd_obj = Acc_total.topRows(3);
         VectorXd pos_dd_obj = Acc_total.middleRows<3>(3);
-        // pos_dd_obj(2,0) = 0.0;
+        if (action_name_.compare("push")==0){
+            pos_dd_obj(2,0) = 0.0;
+        }
         VectorXd qdd_iiwa = Acc_total.middleRows<7>(6);
 
         // angular velocity cannot be directly integrated because orientation is not commutive
@@ -610,6 +629,7 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
 
         }
     }
+    // SHOULD ALWAYS HAVE OBJECT DYNAMICS! THIS IS JUST FOR TESTING THE STATIC CONTACT POINT
     else{
         q << X.head(stateSize/2);
         qd << X.tail(stateSize/2);

@@ -148,9 +148,9 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double pos_weight;
     double vel_weight;
     double torque_weight;
-    pos_weight = 10;
-    vel_weight = 10;
-    torque_weight = 10;
+    pos_weight = 20;
+    vel_weight = 20;
+    torque_weight = 20;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight, vel_weight, torque_weight, N); //postion/velocity/torque weights
     ILQRSolver_TRK testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
@@ -387,7 +387,7 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
 
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
       joint_limit = 2.0;
-      vel_limit = 1.0;
+      vel_limit = 1.5;
       torque_limit = 30;
     } else {
       joint_limit = 3.0;

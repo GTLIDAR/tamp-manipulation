@@ -99,7 +99,7 @@ public:
                         &TrajOptPublisher::HandleRobotTime, this);
     }
 
-    void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step, double realtime_rate){
+    void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step, double realtime_rate, string action_name){
         struct timeval tbegin,tend;
         double texec = 0.0;
         double dt = time_step;
@@ -117,8 +117,8 @@ public:
           FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
         std::string connectorPath = 
           FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
-        // const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
-        const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf";
+        const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
+        // const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf";
 
         std::string urdf_;
         auto plant_ = multibody::MultibodyPlant<double>(0.0);
@@ -144,7 +144,7 @@ public:
                                         Vector3d(0, 0, 0.053));
         plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
-        const ModelInstanceIndex object_model =
+        // const ModelInstanceIndex object_model =
         parser.AddModelFromFile(FindResourceOrThrow(box_sdf_path0), "object");
 
         plant_.Finalize();
@@ -172,13 +172,13 @@ public:
           // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
         }
         //======================================
-        KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_);
+        KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
         CostFunctionKukaArm_Contact costKukaArm(N);
         ILQR_KKTSolver testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
         testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
         // run one or multiple times and then average
-        unsigned int Num_run = 1;
+        unsigned int Num_run = 0;
         gettimeofday(&tbegin,NULL);
         for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
         if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -218,7 +218,7 @@ public:
         cout << "\tTime of derivative (second): " << lastTraj.time_derivative.sum() << " (" << 100.0*lastTraj.time_derivative.sum()/texec << "%)" << endl;
         cout << "\tTime of backward pass (second): " << lastTraj.time_backward.sum() << " (" << 100.0*lastTraj.time_backward.sum()/texec << "%)" << endl;
 
-
+        cout << "xgoal: " << xgoal.transpose() << endl;
         cout << "lastTraj.xList[" << N << "]:" << lastTraj.xList[N].transpose() << endl;
         cout << "lastTraj.uList[" << N-1 << "]:" << lastTraj.uList[N-1].transpose() << endl;
 
@@ -227,19 +227,19 @@ public:
 
         // auto context_ptr = plant_.CreateDefaultContext();
         // auto context = context_ptr.get();
-        for(unsigned int i=N-50;i<=N;i++){
-          // Do the forward kinamtics for the EE to check the performance
-          auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
-          auto xyz = Eigen::Vector3d(0, 0, 0);
-          math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
-          plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
-          plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].topRows(7));
-          plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
-          const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
-          const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
-          const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
-          cout << "ee[" << i << "]:" << X_Wee.translation().transpose() << endl;
-        }
+        // for(unsigned int i=N-50;i<=N;i++){
+        //   // Do the forward kinamtics for the EE to check the performance
+        //   auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
+        //   auto xyz = Eigen::Vector3d(0, 0, 0);
+        //   math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
+        //   plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
+        //   plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].topRows(7));
+        //   plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
+        //   const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
+        //   const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
+        //   const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
+        //   cout << "ee[" << i << "]:" << X_Wee.translation().transpose() << endl;
+        // }
         // saving data file
         for(unsigned int i=0;i<N;i++){
         saveVector(joint_state_traj[i], "joint_trajectory");
@@ -440,20 +440,20 @@ int do_main_kkt(){
     //waypoint (0)
     ConstraintRelaxingIk::IkCartesianWaypoint wp0;
     const Eigen::Vector3d xyz0(
-        // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-        // 0.0,
-        // 0.3
+        (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
         0.0,
-        0.55,
-        0.0816099
+        0.3
+        // 0.0,
+        // 0.55,
+        // 0.0816099
     );
     const math::RollPitchYaw<double> rpy0(
-        // 0,
-        // 1.57079632679,
-        // 1.57079632679
-        1.42092e-12,
-        0.0292037,
-        4.26875e-12
+        0,
+        1.57079632679,
+        1.57079632679
+        // 1.42092e-12,
+        // 0.0292037,
+        // 4.26875e-12
     );
     // rpy0.To
     wp0.pose.set_translation(xyz0);
@@ -464,20 +464,20 @@ int do_main_kkt(){
     // waypoint (1)
     ConstraintRelaxingIk::IkCartesianWaypoint wp1;
     const Eigen::Vector3d xyz1(
-        // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-        // -0.3,
-        // 0.8
-        0.5,
-        0.55,
-        0.0816099
+        (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+        -0.3,
+        0.8
+        // 0.5,
+        // 0.55,
+        // 0.0816099
     );
     const math::RollPitchYaw<double> rpy1(
-        // 0,
-        // 1.57079632679,
-        // 1.57079632679
-        1.42092e-12,
-        0.0292037,
-        4.26875e-12
+        0,
+        1.57079632679,
+        1.57079632679
+        // 1.42092e-12,
+        // 0.0292037,
+        // 4.26875e-12
     );
 
     wp1.pose.set_translation(xyz1);
@@ -503,20 +503,20 @@ int do_main_kkt(){
     cout << "Finished" << endl;
     
     xinit.setZero();
-    // xinit.topRows(13) << 1, 0, 0, 0, 
-    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
     xinit.topRows(13) << 1, 0, 0, 0, 
-    0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
+    // xinit.topRows(13) << 1, 0, 0, 0, 
+    // 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     xinit.middleRows<7>(13) = ik_res[1];
 
     xgoal.setZero();
-    // xgoal.topRows(13) << 1, 0, 0, 0, 
-    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, -0.3, 0.59, 0, 0, 0, 0, 0, 0;
     xgoal.topRows(13) << 1, 0, 0, 0, 
-    0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, -0.3, 0.59, 0, 0, 0, 0, 0, 0;
+    // xgoal.topRows(13) << 1, 0, 0, 0, 
+    // 0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     xgoal.middleRows<7>(13) = ik_res[2];
-    
-    pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate);
+    std::string action = "move";
+    pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate, action);
 
     return 0;
 }

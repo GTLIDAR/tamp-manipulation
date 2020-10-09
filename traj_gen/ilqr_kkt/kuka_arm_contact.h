@@ -61,8 +61,8 @@ class KukaArm_Contact
 {
 public:
     KukaArm_Contact();
-    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal);
-    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, multibody::MultibodyPlant<double>* plant);
+    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, string action_name);
+    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, multibody::MultibodyPlant<double>* plant, string action_name);
     ~KukaArm_Contact(){};
 private:
 protected:
@@ -135,6 +135,8 @@ private:
     Eigen::VectorXd q;
     Eigen::VectorXd qd;
     std::vector<Eigen::VectorXd> q_thread, qd_thread;
+
+    string action_name_;
 protected:
     // methods
 public:
