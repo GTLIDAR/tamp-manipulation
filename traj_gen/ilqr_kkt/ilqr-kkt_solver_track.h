@@ -22,10 +22,10 @@
 
 #ifndef DEBUG_ILQR
 #define DEBUG_ILQR 1
-#else
-    #if PREFIX1(DEBUG_ILQR)==1
-    #define DEBUG_ILQR 1
-    #endif
+// #else
+//     #if PREFIX1(DEBUG_ILQR)==1
+//     #define DEBUG_ILQR 1
+//     #endif
 #endif
 
 #define TRACE(x) do { if (DEBUG_ILQR) printf(x);} while (0)

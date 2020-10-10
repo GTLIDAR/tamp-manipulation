@@ -174,7 +174,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(stateVec_t xinit, stateVec_t xgo
       auto ptr2 = std::make_unique<std::vector<double>>();
       auto ptr2_st = std::make_unique<std::vector<double>>();
 
-      for (int32_t j=0; j < ptr->dim_states; ++j) { 
+      for (int32_t j=13; j < 13+ptr->dim_states; ++j) { 
         //  ptr2->push_back(lastTraj.uList[i][j]);
         // ptr2->push_back(gtau[j]);
 

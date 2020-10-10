@@ -388,7 +388,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
       auto ptr2 = std::make_unique<std::vector<double>>();
       auto ptr2_st = std::make_unique<std::vector<double>>();
 
-      for (int32_t j=0; j < ptr->dim_states; ++j) {
+      for (int32_t j=13; j < 13+ptr->dim_states; ++j) {
         ptr2->push_back(0);
         ptr2_st->push_back(joint_state_traj_interp[i][j]);
       }

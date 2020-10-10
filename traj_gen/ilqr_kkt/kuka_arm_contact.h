@@ -32,10 +32,10 @@
 
 #ifndef DEBUG_KUKA_ARM
 #define DEBUG_KUKA_ARM 1
-#else
-    #if PREFIX1(DEBUG_KUKA_ARM)==1
-    #define DEBUG_KUKA_ARM 1
-    #endif
+// #else
+//     #if PREFIX1(DEBUG_KUKA_ARM)==1
+//     #define DEBUG_KUKA_ARM 1
+//     #endif
 #endif
 
 #define TRACE_KUKA_ARM(x) do { if (DEBUG_KUKA_ARM) printf(x);} while (0)

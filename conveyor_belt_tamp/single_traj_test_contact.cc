@@ -9,9 +9,10 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/traj_gen/admm_runner.h"
-#include "drake/traj_gen/ddp_runner.h"
-// #include "drake/traj_gen/ilqr_kkt/ddp_runner_contact.h"
+// #include "drake/traj_gen/admm_runner.h"
+// #include "drake/traj_gen/ddp_runner.h"
+#include "drake/traj_gen/ilqr_kkt/ddp_runner_contact.h"
+#include "drake/traj_gen/ilqr_kkt/admm_runner_contact.h"
 
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
@@ -34,8 +35,10 @@ DEFINE_string(plan_channel, "COMMITTED_ROBOT_PLAN", "Plan channels for plan");
 
 using lcm::LCM;
 using drake::manipulation::planner::ConstraintRelaxingIk;
-using drake::traj_gen::kuka_iiwa_arm::ADMMRunner;
-using drake::traj_gen::kuka_iiwa_arm::DDPRunner;
+// using drake::traj_gen::kuka_iiwa_arm::ADMMRunner;
+// using drake::traj_gen::kuka_iiwa_arm::DDPRunner;
+using drake::traj_gen::kuka_iiwa_arm::ADMM_KKTRunner;
+using drake::traj_gen::kuka_iiwa_arm::DDP_KKTRunner;
 
 namespace drake {
 namespace conveyor_belt_tamp {
@@ -88,12 +91,13 @@ void Run(const lcmt_motion_plan_query* query) {
     }
 
     q_goal << -1.43793, 0.71893, -0.313679, -1.17462, 0.213281, 1.27488, -0.169404;
+    q_goal <<  1.18179,   1.51028, -0.438049, -0.943883,  -1.62439,  0.955615,   2.55123;
     // q_goal << -1.00343, 0.997431, -0.744752, -1.41766, 0.73145, 1.0159, -0.339804;
     lcmt_manipulator_traj traj;
     if (FLAGS_use_admm) {
-        traj = GetADMMRes(iiwa_q, q_goal, query);
+        traj = GetADMM_KKTRes(iiwa_q, q_goal, query);
     } else {
-        traj = GetDDPRes(iiwa_q, q_goal, query);
+        traj = GetDDP_KKTRes(iiwa_q, q_goal, query);
     }
     std::vector<double> widths;
     std::vector<double> forces;
@@ -116,7 +120,27 @@ string model_path_;
 LCM lcm_;
 const lcmt_motion_plan_query* current_query_;
 
-lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
+// lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
+//     const lcmt_motion_plan_query* query) {
+//     std::cout<<"IK Successful, sent to ddp\n";
+//     std::cout<<"ddp initial pos: " << q_init.transpose() << std::endl;
+//     std::cout<<"ddp goal pos: " << q_goal.transpose() << std::endl;
+
+//     VectorXd qv_init;
+//     qv_init = Eigen::VectorXd::Zero(stateSize);
+//     VectorXd::Map(&qv_init[0], q_init.size()) = q_init;
+//     // std::cout<<"qv_init:\n"<<qv_init<<"\n";
+
+//     VectorXd qv_goal;
+//     qv_goal = VectorXd::Zero(stateSize);
+//     VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
+//     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
+
+//     DDPRunner runner;
+//     return runner.RunDDP(qv_init, qv_goal, query->time_horizon, query->time_step);
+// }
+
+lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to ddp\n";
     std::cout<<"ddp initial pos: " << q_init.transpose() << std::endl;
@@ -124,35 +148,58 @@ lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
 
     VectorXd qv_init;
     qv_init = Eigen::VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_init[0], q_init.size()) = q_init;
+    qv_init.topRows(7) << 1, 0, 0, 0, 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    VectorXd::Map(&qv_init[13], q_init.size()) = q_init;
     // std::cout<<"qv_init:\n"<<qv_init<<"\n";
 
     VectorXd qv_goal;
     qv_goal = VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
+    qv_goal.topRows(13) << 1, 0, 0, 0, 0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    VectorXd::Map(&qv_goal[13], q_goal.size()) = q_goal;
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
 
-    DDPRunner runner;
-    return runner.RunDDP(qv_init, q_goal, query->time_horizon, query->time_step);
+    DDP_KKTRunner runner;
+    return runner.RunDDP_KKT(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
 }
 
-lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
+// lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
+//     const lcmt_motion_plan_query* query) {
+//     std::cout<<"IK Successful, sent to admm\n";
+//     std::cout<<"admm initial pos: " << q_init.transpose() << std::endl;
+//     std::cout<<"admm goal pos: " << q_goal.transpose() << std::endl;
+
+//     VectorXd qv_init;
+//     qv_init = Eigen::VectorXd::Zero(stateSize);
+//     VectorXd::Map(&qv_init[0], q_init.size()) = q_init;
+//     // std::cout<<"qv_init:\n"<<qv_init<<"\n";
+
+//     VectorXd qv_goal;
+//     qv_goal = VectorXd::Zero(stateSize);
+//     VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
+//     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
+//     ADMMRunner runner;
+//     return runner.RunADMM(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
+// }
+
+lcmt_manipulator_traj GetADMM_KKTRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to admm\n";
     std::cout<<"admm initial pos: " << q_init.transpose() << std::endl;
     std::cout<<"admm goal pos: " << q_goal.transpose() << std::endl;
 
-    VectorXd qv_init;
+   VectorXd qv_init;
     qv_init = Eigen::VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_init[0], q_init.size()) = q_init;
+    qv_init.topRows(7) << 1, 0, 0, 0, 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    VectorXd::Map(&qv_init[13], q_init.size()) = q_init;
     // std::cout<<"qv_init:\n"<<qv_init<<"\n";
 
     VectorXd qv_goal;
     qv_goal = VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
+    qv_goal.topRows(13) << 1, 0, 0, 0, 0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    VectorXd::Map(&qv_goal[13], q_goal.size()) = q_goal;
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
-    ADMMRunner runner;
-    return runner.RunADMM(qv_init, q_goal, query->time_horizon, query->time_step, query->name);
+    ADMM_KKTRunner runner;
+    return runner.RunADMM(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
 }
 
 };
