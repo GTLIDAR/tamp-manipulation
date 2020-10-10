@@ -278,11 +278,21 @@ int do_main(int argc, char* argv[]) {
         station->GetConveyorBeltId(),
         drake::Vector1d(geo_setup["belt_vel"][1].asDouble())
     );
+
+    Eigen::VectorXd q0(7);
+    q0 << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+    plant.SetPositions(
+        context,
+        &state,
+        station->GetIiwaModel(),
+        q0
+    );
     
-    // Eigen::VectorXd q0 = station->GetIiwaPosition(station_context);
+    
     // iiwa_command_receiver->set_initial_position(
     //     &diagram->GetMutableSubsystemContext(*iiwa_command_receiver, &context), q0
     // );
+    // station->SetIiwaPosition(station_context, q0);
 
     simulator.set_publish_every_time_step(false);
     simulator.set_target_realtime_rate(sim_setup["target_realtime_rate"].asDouble());

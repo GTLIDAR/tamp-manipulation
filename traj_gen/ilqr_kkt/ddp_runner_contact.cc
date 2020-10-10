@@ -5,7 +5,7 @@ namespace traj_gen {
 namespace kuka_iiwa_arm {
 
 lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(stateVec_t xinit, stateVec_t xgoal, 
-  double time_horizon, double time_step, string action_name) {
+  double time_horizon, double time_step, string action_name, bool with_obj) {
     struct timeval tbegin,tend;
     double texec = 0.0;
 

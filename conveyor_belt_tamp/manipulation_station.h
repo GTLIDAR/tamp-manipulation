@@ -475,6 +475,10 @@ class ManipulationStation : public systems::Diagram<T> {
     return object_model_ids_[idx];
   }
 
+  multibody::ModelInstanceIndex GetIiwaModel() {
+    return iiwa_model_.model_instance;
+  }
+  
  private:
   // Struct defined to store information about the how to parse and add a model.
   struct ModelInformation {

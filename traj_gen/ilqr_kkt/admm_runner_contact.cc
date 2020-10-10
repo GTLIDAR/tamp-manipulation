@@ -14,7 +14,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 20;
+    unsigned int ADMMiterMax = 5;
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -166,7 +166,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
     pos_obj_weight = 0;
     pos_iiwa_weight = 20; 
     vel_obj_weight = 0;
-    vel_iiwa_weight = 0;
+    vel_iiwa_weight = 20;
     torque_weight = 20;
 
     CostFunctionKukaArm_TRK_Contact costKukaArm_init(0, 0, 0, 0, 0, N); //only for initialization
@@ -414,7 +414,7 @@ projStateAndCommandTab_t ADMM_KKTRunner::projection(const stateVecTab_t& xnew,
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
       pos_limit_obj = 10; // not used for object now
       vel_limit_obj = 10;
-      joint_limit_iiwa = 2.0;
+      joint_limit_iiwa = 3.0;
       vel_limit_iiwa = 1.5;
       torque_limit = 30;
     } else {

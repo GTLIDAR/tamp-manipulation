@@ -17,7 +17,7 @@
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
 
-DEFINE_bool(use_admm, false, "whether to use admm or ddp");
+DEFINE_bool(use_admm, true, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -148,7 +148,7 @@ lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal,
 
     VectorXd qv_init;
     qv_init = Eigen::VectorXd::Zero(stateSize);
-    qv_init.topRows(7) << 1, 0, 0, 0, 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    qv_init.topRows(13) << 1, 0, 0, 0, 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     VectorXd::Map(&qv_init[13], q_init.size()) = q_init;
     // std::cout<<"qv_init:\n"<<qv_init<<"\n";
 

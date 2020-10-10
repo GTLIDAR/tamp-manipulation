@@ -57,7 +57,7 @@ using multibody::BodyIndex;
 class DDP_KKTRunner {
 public:
 lcmt_manipulator_traj RunDDP_KKT(stateVec_t xinit, stateVec_t xgoal,
-    double time_horizon, double time_step, string action_name);
+    double time_horizon, double time_step, string action_name, bool with_obj);
 void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);
 void clean_file(const char * _file_name, std::string & _ret_file);
