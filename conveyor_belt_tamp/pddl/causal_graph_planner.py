@@ -50,6 +50,7 @@ class CausalGraphTampPlanner(object):
         self.refinement_time = 0
         self.branching_factor = []
         self.num_nodes = []
+        self.move_query_sequence = []
 
 
     def _rank_subproblems(self, subproblems):
@@ -111,6 +112,30 @@ class CausalGraphTampPlanner(object):
         with open(foldername+filename, 'w') as out:
             json.dump(actions, out)
     
+    def save_move_query_sequence(self, query=None, foldername=None, filename=None):
+        """ save move query
+        """
+        if query is None:
+            query = self.move_query_sequence
+            
+        if not query:
+            print("No available solution.")
+            return
+
+        if foldername is None:
+            foldername = drake_path + "/conveyor_belt_tamp/results/"
+        
+        try:
+            os.stat(foldername)
+        except:
+            os.makedirs(foldername)
+
+        if filename is None:
+            filename = "admm_queries"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
+
+        with open(foldername+filename, 'w') as out:
+            json.dump(query, out)
+
     def save_action_costs(self, costs=None, foldername=None, filename=None):
         """ save actions
         """
@@ -170,6 +195,7 @@ class CausalGraphTampPlanner(object):
 
                 self.trajectories.extend(tree.get_traj(tree.goals[0]))
                 self.actions.extend(tree.get_sol(tree.goals[0]))
+                self.move_query_sequence.extend(tree.get_move_query_sequence(tree.goals[0], save_results=False))
                 self.trees.append(tree)
             else:
                 print("This tree does not have solution...")

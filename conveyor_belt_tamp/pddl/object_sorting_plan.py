@@ -20,7 +20,7 @@ from search_tree.multi_wp_motion_plan_runner import MultiWPStaionaryManipMotionP
 
 from pyperplan import _parse, _ground
 
-TRAJ_OPTION = "refine"
+TRAJ_OPTION = "ddp"
 MULTI_WP = True
 
 def main():
@@ -54,6 +54,7 @@ def main():
     print("Total Planning Time: ", end - start, "sec")
     
     planner.save_traj()
+    planner.save_move_query_sequence()
     print("Branching Factors", planner.branching_factor)
     print("Tree Size", planner.num_nodes)
 

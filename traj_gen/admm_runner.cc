@@ -14,11 +14,20 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 20;
+    unsigned int ADMMiterMax = 10;
+
+    double pos_weight;
+    double vel_weight;
+    double torque_weight;
+    pos_weight = 5;
+    vel_weight = 20;
+    torque_weight = 0;
 
     if (time_horizon<=1.5) {
       iterMax = 20;
-      ADMMiterMax = 30;
+      ADMMiterMax = 20;
+      // pos_weight = 5;
+      // vel_weight = 20;
     }
 
     if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
@@ -146,12 +155,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
     // KukaArm_TRK KukaArmModel(dt, N, xgoal);
-    double pos_weight;
-    double vel_weight;
-    double torque_weight;
-    pos_weight = 5;
-    vel_weight = 30;
-    torque_weight = 0;
+
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight, vel_weight, torque_weight, N); //postion/velocity/torque weights
     ILQRSolver_TRK testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
