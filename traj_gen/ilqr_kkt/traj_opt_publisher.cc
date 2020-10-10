@@ -178,7 +178,7 @@ public:
         testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
         // run one or multiple times and then average
-        unsigned int Num_run = 0;
+        unsigned int Num_run = 1;
         gettimeofday(&tbegin,NULL);
         for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
         if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -436,86 +436,143 @@ int do_main_kkt(){
 
     std::string kIiwaUrdf = 
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
-    std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
-    //waypoint (0)
-    ConstraintRelaxingIk::IkCartesianWaypoint wp0;
-    const Eigen::Vector3d xyz0(
-        (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-        0.0,
-        0.3
-        // 0.0,
-        // 0.55,
-        // 0.0816099
-    );
-    const math::RollPitchYaw<double> rpy0(
-        0,
-        1.57079632679,
-        1.57079632679
-        // 1.42092e-12,
-        // 0.0292037,
-        // 4.26875e-12
-    );
-    // rpy0.To
-    wp0.pose.set_translation(xyz0);
-    wp0.pose.set_rotation(rpy0);
-    wp0.constrain_orientation = true;
-    wp_vec.push_back(wp0);
-
-    // waypoint (1)
-    ConstraintRelaxingIk::IkCartesianWaypoint wp1;
-    const Eigen::Vector3d xyz1(
-        (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-        -0.3,
-        0.8
-        // 0.5,
-        // 0.55,
-        // 0.0816099
-    );
-    const math::RollPitchYaw<double> rpy1(
-        0,
-        1.57079632679,
-        1.57079632679
-        // 1.42092e-12,
-        // 0.0292037,
-        // 4.26875e-12
-    );
-
-    wp1.pose.set_translation(xyz1);
-    wp1.pose.set_rotation(rpy1);
-    wp1.constrain_orientation = true;
-    wp_vec.push_back(wp1);
-
-    Eigen::VectorXd iiwa_q(7);
-    iiwa_q << -0.133372, 0.251457, -0.0461879, -1.21048, 0.0324702, 0.928553, -0.190112; //warm-start for grasping from top
-
-    ConstraintRelaxingIk ik(
-        kIiwaUrdf,
-        FLAGS_ee_name
-    );
-
+    std::string action = "push";
     std::vector<Eigen::VectorXd> ik_res;
-    if(!ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &ik_res)){
-      cout << "infeasible" << endl;
+    if (action.compare("push")==0){
+        std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
+        //waypoint (0)
+        ConstraintRelaxingIk::IkCartesianWaypoint wp0;
+        const Eigen::Vector3d xyz0(
+            0.0,
+            0.55,
+            0.0816099
+        );
+        const math::RollPitchYaw<double> rpy0(
+            // 0,
+            // 1.57079632679,
+            // 1.57079632679
+            1.42092e-12,
+            0.0292037,
+            4.26875e-12
+        );
+        // rpy0.To
+        wp0.pose.set_translation(xyz0);
+        wp0.pose.set_rotation(rpy0);
+        wp0.constrain_orientation = true;
+        wp_vec.push_back(wp0);
+
+        // waypoint (1)
+        ConstraintRelaxingIk::IkCartesianWaypoint wp1;
+        const Eigen::Vector3d xyz1(
+            0.5,
+            0.55,
+            0.0816099
+        );
+        const math::RollPitchYaw<double> rpy1(
+            // 0,
+            // 1.57079632679,
+            // 1.57079632679
+            1.42092e-12,
+            0.0292037,
+            4.26875e-12
+        );
+
+        wp1.pose.set_translation(xyz1);
+        wp1.pose.set_rotation(rpy1);
+        wp1.constrain_orientation = true;
+        wp_vec.push_back(wp1);
+
+        Eigen::VectorXd iiwa_q(7);
+        iiwa_q << -0.133372, 0.251457, -0.0461879, -1.21048, 0.0324702, 0.928553, -0.190112; //warm-start for grasping from top
+
+        ConstraintRelaxingIk ik(
+            kIiwaUrdf,
+            FLAGS_ee_name
+        );
+
+        if(!ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &ik_res)){
+        cout << "infeasible" << endl;
+        }
+        for (unsigned int y=0; y<ik_res.size(); y++){
+        cout << ik_res[y].transpose() << endl;
+        }
+        cout << "Finished" << endl;
     }
-    for (unsigned int y=0; y<ik_res.size(); y++){
-      cout << ik_res[y].transpose() << endl;
+    else{
+        std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
+        //waypoint (0)
+        ConstraintRelaxingIk::IkCartesianWaypoint wp0;
+        const Eigen::Vector3d xyz0(
+            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+            0.0,
+            0.3
+        );
+        const math::RollPitchYaw<double> rpy0(
+            0,
+            1.57079632679,
+            1.57079632679
+        );
+        // rpy0.To
+        wp0.pose.set_translation(xyz0);
+        wp0.pose.set_rotation(rpy0);
+        wp0.constrain_orientation = true;
+        wp_vec.push_back(wp0);
+
+        // waypoint (1)
+        ConstraintRelaxingIk::IkCartesianWaypoint wp1;
+        const Eigen::Vector3d xyz1(
+            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+            -0.3,
+            0.8
+        );
+        const math::RollPitchYaw<double> rpy1(
+            0,
+            1.57079632679,
+            1.57079632679
+        );
+
+        wp1.pose.set_translation(xyz1);
+        wp1.pose.set_rotation(rpy1);
+        wp1.constrain_orientation = true;
+        wp_vec.push_back(wp1);
+
+        Eigen::VectorXd iiwa_q(7);
+        iiwa_q << -0.133372, 0.251457, -0.0461879, -1.21048, 0.0324702, 0.928553, -0.190112; //warm-start for grasping from top
+
+        ConstraintRelaxingIk ik(
+            kIiwaUrdf,
+            FLAGS_ee_name
+        );
+
+        if(!ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &ik_res)){
+        cout << "infeasible" << endl;
+        }
+        for (unsigned int y=0; y<ik_res.size(); y++){
+        cout << ik_res[y].transpose() << endl;
+        }
+        cout << "Finished" << endl;
+
+        // object initial and final states
+        Vector3d object_pos_init = xyz0;
+        object_pos_init(2, 0) -= 0.21;
+        Vector3d object_pos_goal = xyz1;
+        object_pos_goal(2, 0) -= 0.21;
+
     }
-    cout << "Finished" << endl;
-    
     xinit.setZero();
-    xinit.topRows(13) << 1, 0, 0, 0, 
-    (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
     // xinit.topRows(13) << 1, 0, 0, 0, 
-    // 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
+    xinit.topRows(13) << 1, 0, 0, 0, 
+    0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     xinit.middleRows<7>(13) = ik_res[1];
 
     xgoal.setZero();
-    xgoal.topRows(13) << 1, 0, 0, 0, 
-    (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, -0.3, 0.59, 0, 0, 0, 0, 0, 0;
     // xgoal.topRows(13) << 1, 0, 0, 0, 
-    // 0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
+    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, -0.3, 0.59, 0, 0, 0, 0, 0, 0;
+    xgoal.topRows(13) << 1, 0, 0, 0, 
+    0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     xgoal.middleRows<7>(13) = ik_res[2];
-    std::string action = "move";
+    
     pub.Run_test(xinit, xgoal, time_horizon, time_step, realtime_rate, action);
 
     return 0;

@@ -1,31 +1,14 @@
-#include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
+#include "drake/traj_gen/ilqr_kkt/kuka_arm_track_contact.h"
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-KukaArm_Contact::KukaArm_Contact(){}
-
-//const char* const kIiwaUrdf =
-//    "drake/manipulation/models/iiwa_description/urdf/"
-//    "iiwa14_no_collision.urdf";
+KukaArm_TRK_Contact::KukaArm_TRK_Contact(){}
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-
-// const char* const kIiwaUrdf =
-//     "drake/manipulation/models/iiwa_description/urdf/"
-//     "iiwa7.urdf";
-
-// Add Schunk and Kuka_connector
-// const char* const kIiwaUrdf = "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-// const char* schunkPath = "drake/manipulation/models/wsg_50_description/urdf/wsg_50_mesh_collision_no_world_joint.urdf";
-// const char* connectorPath = "drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf";
-
-// iiwa_dt = time step
-// iiwa_N = number of knots
-// iiwa_xgoal = final goal in state space (7pos, 7vel)
-KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, string action_name)
+KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, string action_name)
 {
     action_name_ = action_name;
     //#####
@@ -124,12 +107,10 @@ KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec
         const auto& iiwa_base_frame = plant_->GetFrameByName("iiwa_link_0", iiwa_model);
         RigidTransformd X_WI(Eigen::Vector3d(0, 0, 0));
         plant_->WeldFrames(plant_->world_frame(), iiwa_base_frame, X_WI);
-
     }
 }
 
-KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal,
-    MultibodyPlant<double>* plant, string action_name)
+KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, MultibodyPlant<double>* plant, string action_name)
 {
     action_name_ = action_name;
     //#####
@@ -207,18 +188,11 @@ KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec
     initial_phase_flag_ = 1;
     q.resize(stateSize/2);
     qd.resize(stateSize/2);
-    // q_thread.resize(NUMBER_OF_THREAD);
-    // qd_thread.resize(NUMBER_OF_THREAD);
-    // for(unsigned int i=0;i<NUMBER_OF_THREAD;i++){
-    //     q_thread[i].resize(stateSize/2);
-    //     qd_thread[i].resize(stateSize/2);
-    // }
 
     finalTimeProfile.time_period1 = 0;
     finalTimeProfile.time_period2 = 0;
     finalTimeProfile.time_period3 = 0;
     finalTimeProfile.time_period4 = 0;
-
 
     if(initial_phase_flag_ == 1){
         plant_ = plant;
@@ -227,7 +201,7 @@ KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec
     }
 }
 
-stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau)
+stateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau)
 {
 
     finalTimeProfile.counter0_ += 1;
@@ -722,14 +696,15 @@ stateVec_t KukaArm_Contact::kuka_arm_dynamics(const stateVec_t& X, const command
 }
 
 
-KukaArm_Contact::timeprofile KukaArm_Contact::getFinalTimeProfile()
+KukaArm_TRK_Contact::timeprofile KukaArm_TRK_Contact::getFinalTimeProfile()
 {
     return finalTimeProfile;
 }
 
-void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
-                                CostFunctionKukaArm_Contact*& costFunction){
+void KukaArm_TRK_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
+                                const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, CostFunctionKukaArm_TRK_Contact*& costFunction){
     // // for a positive-definite quadratic, no control cost (indicated by the iLQG function using nans), is equivalent to u=0
+    // for ADMM, add new penalties for augmented Lagrangian terms
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     unsigned int Nl = xList.size();
 
@@ -746,16 +721,23 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTa
         for(unsigned int k=0;k<Nl;k++){
             if(k == Nl-1){//isNanVec(uList[k])
                 if(debugging_print) TRACE_KUKA_ARM("before the update1\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose()) * costFunction->getQf() * (xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose()) * costFunction->getQf() * (xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);
+                // cout << "CMAT SCALAR 1: " << c_mat_to_scalar << endl;
                 costFunction->getc() += c_mat_to_scalar(0,0);
                 if(debugging_print) TRACE_KUKA_ARM("after the update1\n");
             }else{
                 // if u is not NaN (not final), add state and control cost
                 if(debugging_print) TRACE_KUKA_ARM("before the update2\n");
                 FList[k] = update(nargout_update1, xList[k], uList[k], AA, BB);
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);
+
+                // cout << "CMAT SCALAR 2: " << c_mat_to_scalar << endl;
+
                 if(debugging_print) TRACE_KUKA_ARM("after the update2\n");
-                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k];
+                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k] +
+                0.5*(uList[k].transpose() - uList_bar[k].transpose()) * costFunction->getRho_torque()* (uList[k] - uList_bar[k]);
                 costFunction->getc() += c_mat_to_scalar(0,0);
             }
         }
@@ -765,27 +747,32 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTa
         for(unsigned int k=0;k<Nl;k++) {
             if(k == Nl-1) {//isNanVec(uList[k])
                 // if(debugging_print) TRACE_KUKA_ARM("before the update3\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQf()*(xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQf()*(xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);
                 costFunction->getc() += c_mat_to_scalar(0,0);
+                // cout << "CMAT SCALAR 1: " << c_mat_to_scalar << endl;
                 // if(debugging_print) TRACE_KUKA_ARM("after the update3\n");
             }
             else {
                 // if(debugging_print) TRACE_KUKA_ARM("before the update4\n");
                 FList[k] = update(nargout_update2, xList[k], uList[k], AA, BB);//assume three outputs, code needs to be optimized
                 // if(debugging_print) TRACE_KUKA_ARM("before the update4-1\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);;
                 // if(debugging_print) TRACE_KUKA_ARM("after the update4\n");
 
-                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k];
+                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k] +
+                0.5*(uList[k].transpose() - uList_bar[k].transpose()) * costFunction->getRho_torque()* (uList[k] - uList_bar[k]);
                 costFunction->getc() += c_mat_to_scalar(0,0); // TODO: to be checked
                 // if(debugging_print) TRACE_KUKA_ARM("after the update5\n");
-
+                // cout << "CMAT SCALAR 2: " << c_mat_to_scalar << endl;
                 A_temp[k] = AA;
                 B_temp[k] = BB;
             }
         }
 
         stateVec_t cx_temp;
+        // cout << cx_temp << endl;
 
         if(debugging_print) TRACE_KUKA_ARM("compute dynamics and cost derivative\n");
 
@@ -794,21 +781,27 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTa
             fuList[k] = B_temp[k];
 
             // cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
+
             cx_temp << xList[k] - xgoal;
 
-            costFunction->getcx()[k] = costFunction->getQ()*cx_temp;
-            costFunction->getcu()[k] = costFunction->getR()*uList[k];
-            costFunction->getcxx()[k] = costFunction->getQ();
+            // if (k==0)
+            //     cout << cx_temp << endl;
+
+            costFunction->getcx()[k] = costFunction->getQ()*cx_temp + costFunction->getRho_state()*(xList[k]-xList_bar[k]);
+
+            costFunction->getcu()[k] = costFunction->getR()*uList[k] + costFunction->getRho_torque()*(uList[k]-uList_bar[k]);
+            costFunction->getcxx()[k] = costFunction->getQ() + costFunction->getRho_state();
             costFunction->getcux()[k].setZero();
-            costFunction->getcuu()[k] = costFunction->getR();
+            costFunction->getcuu()[k] = costFunction->getR() + costFunction->getRho_torque();
         }
         if(debugging_print) TRACE_KUKA_ARM("update the final value of cost derivative \n");
 
-        costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal);
-        costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1];
-        costFunction->getcxx()[Nl-1] = costFunction->getQf();
+        costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal) + costFunction->getRho_state()*(xList[Nl-1]-xList_bar[Nl-1]);
+        costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1] + costFunction->getRho_torque()*(uList[Nl-1]-uList_bar[Nl-1]);
+        costFunction->getcxx()[Nl-1] = costFunction->getQf() + costFunction->getRho_state();
         costFunction->getcux()[Nl-1].setZero();
-        costFunction->getcuu()[Nl-1] = costFunction->getR();
+        costFunction->getcuu()[Nl-1] = costFunction->getR() + costFunction->getRho_torque();
+
 
         if(debugging_print) TRACE_KUKA_ARM("set unused matrices to zero \n");
 
@@ -822,8 +815,8 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTa
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-void KukaArm_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr, 
-                                                    const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm_Contact*& costFunction){
+void KukaArm_TRK_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr,
+        const stateVec_t& xList_cur_bar, const commandVec_t& uList_cur_bar, const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm_TRK_Contact*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     if(debugging_print) std::cout<<"nargout: "<<nargout<<"\n";
     unsigned int Nc = xList_curr.cols(); //xList_curr is 14x1 vector -> col=1
@@ -844,23 +837,26 @@ void KukaArm_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const stat
             // cout << "Q: " <<  costFunction->getQ() << endl;
             // cout << "QF: " <<  costFunction->getQf() << endl;
             // if(debugging_print) TRACE_KUKA_ARM("before the update1\n");
-            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose()) * costFunction->getQf() * (xList_curr - xgoal);
+            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose()) * costFunction->getQf() * (xList_curr - xgoal) +
+            0.5*(xList_curr.transpose() - xList_cur_bar.transpose())*costFunction->getRho_state()*(xList_curr - xList_cur_bar);
             costFunction->getc() += c_mat_to_scalar(0,0);
             // if(debugging_print) TRACE_KUKA_ARM("after the update1\n");
         }
         else {
             // if(debugging_print) TRACE_KUKA_ARM("before the update2\n");
             xList_next = update(nargout_update1, xList_curr, uList_curr, AA, BB);
-            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose())*costFunction->getQ()*(xList_curr - xgoal);
+            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose())*costFunction->getQ()*(xList_curr - xgoal) +
+            0.5*(xList_curr.transpose() - xList_cur_bar.transpose())*costFunction->getRho_state()*(xList_curr - xList_cur_bar);
             // if(debugging_print) TRACE_KUKA_ARM("after the update2\n");
-            c_mat_to_scalar += 0.5*uList_curr.transpose()*costFunction->getR()*uList_curr;
+            c_mat_to_scalar += 0.5*uList_curr.transpose()*costFunction->getR()*uList_curr +
+            0.5*(uList_curr.transpose() - uList_cur_bar.transpose()) * costFunction->getRho_torque()* (uList_curr - uList_cur_bar);
             costFunction->getc() += c_mat_to_scalar(0,0);
         }
     }
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-stateVec_t KukaArm_Contact::update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
+stateVec_t KukaArm_TRK_Contact::update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
     // 4th-order Runge-Kutta step
     if(debugging_print) TRACE_KUKA_ARM("update: 4th-order Runge-Kutta step\n");
 
@@ -873,17 +869,18 @@ stateVec_t KukaArm_Contact::update(const int& nargout, const stateVec_t& X, cons
     Xdot4 = kuka_arm_dynamics(X + dt*Xdot3, U);
     stateVec_t X_new;
     X_new = X + (dt/6)*(Xdot1 + 2*Xdot2 + 2*Xdot3 + Xdot4);
-    // Simple Euler Integration (for debug)
-//    X_new = X + (dt)*Xdot1;
 
-    if ((globalcnt%4 == 0) && (globalcnt<40)) {
-        // cout << "X " << endl << X << endl;
-        // cout << "Xdot1 " << endl << Xdot1 << endl;
-        // cout << "Xdot2 " << endl << Xdot2 << endl;
-        // cout << "Xdot3 " << endl << Xdot3 << endl;
-        // cout << "Xdot4 " << endl << Xdot4 << endl;
-        // cout << "X_NEW: " << endl << X_new << endl;
-    }
+    // Simple Euler Integration (for debug)
+    // X_new = X + (dt)*Xdot1;
+
+    // if ((globalcnt%4 == 0) && (globalcnt<40)) {
+    //     cout << "X " << endl << X << endl;
+    //     cout << "Xdot1 " << endl << Xdot1 << endl;
+    //     cout << "Xdot2 " << endl << Xdot2 << endl;
+    //     cout << "Xdot3 " << endl << Xdot3 << endl;
+    //     cout << "Xdot4 " << endl << Xdot4 << endl;
+    //     cout << "X_NEW: " << endl << X_new << endl;
+    // }
 
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 
@@ -904,7 +901,7 @@ stateVec_t KukaArm_Contact::update(const int& nargout, const stateVec_t& X, cons
         Du.setIdentity();
         Du = delta*Du;
 
-        // State perturbation
+        // State perturbation?
         for(unsigned int i=0;i<n;i++){
             Xp1 = kuka_arm_dynamics(X+Dx.col(i),U);
             Xm1 = kuka_arm_dynamics(X-Dx.col(i),U);
@@ -923,7 +920,7 @@ stateVec_t KukaArm_Contact::update(const int& nargout, const stateVec_t& X, cons
             A4.col(i) = (Xp4 - Xm4)/(2*delta);
         }
 
-        // Control perturbation
+        // Control perturbation?
         for(unsigned int i=0;i<m;i++){
             Xp1 = kuka_arm_dynamics(X,U+Du.col(i));
             Xm1 = kuka_arm_dynamics(X,U-Du.col(i));
@@ -943,8 +940,7 @@ stateVec_t KukaArm_Contact::update(const int& nargout, const stateVec_t& X, cons
         }
 
         A = (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)*(IdentityMat + A2 * dt/3)*(IdentityMat + A1 * dt/6);
-        B = B4 * dt/6 + (IdentityMat + A4 * dt/6) * B3 * dt/3 + (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)* B2 * dt/3 
-            + (IdentityMat + (dt/6)*A4)*(IdentityMat + (dt/3)*A3)*(IdentityMat + (dt/3)*A2)*(dt/6)*B1;
+        B = B4 * dt/6 + (IdentityMat + A4 * dt/6) * B3 * dt/3 + (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)* B2 * dt/3 + (IdentityMat + (dt/6)*A4)*(IdentityMat + (dt/3)*A3)*(IdentityMat + (dt/3)*A2)*(dt/6)*B1;
     }
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 
@@ -954,7 +950,7 @@ stateVec_t KukaArm_Contact::update(const int& nargout, const stateVec_t& X, cons
     return X_new;
 }
 
-void KukaArm_Contact::grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
+void KukaArm_TRK_Contact::grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -984,7 +980,7 @@ void KukaArm_Contact::grad(const stateVec_t& X, const commandVec_t& U, stateMat_
 }
 
 // parameters are called by reference. Name doesn't matter
-void KukaArm_Contact::hessian(const stateVec_t& X, const commandVec_t& U, stateTens_t& fxx_p, stateR_stateC_commandD_t& fxu_p, stateR_commandC_commandD_t& fuu_p){
+void KukaArm_TRK_Contact::hessian(const stateVec_t& X, const commandVec_t& U, stateTens_t& fxx_p, stateR_stateC_commandD_t& fxu_p, stateR_commandC_commandD_t& fuu_p){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -1028,39 +1024,39 @@ void KukaArm_Contact::hessian(const stateVec_t& X, const commandVec_t& U, stateT
     }
 }
 
-unsigned int KukaArm_Contact::getStateNb()
+unsigned int KukaArm_TRK_Contact::getStateNb()
 {
     return stateNb;
 }
 
-unsigned int KukaArm_Contact::getCommandNb()
+unsigned int KukaArm_TRK_Contact::getCommandNb()
 {
     return commandNb;
 }
 
-commandVec_t& KukaArm_Contact::getLowerCommandBounds()
+commandVec_t& KukaArm_TRK_Contact::getLowerCommandBounds()
 {
     return lowerCommandBounds;
 }
 
-commandVec_t& KukaArm_Contact::getUpperCommandBounds()
+commandVec_t& KukaArm_TRK_Contact::getUpperCommandBounds()
 {
     return upperCommandBounds;
 }
 
-stateMatTab_t& KukaArm_Contact::getfxList()
+stateMatTab_t& KukaArm_TRK_Contact::getfxList()
 {
     return fxList;
 }
 
-stateR_commandC_tab_t& KukaArm_Contact::getfuList()
+stateR_commandC_tab_t& KukaArm_TRK_Contact::getfuList()
 {
     return fuList;
 }
 
 
-void KukaArm_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
-                                CostFunctionKukaArm_Contact*& costFunction){
+void KukaArm_TRK_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
+                                CostFunctionKukaArm_TRK_Contact*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     unsigned int Nl = xList.size();
 
@@ -1093,9 +1089,7 @@ void KukaArm_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab
         stateVec_t cx_temp;
         if(debugging_print) TRACE_KUKA_ARM("compute cost derivative\n");
         for(unsigned int k=0;k<Nl-1;k++){
-            // cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
-            cx_temp << xList[k] - xgoal;
-
+            cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
             costFunction->getcx()[k] = costFunction->getQ()*cx_temp;
             costFunction->getcu()[k] = costFunction->getR()*uList[k];
             costFunction->getcxx()[k] = costFunction->getQ();

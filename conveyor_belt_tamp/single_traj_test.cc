@@ -11,11 +11,12 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/traj_gen/admm_runner.h"
 #include "drake/traj_gen/ddp_runner.h"
+#include "drake/traj_gen/ilqr_kkt/ddp_runner_contact.h"
 
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -167,7 +168,7 @@ int main(int argc, char* argv[]) {
     query.name = "push";
     query.level = 0;
     query.time_horizon = 1.0;
-    query.time_step = 0.01;
+    query.time_step = 0.005;
     query.wait_time = 0;
 
     // double prev_q[] = {0, 0, 0, 0, 0, 0, 0};

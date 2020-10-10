@@ -72,7 +72,7 @@ typedef Eigen::Matrix<double,stateSize,stateSize> stateR_stateC_commandD_t[comma
 typedef Eigen::Matrix<double,commandSize,commandSize> commandR_commandC_stateD_t[stateSize];    // commandSize x commandSize x stateSize
 typedef Eigen::Matrix<double,stateSize+commandSize,1> stateAug_t;                               // stateSize + commandSize x 1
 typedef Eigen::Matrix<double,1,1> scalar_t;                                                     // 1 x 1
-typedef Eigen::Matrix<double,stateSize+commandSize,1> projStateAndCommand_t;                    // 21 x 1
+typedef Eigen::Matrix<double,stateSize+commandSize,1> projStateAndCommand_t;                    // 34 x 1
 
 // typedef for half commandSize and stateSize types
 typedef Eigen::Matrix<double,stateSize/2,1> stateVec_half_t;                                    // stateSize/2 x 1
