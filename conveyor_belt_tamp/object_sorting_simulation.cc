@@ -419,6 +419,23 @@ int do_main(int argc, char* argv[]) {
     // setup simulator
     systems::Simulator<double> simulator(*diagram);
 
+    // auto& context = simulator.get_mutable_context();
+    // auto& state = context.get_mutable_state();
+
+    // auto& plant = station->get_multibody_plant();
+
+    // VectorX<double> q0_iiwa(7);
+    // q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+    // std::cout<<"IIWA Position was: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
+
+
+    // plant.SetPositions(
+    //     context,
+    //     &state,
+    //     station->GetIiwaModel(),
+    //     q0_iiwa
+    // );
+
     simulator.set_publish_every_time_step(false);
     simulator.set_target_realtime_rate(sim_setup["target_realtime_rate"].asDouble());
     simulator.Initialize();

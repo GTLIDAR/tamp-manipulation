@@ -275,8 +275,22 @@ int do_main(int argc, char* argv[]) {
         context,
         &state,
         station->GetConveyorBeltId(),
-        drake::Vector1d(geo_setup["belt_vel"][1].asDouble())
+        drake::Vector1d(0.1)
     );
+
+    VectorX<double> q0_iiwa(7);
+    q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+    std::cout<<"IIWA Position was: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
+
+
+    plant.SetPositions(
+        context,
+        &state,
+        station->GetIiwaModel(),
+        q0_iiwa
+    );
+
+    std::cout<<"IIWA Position set to: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
 
     simulator.set_publish_every_time_step(false);
     simulator.set_target_realtime_rate(sim_setup["target_realtime_rate"].asDouble());
