@@ -119,6 +119,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="left_bottom">
 	<pose> -0.008 0.041 0 0 0 0 </pose>
@@ -127,6 +131,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="left_left">
 	<pose> -0.008 0.031 -0.01 0 0 0 </pose>
@@ -143,6 +151,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>                      
       <collision name="collision">
         <laser_retro>0</laser_retro>
@@ -232,6 +244,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="right_bottom">
 	<pose> -0.008 0.041 0 0 0 0 </pose>
@@ -240,6 +256,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="right_left">
 	<pose> -0.008 0.031 -0.01 0 0 0 </pose>
@@ -248,6 +268,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="right_right">
 	<pose> -0.008 0.031 0.01 0 0 0 </pose>
@@ -256,6 +280,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>                  
       <collision name="collision">
         <laser_retro>0</laser_retro>
