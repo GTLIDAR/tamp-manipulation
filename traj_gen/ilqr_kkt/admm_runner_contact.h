@@ -48,7 +48,7 @@ using Eigen::Vector3d;
 #include <string>
 #include <list>
 
-#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/config.h"
 #include "drake/traj_gen/ilqr_kkt/ilqr-kkt_solver_track.h"
 #include "drake/traj_gen/ilqr_kkt/kuka_arm_track_contact.h"
 
@@ -76,10 +76,10 @@ using math::RollPitchYaw;
 
 class ADMM_KKTRunner {
   public:
-  lcmt_manipulator_traj RunADMM(stateVec_t xinit, stateVec_t xgoal,
+  lcmt_manipulator_traj RunADMM(fullstateVec_t xinit, fullstateVec_t xgoal,
     double time_horizon, double time_step, string action_name);
 
-  projStateAndCommandTab_t projection(const stateVecTab_t& xnew,
+  projfullStateAndCommandTab_t projection(const fullstateVecTab_t& xnew,
     const commandVecTab_t& unew, unsigned int NumberofKnotPt,
     string action_name);
 
@@ -94,9 +94,9 @@ class ADMM_KKTRunner {
   // lcmt_manipulator_traj ddp_traj_;
 
   //UDP parameters
-  stateVecTab_t joint_state_traj;
+  fullstateVecTab_t joint_state_traj;
   commandVecTab_t torque_traj;
-  stateVecTab_t joint_state_traj_interp;
+  fullstateVecTab_t joint_state_traj_interp;
   commandVecTab_t torque_traj_interp;
   // unsigned int traj_knot_number_ = 0;
 };

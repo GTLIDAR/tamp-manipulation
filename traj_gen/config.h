@@ -108,7 +108,6 @@ typedef std::vector<fullstateVec_t> fullstateVecTab_t;
 typedef std::vector<fullstateMat_t> fullstateMatTab_t;
 typedef std::vector<fullstateR_commandC_t> fullstateR_commandC_tab_t;
 typedef std::vector<commandR_fullstateC_t> commandR_fullstateC_tab_t;
-typedef std::vector<fullstateVec_half_t> fullstateVecTab_half_t;
 typedef std::vector<projfullStateAndCommand_t> projfullStateAndCommandTab_t;
 
 //typedef std::vector<stateTens_t> stateTensTab_t;

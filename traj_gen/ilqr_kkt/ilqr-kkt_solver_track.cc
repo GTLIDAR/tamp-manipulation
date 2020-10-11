@@ -47,7 +47,7 @@ ILQRSolver_TRK_Contact::ILQRSolver_TRK_Contact(KukaArm_TRK_Contact& iiwaDynamicM
     //tOptSet Op = INIT_OPTSET;
 }
 
-void ILQRSolver_TRK_Contact::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, stateVecTab_t& x_bar, commandVecTab_t& u_bar, 
+void ILQRSolver_TRK_Contact::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, fullstateVecTab_t& x_bar, commandVecTab_t& u_bar, 
         commandVecTab_t initialTorque, unsigned int& iiwaN, double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad)
 {
     // TODO: double check opt params
@@ -397,9 +397,9 @@ void ILQRSolver_TRK_Contact::standardizeParameters(tOptSet *o) {
 void ILQRSolver_TRK_Contact::doBackwardPass()
 {    
     if(Op.regType == 1)
-        lambdaEye = Op.lambda*stateMat_t::Identity();
+        lambdaEye = Op.lambda*fullstateMat_t::Identity();
     else
-        lambdaEye = Op.lambda*stateMat_t::Zero();
+        lambdaEye = Op.lambda*fullstateMat_t::Zero();
 
     diverge = 0;
     
@@ -514,7 +514,7 @@ void ILQRSolver_TRK_Contact::doForwardPass()
     updatedxList[0] = Op.xInit;
     int nargout = 2;
 
-    stateVec_t x_unused;
+    fullstateVec_t x_unused;
     x_unused.setZero();
     commandVec_t u_NAN_loc;
     u_NAN_loc << sqrt(-1.0); // sqrt(-1)=NaN. After this line, u_nan has nan for [0] and garbage for rest

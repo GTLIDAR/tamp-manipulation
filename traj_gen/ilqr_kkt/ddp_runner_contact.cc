@@ -4,8 +4,8 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(stateVec_t xinit, stateVec_t xgoal, 
-  double time_horizon, double time_step, string action_name, bool with_obj) {
+lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateVec_t xgoal, 
+  double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
 
@@ -109,7 +109,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(stateVec_t xinit, stateVec_t xgo
     torque_traj = lastTraj.uList;
 
     //linear interpolation to 1ms
-    for(unsigned int i=0;i<stateSize;i++){
+    for(unsigned int i=0;i<fullstateSize;i++){
     for(unsigned int j=0;j<N*InterpolationScale;j++){
     unsigned int index = j/10;
     joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;

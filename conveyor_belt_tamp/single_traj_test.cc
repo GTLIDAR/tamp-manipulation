@@ -15,6 +15,7 @@
 
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
+#include "drake/traj_gen/config.h"
 
 DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 

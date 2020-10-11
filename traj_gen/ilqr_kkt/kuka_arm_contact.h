@@ -3,7 +3,7 @@
 #ifndef KUKAARM_CONTACT_H
 #define KUKAARM_CONTACT_H
 
-#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/config.h"
 #include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
 
 #include "drake/common/find_resource.h"
@@ -61,8 +61,8 @@ class KukaArm_Contact
 {
 public:
     KukaArm_Contact();
-    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, string action_name);
-    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, stateVec_t& iiwa_xgoal, multibody::MultibodyPlant<double>* plant, string action_name);
+    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, string action_name);
+    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, multibody::MultibodyPlant<double>* plant, string action_name);
     ~KukaArm_Contact(){};
 private:
 protected:
@@ -72,18 +72,18 @@ protected:
     commandVec_t lowerCommandBounds;
     commandVec_t upperCommandBounds;
 
-    stateMat_t fx;
-    stateTens_t fxx;
-    stateR_commandC_t fu;
-    stateR_commandC_commandD_t fuu;
-    stateR_stateC_commandD_t fxu;
-    stateR_commandC_stateD_t fux;
+    fullstateMat_t fx;
+    fullstateTens_t fxx;
+    fullstateR_commandC_t fu;
+    fullstateR_commandC_commandD_t fuu;
+    fullstateR_fullstateC_commandD_t fxu;
+    fullstateR_commandC_fullstateD_t fux;
 
-    stateMatTab_t fxList;
-    stateR_commandC_tab_t fuList;
-    stateTensTab_t fxxList;
-    stateTensTab_t fxuList;
-    stateR_commandC_Tens_t fuuList;
+    fullstateMatTab_t fxList;
+    fullstateR_commandC_tab_t fuList;
+    fullstateTensTab_t fxxList;
+    fullstateTensTab_t fxuList;
+    fullstateR_commandC_Tens_t fuuList;
 
 public:
     struct timeprofile
@@ -106,7 +106,7 @@ public:
     unsigned int globalcnt;
     //######
     
-    stateVec_t xgoal;
+    fullstateVec_t xgoal;
 private:
     
     stateMat_half_t H, C; // inertial, corillois dynamics
@@ -114,21 +114,21 @@ private:
     stateR_half_commandC_t Bu; //input mapping
     stateVec_half_t velocity;
     stateVec_half_t accel;
-    stateVec_t Xdot_new;
+    fullstateVec_t Xdot_new;
     stateVec_half_t vd;
     stateVecTab_half_t vd_thread;
-    stateVecTab_t Xdot_new_thread;
+    fullstateVecTab_t Xdot_new_thread;
 
-    stateVec_t Xdot1, Xdot2, Xdot3, Xdot4;
-    stateMat_t A1, A2, A3, A4, IdentityMat;
-    stateR_commandC_t B1, B2, B3, B4;
-    stateVec_t Xp, Xp1, Xp2, Xp3, Xp4, Xm, Xm1, Xm2, Xm3, Xm4;
+    fullstateVec_t Xdot1, Xdot2, Xdot3, Xdot4;
+    fullstateMat_t A1, A2, A3, A4, IdentityMat;
+    fullstateR_commandC_t B1, B2, B3, B4;
+    fullstateVec_t Xp, Xp1, Xp2, Xp3, Xp4, Xm, Xm1, Xm2, Xm3, Xm4;
     
     bool debugging_print;
-    stateMat_t AA;
-    stateR_commandC_t BB;
-    stateMatTab_t A_temp;
-    stateR_commandC_tab_t B_temp;
+    fullstateMat_t AA;
+    fullstateR_commandC_t BB;
+    fullstateMatTab_t A_temp;
+    fullstateR_commandC_tab_t B_temp;
     
     MultibodyPlant<double>* plant_{};
 
@@ -140,23 +140,23 @@ private:
 protected:
     // methods
 public:
-    stateVec_t kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau);
+    fullstateVec_t kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau);
 
-    void kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
-    void kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr,  const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm_Contact*& costFunction);
-    void kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
+    void kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
+    void kuka_arm_dyn_cst_min_output(const int& nargout, const fullstateVec_t& xList_curr, const commandVec_t& uList_curr,  const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_Contact*& costFunction);
+    void kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
     // void kuka_arm_dyn_cst_v3(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, stateTensTab_t& fxxList, stateTensTab_t& fxuList, stateR_commandC_Tens_t& fuuList, CostFunctionKukaArm*& costFunction);
-    stateVec_t update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B);
-    void grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B);
-    void hessian(const stateVec_t& X, const commandVec_t& U, stateTens_t& fxx_p, stateR_stateC_commandD_t& fxu_p, stateR_commandC_commandD_t& fuu_p);    
+    fullstateVec_t update(const int& nargout, const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B);
+    void grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B);
+    void hessian(const fullstateVec_t& X, const commandVec_t& U, fullstateTens_t& fxx_p, fullstateR_fullstateC_commandD_t& fxu_p, fullstateR_commandC_commandD_t& fuu_p);    
     struct timeprofile getFinalTimeProfile();
 
     unsigned int getStateNb();
     unsigned int getCommandNb();
     commandVec_t& getLowerCommandBounds();
     commandVec_t& getUpperCommandBounds();
-    stateMatTab_t& getfxList();
-    stateR_commandC_tab_t& getfuList();
+    fullstateMatTab_t& getfxList();
+    fullstateR_commandC_tab_t& getfuList();
 private:
 protected:
         // accessors //

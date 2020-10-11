@@ -25,7 +25,7 @@
 
 #include "drake/lcmt_generic_string_msg.hpp"
 
-#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/config.h"
 #include "drake/traj_gen/ilqr_kkt/ilqr-kkt_solver.h"
 #include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
 
@@ -56,8 +56,8 @@ using multibody::BodyIndex;
 
 class DDP_KKTRunner {
 public:
-lcmt_manipulator_traj RunDDP_KKT(stateVec_t xinit, stateVec_t xgoal,
-    double time_horizon, double time_step, string action_name, bool with_obj);
+lcmt_manipulator_traj RunDDP_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
+    double time_horizon, double time_step, string action_name);
 void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);
 void clean_file(const char * _file_name, std::string & _ret_file);
@@ -65,9 +65,9 @@ void clean_file(const char * _file_name, std::string & _ret_file);
 private:
 
 //UDP parameters
-stateVecTab_t joint_state_traj;
+fullstateVecTab_t joint_state_traj;
 commandVecTab_t torque_traj;
-stateVecTab_t joint_state_traj_interp;
+fullstateVecTab_t joint_state_traj_interp;
 commandVecTab_t torque_traj_interp;
 };
 

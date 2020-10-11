@@ -47,7 +47,7 @@ ILQR_KKTSolver::ILQR_KKTSolver(KukaArm_Contact& iiwaDynamicModel, CostFunctionKu
     //tOptSet Op = INIT_OPTSET;
 }
 
-void ILQR_KKTSolver::firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxgoal, commandVecTab_t initialTorque, unsigned int& iiwaN,
+void ILQR_KKTSolver::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, commandVecTab_t initialTorque, unsigned int& iiwaN,
                        double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad)
 {
     // TODO: double check opt params
@@ -399,9 +399,9 @@ void ILQR_KKTSolver::standardizeParameters(tOptSet *o) {
 void ILQR_KKTSolver::doBackwardPass()
 {
     if(Op.regType == 1)
-        lambdaEye = Op.lambda*stateMat_t::Identity();
+        lambdaEye = Op.lambda*fullstateMat_t::Identity();
     else
-        lambdaEye = Op.lambda*stateMat_t::Zero();
+        lambdaEye = Op.lambda*fullstateMat_t::Zero();
 
     diverge = 0;
 
@@ -516,7 +516,7 @@ void ILQR_KKTSolver::doForwardPass()
     updatedxList[0] = Op.xInit;
     int nargout = 2;
 
-    stateVec_t x_unused;
+    fullstateVec_t x_unused;
     x_unused.setZero();
     commandVec_t u_NAN_loc;
     u_NAN_loc << sqrt(-1.0); // sqrt(-1)=NaN. After this line, u_nan has nan for [0] and garbage for rest

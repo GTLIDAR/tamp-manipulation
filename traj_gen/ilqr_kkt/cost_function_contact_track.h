@@ -3,7 +3,7 @@
 #ifndef COSTFUNCTIONKUKAARM_CONTACT_TRK_H
 #define COSTFUNCTIONKUKAARM_CONTACT_TRK_H
 
-#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/config.h"
 #include <iostream>
 
 #include <Eigen/Dense>
@@ -22,16 +22,16 @@ public:
                                     double torque_weight, unsigned int N);
 private:
 protected:
-	stateMat_t Q;
-	stateMat_t Qf;
-    stateMat_t Rho_state;
+	fullstateMat_t Q;
+	fullstateMat_t Qf;
+    fullstateMat_t Rho_state;
     commandMat_t Rho_torque;
 	commandMat_t R;
 
-	stateVec_t QDiagElementVec;
-	stateVec_t QfDiagElementVec;
+	fullstateVec_t QDiagElementVec;
+	fullstateVec_t QfDiagElementVec;
 	commandVec_t RDiagElementVec;
-    stateVec_t Rho_state_DiagElementVec;
+    fullstateVec_t Rho_state_DiagElementVec;
 	commandVec_t Rho_torque_DiagElementVec;
 
 	// double pos_scale;
@@ -49,23 +49,23 @@ protected:
 	// double rho_vel_weight;
     // double rho_torque_weight;
 
-	stateVecTab_t cx_new;
+	fullstateVecTab_t cx_new;
 	commandVecTab_t cu_new; 
-	stateMatTab_t cxx_new; 
-	commandR_stateC_tab_t cux_new; 
+	fullstateMatTab_t cxx_new; 
+	commandR_fullstateC_tab_t cux_new; 
 	commandMatTab_t cuu_new;
 	double c_new;
     // attributes
 public:
-	stateMat_t& getQ();
-	stateMat_t& getQf();
-    stateMat_t& getRho_state();
+	fullstateMat_t& getQ();
+	fullstateMat_t& getQf();
+    fullstateMat_t& getRho_state();
 	commandMat_t& getRho_torque();
 	commandMat_t& getR();
-	stateVecTab_t& getcx();
+	fullstateVecTab_t& getcx();
 	commandVecTab_t& getcu();
-	stateMatTab_t& getcxx();
-	commandR_stateC_tab_t& getcux();
+	fullstateMatTab_t& getcxx();
+	commandR_fullstateC_tab_t& getcux();
 	commandMatTab_t& getcuu();
 	double& getc();
 

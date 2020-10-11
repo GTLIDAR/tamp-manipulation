@@ -29,7 +29,7 @@
 
 #include "drake/lcmt_generic_string_msg.hpp"
 
-#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/config.h"
 #include "drake/traj_gen/ilqr_kkt/ilqr-kkt_solver.h"
 #include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
 
@@ -87,9 +87,9 @@ private:
     lcmt_robot_time robot_time_;
     bool plan_finished_;
     unsigned int step_;
-    stateVecTab_t joint_state_traj;
+    fullstateVecTab_t joint_state_traj;
     commandVecTab_t torque_traj;
-    stateVecTab_t joint_state_traj_interp;
+    fullstateVecTab_t joint_state_traj_interp;
     commandVecTab_t torque_traj_interp;
 
 public:
@@ -99,7 +99,7 @@ public:
                         &TrajOptPublisher::HandleRobotTime, this);
     }
 
-    void Run_test(stateVec_t xinit, stateVec_t xgoal, double time_horizon, double time_step, double realtime_rate, string action_name){
+    void Run_test(fullstateVec_t xinit, fullstateVec_t xgoal, double time_horizon, double time_step, double realtime_rate, string action_name){
         struct timeval tbegin,tend;
         double texec = 0.0;
         double dt = time_step;
@@ -429,7 +429,7 @@ private:
 
 int do_main_kkt(){
     TrajOptPublisher pub;
-    stateVec_t xinit,xgoal;
+    fullstateVec_t xinit,xgoal;
     double time_horizon = 1.0;
     double time_step = 0.005;
     double realtime_rate = 0.2;

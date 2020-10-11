@@ -62,12 +62,12 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N)
     cuu_new.resize(N+1);
 }
 
-stateMat_t& CostFunctionKukaArm_Contact::getQ()
+fullstateMat_t& CostFunctionKukaArm_Contact::getQ()
 {
     return Q;
 }
 
-stateMat_t& CostFunctionKukaArm_Contact::getQf()
+fullstateMat_t& CostFunctionKukaArm_Contact::getQf()
 {
     return Qf;
 }
@@ -77,7 +77,7 @@ commandMat_t& CostFunctionKukaArm_Contact::getR()
     return R;
 }
 
-stateVecTab_t& CostFunctionKukaArm_Contact::getcx()
+fullstateVecTab_t& CostFunctionKukaArm_Contact::getcx()
 {
     return cx_new;
 }
@@ -87,12 +87,12 @@ commandVecTab_t& CostFunctionKukaArm_Contact::getcu()
     return cu_new;
 }
 
-stateMatTab_t& CostFunctionKukaArm_Contact::getcxx()
+fullstateMatTab_t& CostFunctionKukaArm_Contact::getcxx()
 {
     return cxx_new;
 }
 
-commandR_stateC_tab_t& CostFunctionKukaArm_Contact::getcux()
+commandR_fullstateC_tab_t& CostFunctionKukaArm_Contact::getcux()
 {
     return cux_new;
 }

@@ -16,11 +16,11 @@ COPTS = ["-Wno-unused-parameter",
 drake_cc_library(
     name = "cost_function_kuka_arm_contact",
     srcs = ["cost_function_kuka_arm_contact.cc",],
-    hdrs = ["cost_function_kuka_arm_contact.h",
-            "config-kkt.h",],
+    hdrs = ["cost_function_kuka_arm_contact.h",],
     visibility = ["//visibility:public"],
     deps = [
         "@eigen",
+        "//traj_gen:config",
     ],
     copts = COPTS,
 )
@@ -28,11 +28,11 @@ drake_cc_library(
 drake_cc_library(
     name = "cost_function_contact_track",
     srcs = ["cost_function_contact_track.cc",],
-    hdrs = ["cost_function_contact_track.h",
-            "config-kkt.h",],
+    hdrs = ["cost_function_contact_track.h",],
     visibility = ["//visibility:public"],
     deps = [
         "@eigen",
+        "//traj_gen:config",
     ],
     copts = COPTS,
 )
@@ -42,7 +42,6 @@ drake_cc_library(
     name = "kuka_arm_contact",
     srcs = ["kuka_arm_contact.cpp",],
     hdrs = ["kuka_arm_contact.h",
-            "config-kkt.h",
             "cost_function_kuka_arm_contact.h",
             ],
     visibility = ["//visibility:public"],
@@ -61,6 +60,7 @@ drake_cc_library(
         "//multibody/parsing",
         "//math:geometric_transform",
         "//common:find_resource",
+        "//traj_gen:config",
     ],
     copts = COPTS,
 )
@@ -69,7 +69,6 @@ drake_cc_library(
     name = "kuka_arm_track_contact",
     srcs = ["kuka_arm_track_contact.cc",],
     hdrs = ["kuka_arm_track_contact.h",
-            "config-kkt.h",
             "cost_function_contact_track.h",
             ],
     visibility = ["//visibility:public"],
@@ -88,6 +87,7 @@ drake_cc_library(
         "//multibody/parsing",
         "//math:geometric_transform",
         "//common:find_resource",
+        "//traj_gen:config",
     ],
     copts = COPTS,
 )
@@ -96,7 +96,6 @@ drake_cc_library(
     name = "ilqr-kkt_solver",
     srcs = ["ilqr-kkt_solver.cpp",],
     hdrs = ["ilqr-kkt_solver.h",
-            "config-kkt.h",
             "kuka_arm_contact.h",
             "cost_function_kuka_arm_contact.h",],
     visibility = ["//visibility:public"],
@@ -105,6 +104,7 @@ drake_cc_library(
         "//common:find_resource",
         "//multibody/plant",
         "//multibody/parsing",
+        "//traj_gen:config",
     ],
     copts = COPTS,
 )
@@ -113,7 +113,6 @@ drake_cc_library(
     name = "ilqr-kkt_solver_track",
     srcs = ["ilqr-kkt_solver_track.cc",],
     hdrs = ["ilqr-kkt_solver_track.h",
-            "config-kkt.h",
             "kuka_arm_track_contact.h",
             "cost_function_contact_track.h",],
     visibility = ["//visibility:public"],
@@ -122,6 +121,7 @@ drake_cc_library(
         "//common:find_resource",
         "//multibody/plant",
         "//multibody/parsing",
+        "//traj_gen:config",
     ],
     copts = COPTS,
 )
@@ -183,8 +183,7 @@ drake_cc_binary(
 
 drake_cc_binary(
     name = "traj_opt_publisher",
-    srcs = ["traj_opt_publisher.cc",
-            "config-kkt.h",],
+    srcs = ["traj_opt_publisher.cc",],
     visibility = ["//visibility:public"],
     data = [
         "//examples/kuka_iiwa_arm:models",
@@ -209,6 +208,7 @@ drake_cc_binary(
         "//multibody/parsing",
         "//math:geometric_transform",
         "//manipulation/planner:constraint_relaxing_ik",
+        "//traj_gen:config",
     ],
     copts = COPTS,
 )
@@ -264,8 +264,7 @@ drake_cc_library(
 drake_cc_library(
     name = "ddp_runner_contact",
     srcs = ["ddp_runner_contact.cc",],
-    hdrs = ["ddp_runner_contact.h",
-            "config-kkt.h",],
+    hdrs = ["ddp_runner_contact.h",],
     visibility = ["//visibility:public"],
     data = [
         "//examples/kuka_iiwa_arm:models",
@@ -289,14 +288,14 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
+        "//traj_gen:config",
     ],
 )
 
 drake_cc_library(
     name = "admm_runner_contact",
     srcs = ["admm_runner_contact.cc",],
-    hdrs = ["admm_runner_contact.h",
-            "config-kkt.h",],
+    hdrs = ["admm_runner_contact.h",],
     visibility = ["//visibility:public"],
     data = [
         "//examples/kuka_iiwa_arm:models",
@@ -320,5 +319,6 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
+        "//traj_gen:config",
     ],
 )

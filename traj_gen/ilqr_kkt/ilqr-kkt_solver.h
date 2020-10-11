@@ -3,7 +3,7 @@
 #ifndef ILQR_KKT_SOLVER_H
 #define ILQR_KKT_SOLVER_H
 
-#include "drake/traj_gen/ilqr_kkt/config-kkt.h"
+#include "drake/traj_gen/config.h"
 #include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
 #include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
 #include <numeric>
@@ -43,7 +43,7 @@ class ILQR_KKTSolver
 public:
     struct traj
     {
-        stateVecTab_t xList;
+        fullstateVecTab_t xList;
         commandVecTab_t uList;
         unsigned int iter;
         double finalCost;
@@ -55,7 +55,7 @@ public:
     struct tOptSet {
         int n_hor;
         int debug_level;
-        stateVec_t xInit;
+        fullstateVec_t xInit;
         double new_cost, cost, dcost, lambda, dlambda, g_norm, expected;
         double **p;
         const double *alpha;
@@ -108,42 +108,42 @@ private:
     CostFunctionKukaArm_Contact* costFunction;
     unsigned int stateNb;
     unsigned int commandNb;
-    stateVec_t xInit; //matrix of <statesize, 1> = essentially a vector
-    stateVec_t xgoal;
+    fullstateVec_t xInit; //matrix of <statesize, 1> = essentially a vector
+    fullstateVec_t xgoal;
     unsigned int N;
     unsigned int iter;
     double dt;
     commandVecTab_t initCommand;
 
-    stateVecTab_t xList; // vector/array of stateVec_t = basically knot config over entire time horizon
+    fullstateVecTab_t xList; // vector/array of stateVec_t = basically knot config over entire time horizon
     commandVecTab_t uList;
     commandVecTab_t uListFull;
     commandVec_t u_NAN; //matrix of <commandsize, 1> = essentially a vector
-    stateVecTab_t updatedxList;
+    fullstateVecTab_t updatedxList;
     commandVecTab_t updateduList;
-    stateVecTab_t FList;
+    fullstateVecTab_t FList;
     costVecTab_t costList;
     costVecTab_t costListNew;
     struct traj lastTraj;
     struct timeval tbegin_time_fwd, tend_time_fwd, tbegin_time_bwd, tend_time_bwd, tbegin_time_deriv, tend_time_deriv;
 
-    stateVecTab_t Vx;
-    stateMatTab_t Vxx;
+    fullstateVecTab_t Vx;
+    fullstateMatTab_t Vxx;
 
-    stateVec_t Qx;
-    stateMat_t Qxx;
+    fullstateVec_t Qx;
+    fullstateMat_t Qxx;
     commandVec_t Qu;
     commandMat_t Quu;
     commandMat_t QuuF;
     commandMat_t QuuInv;
-    commandR_stateC_t Qux;
+    commandR_fullstateC_t Qux;
     commandVec_t k;
-    commandR_stateC_t K;
+    commandR_fullstateC_t K;
     commandVecTab_t kList;
-    commandR_stateC_tab_t KList;
+    commandR_fullstateC_tab_t KList;
     double alpha;
 
-    stateMat_t lambdaEye;
+    fullstateMat_t lambdaEye;
     unsigned int backPassDone;
     unsigned int fwdPassDone;
     unsigned int initFwdPassDone;
@@ -171,7 +171,7 @@ private:
 protected:
     // methods
 public:
-    void firstInitSolver(stateVec_t& iiwaxInit, stateVec_t& iiwaxDes, commandVecTab_t initialTorque, unsigned int& iiwaN,
+    void firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxDes, commandVecTab_t initialTorque, unsigned int& iiwaN,
                     double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad);
     void solveTrajectory();
     void initializeTraj();

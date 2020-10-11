@@ -3,7 +3,7 @@
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
-lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
+lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(fullstateVec_t xinit, fullstateVec_t xgoal,
   double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
@@ -24,22 +24,22 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
 
     // Initalize Primal and Dual variables
     // Primal
-    stateVecTab_t xnew;
+    fullstateVecTab_t xnew;
     commandVecTab_t unew;
-    stateVecTab_t xbar;
+    fullstateVecTab_t xbar;
     commandVecTab_t ubar;
-    stateVecTab_t xbar_old;
+    fullstateVecTab_t xbar_old;
     commandVecTab_t ubar_old;
 
     // Dual
-    stateVecTab_t x_lambda;
+    fullstateVecTab_t x_lambda;
     commandVecTab_t u_lambda;
 
-    stateVecTab_t x_temp;
+    fullstateVecTab_t x_temp;
     commandVecTab_t u_temp;
-    stateVecTab_t x_temp2;
+    fullstateVecTab_t x_temp2;
     commandVecTab_t u_temp2;
-    projStateAndCommandTab_t xubar;
+    projfullStateAndCommandTab_t xubar;
     vector<double> res_x;
     vector<double> res_x_pos_obj;
     vector<double> res_x_pos_iiwa;
@@ -224,7 +224,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
 
       /////////////////////////// Dual variables update
       for(unsigned int j=0;j<N;j++){
-        xbar[j] = xubar[j].head(stateSize);
+        xbar[j] = xubar[j].head(fullstateSize);
         ubar[j] = xubar[j].tail(commandSize);
         // cout << "u_bar[" << j << "]:" << ubar[j].transpose() << endl;
         x_lambda[j] += xnew[j] - xbar[j];
@@ -242,7 +242,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
         res_xlambda[i] += 0*(xbar[j] - xbar_old[j]).norm(); //not used now
         res_ulambda[i] += 0*(ubar[j] - ubar_old[j]).norm(); // not used now
       }
-      xbar[N] = xubar[N].head(stateSize);
+      xbar[N] = xubar[N].head(fullstateSize);
       x_lambda[N] += xnew[N] - xbar[N];
 
       res_x[i] += (xnew[N] - xbar[N]).norm();
@@ -280,7 +280,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
     torque_traj = unew;
 
     //linear interpolation to 1ms
-    for(unsigned int i=0;i<stateSize;i++){
+    for(unsigned int i=0;i<fullstateSize;i++){
       for(unsigned int j=0;j<N*InterpolationScale;j++){
        unsigned int index = j/10;
        joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;
@@ -399,10 +399,10 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal
     return *ptr;
   }
 
-projStateAndCommandTab_t ADMM_KKTRunner::projection(const stateVecTab_t& xnew,
+projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t& xnew,
   const commandVecTab_t& unew, unsigned int NumberofKnotPt,
   string action_name){
-    projStateAndCommandTab_t xubar;
+    projfullStateAndCommandTab_t xubar;
     xubar.resize(NumberofKnotPt+1);
 
     double pos_limit_obj;
@@ -426,7 +426,7 @@ projStateAndCommandTab_t ADMM_KKTRunner::projection(const stateVecTab_t& xnew,
     }
 
     for(unsigned int i=0;i<NumberofKnotPt+1;i++){
-    for(unsigned int j=0;j<stateSize+commandSize;j++){
+    for(unsigned int j=0;j<fullstateSize+commandSize;j++){
         if(j < 7){//postion constraints for obj
         if(xnew[i](j,0) > pos_limit_obj){
             xubar[i](j,0) = pos_limit_obj;

@@ -16,8 +16,9 @@
 
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
+#include "drake/traj_gen/config.h"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -147,13 +148,13 @@ lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal,
     std::cout<<"ddp goal pos: " << q_goal.transpose() << std::endl;
 
     VectorXd qv_init;
-    qv_init = Eigen::VectorXd::Zero(stateSize);
+    qv_init = Eigen::VectorXd::Zero(fullstateSize);
     qv_init.topRows(13) << 1, 0, 0, 0, 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     VectorXd::Map(&qv_init[13], q_init.size()) = q_init;
     // std::cout<<"qv_init:\n"<<qv_init<<"\n";
 
     VectorXd qv_goal;
-    qv_goal = VectorXd::Zero(stateSize);
+    qv_goal = VectorXd::Zero(fullstateSize);
     qv_goal.topRows(13) << 1, 0, 0, 0, 0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     VectorXd::Map(&qv_goal[13], q_goal.size()) = q_goal;
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
@@ -188,13 +189,13 @@ lcmt_manipulator_traj GetADMM_KKTRes(VectorXd q_init, VectorXd q_goal,
     std::cout<<"admm goal pos: " << q_goal.transpose() << std::endl;
 
    VectorXd qv_init;
-    qv_init = Eigen::VectorXd::Zero(stateSize);
+    qv_init = Eigen::VectorXd::Zero(fullstateSize);
     qv_init.topRows(7) << 1, 0, 0, 0, 0.26, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     VectorXd::Map(&qv_init[13], q_init.size()) = q_init;
     // std::cout<<"qv_init:\n"<<qv_init<<"\n";
 
     VectorXd qv_goal;
-    qv_goal = VectorXd::Zero(stateSize);
+    qv_goal = VectorXd::Zero(fullstateSize);
     qv_goal.topRows(13) << 1, 0, 0, 0, 0.76, 0.55, 0.09, 0, 0, 0, 0, 0, 0;
     VectorXd::Map(&qv_goal[13], q_goal.size()) = q_goal;
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
