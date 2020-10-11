@@ -14,8 +14,12 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_robot_time.hpp"
+#include "drake/lcmt_object_status.hpp"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -33,6 +37,7 @@
 
 using namespace std;
 using namespace Eigen;
+using lcm::LCM;
 
 #define useILQRSolver 1
 #define useUDPSolver 0
@@ -46,7 +51,13 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
+const char* const kLcmStatusChannel_DDP = "IIWA_STATUS";
+const char* const kLcmObjectStatusChannel_DDP = "OBJECT_STATUS";
+const char* const kLcmSchunkStatusChannel_DDP = "WSG_STATUS";
+const char* const kLcmTimeChannel_DDP = "IIWA_TIME";
+
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
+using examples::kuka_iiwa_arm::kIiwaLcmStatusPeriod;
 using multibody::ModelInstanceIndex;
 using math::RigidTransformd;
 using math::RollPitchYaw;
@@ -58,13 +69,21 @@ class DDP_KKTRunner {
 public:
 lcmt_manipulator_traj RunDDP_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
     double time_horizon, double time_step, string action_name);
+void RunVisualizer(double realtime_rate);
 void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);
 void clean_file(const char * _file_name, std::string & _ret_file);
 
 private:
-
-//UDP parameters
+void HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+                      const lcmt_robot_time* robot_time);
+// parameters
+LCM lcm_;
+lcmt_robot_time robot_time_;
+bool plan_finished_;
+unsigned int step_;
+double time_step_;
+unsigned int N;
 fullstateVecTab_t joint_state_traj;
 commandVecTab_t torque_traj;
 fullstateVecTab_t joint_state_traj_interp;

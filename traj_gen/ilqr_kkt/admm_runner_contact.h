@@ -21,8 +21,12 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_robot_time.hpp"
+#include "drake/lcmt_object_status.hpp"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -57,6 +61,7 @@ using Eigen::Vector3d;
 
 using namespace std;
 using namespace Eigen;
+using lcm::LCM;
 
 /* ADMM trajectory generation */
 
@@ -67,8 +72,13 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
+const char* const kLcmStatusChannel_ADMM = "IIWA_STATUS";
+const char* const kLcmObjectStatusChannel_ADMM = "OBJECT_STATUS";
+const char* const kLcmSchunkStatusChannel_ADMM = "WSG_STATUS";
+const char* const kLcmTimeChannel_ADMM = "IIWA_TIME";
+
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
-using manipulation::kuka_iiwa::kIiwaArmNumJoints;
+using examples::kuka_iiwa_arm::kIiwaLcmStatusPeriod;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyForces;
 using math::RigidTransformd;
@@ -83,6 +93,8 @@ class ADMM_KKTRunner {
     const commandVecTab_t& unew, unsigned int NumberofKnotPt,
     string action_name);
 
+  void RunVisualizer(double realtime_rate);
+
   void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 
   void saveValue(double _value, const char * _name);
@@ -90,10 +102,16 @@ class ADMM_KKTRunner {
   void clean_file(const char * _file_name, std::string & _ret_file);
 
  private:
-  // lcm::LCM lcm_;
-  // lcmt_manipulator_traj ddp_traj_;
+  void HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+                        const lcmt_robot_time* robot_time);
 
-  //UDP parameters
+  // parameters
+  LCM lcm_;
+  lcmt_robot_time robot_time_;
+  bool plan_finished_;
+  unsigned int step_;
+  double time_step_;
+  unsigned int N;
   fullstateVecTab_t joint_state_traj;
   commandVecTab_t torque_traj;
   fullstateVecTab_t joint_state_traj_interp;

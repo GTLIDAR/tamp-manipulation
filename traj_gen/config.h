@@ -16,6 +16,7 @@
 #define INCLUDE_OBJECT 1
 #define DIRECT_INVERSE 0
 #define WHOLE_BODY 1
+#define VISUALIZE 1
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD

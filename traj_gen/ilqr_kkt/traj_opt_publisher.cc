@@ -196,7 +196,7 @@ public:
         torque_traj = lastTraj.uList;
 
         //linear interpolation to 1ms
-        for(unsigned int i=0;i<stateSize;i++){
+        for(unsigned int i=0;i<fullstateSize;i++){
         for(unsigned int j=0;j<N*InterpolationScale;j++){
         unsigned int index = j/10;
         joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;

@@ -9,8 +9,9 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     struct timeval tbegin,tend;
     double texec = 0.0;
 
+    time_step_ = time_step;
     double dt = time_step;
-    unsigned int N = int(time_horizon/time_step);
+    N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
     unsigned int iterMax = 15; //100;
@@ -139,9 +140,9 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     cout << "lastTraj.uList[0]:" << lastTraj.uList[0].transpose() << endl;
 
     
-    for(unsigned int i=N-50;i<=N;i++){
-      cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
-    }
+    // for(unsigned int i=N-50;i<=N;i++){
+    //   cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
+    // }
     // saving data file
     for(unsigned int i=0;i<N;i++){
       saveVector(joint_state_traj[i], "joint_trajectory");
@@ -154,7 +155,6 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     }
 
     cout << "-------- DDP Trajectory Generation Finished! --------" << endl;
-    // traj_knot_number_ = 0;
 
     // need this for dynamic memory allocation (push_back)
     auto ptr = std::make_unique<lcmt_manipulator_traj>();
@@ -188,20 +188,104 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     return *ptr;
 }
 
-void DDP_KKTRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name) {
-      std::string _file_name = UDP_TRAJ_DIR;
-      _file_name += _name;
-      _file_name += ".csv";
-      DDP_KKTRunner::clean_file(_name, _file_name);
+void DDP_KKTRunner::RunVisualizer(double realtime_rate){
+    lcm_.subscribe(kLcmTimeChannel_DDP,
+                        &DDP_KKTRunner::HandleRobotTime, this);
+    lcmt_iiwa_status iiwa_state;
+    lcmt_schunk_wsg_status wsg_status;
+    lcmt_object_status object_state;
+    iiwa_state.num_joints = kIiwaArmNumJoints;
+    object_state.num_joints = 7;
+    iiwa_state.joint_position_measured.resize(kIiwaArmNumJoints, 0.);   
+    iiwa_state.joint_velocity_estimated.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_position_commanded.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_position_ipo.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_measured.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_commanded.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_external.resize(kIiwaArmNumJoints, 0.);
+    
+    //////////////// !!!!!!!!!! /////////////////////
+    // Warning: just for visualization since the gripper_position_output_port has been depricated in latest drake update
+    // actual_position_mm = finger1 -- negative
+    // actual_speed_mm_per_s = finger2 -- positive
+    // maximum width = 110
 
-      std::ofstream save_file;
-      save_file.open(_file_name, std::fstream::app);
-      for (int i(0); i < _vec.rows(); ++i){
-          save_file<<_vec(i,0)<< "\t";
-      }
-      save_file<<"\n";
-      save_file.flush();
-      save_file.close();
+    wsg_status.actual_position_mm = -25;
+    wsg_status.actual_speed_mm_per_s = 25;
+    
+    object_state.joint_position_measured.resize(7, 0.);   
+    object_state.joint_velocity_estimated.resize(7, 0.);
+    object_state.joint_position_commanded.resize(7, 0.);
+    object_state.joint_position_ipo.resize(7, 0.);
+    object_state.joint_torque_measured.resize(7, 0.);
+    object_state.joint_torque_commanded.resize(7, 0.);
+    object_state.joint_torque_external.resize(7, 0.);
+
+    drake::log()->info("Publishing trajectory to visualizer");
+    plan_finished_ = false;
+
+    while(true){
+        while (0 == lcm_.handleTimeout(10) || iiwa_state.utime == -1 
+        || plan_finished_) { }
+
+        // if(!start_publish){
+        //   start_time = robot_time_.utime;     
+        //   cout << "start_time: " << start_time << endl; 
+        //   start_publish = true;
+        // }
+
+        // Update status time to simulation time
+        // Note: utime is in microseconds
+        iiwa_state.utime = robot_time_.utime;
+        wsg_status.utime = robot_time_.utime;
+        // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
+        step_ = int(((robot_time_.utime) / 1000)*(0.001*realtime_rate/(time_step_/InterpolationScale)));
+        std::cout << step_ << std::endl;
+        
+        if(step_ >= N*InterpolationScale)
+        {
+            drake::log()->info("Interpolated trajectory has been published");
+            plan_finished_ = true;
+            break;
+        }
+
+        // pass the interpolated traj to lcm
+        for (int32_t j=0; j < iiwa_state.num_joints; ++j) { 
+            iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
+        }
+
+        lcm_.publish(kLcmStatusChannel_DDP, &iiwa_state);
+        
+
+        for (int joint = 0; joint < 7; joint++) 
+        {
+            object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
+        }
+
+        lcm_.publish(kLcmObjectStatusChannel_DDP, &object_state);
+        lcm_.publish(kLcmSchunkStatusChannel_DDP, &wsg_status);
+    }
+}
+
+void DDP_KKTRunner::HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+                      const lcmt_robot_time* robot_time) {
+        robot_time_ = *robot_time;
+}
+
+void DDP_KKTRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name) {
+    std::string _file_name = UDP_TRAJ_DIR;
+    _file_name += _name;
+    _file_name += ".csv";
+    DDP_KKTRunner::clean_file(_name, _file_name);
+
+    std::ofstream save_file;
+    save_file.open(_file_name, std::fstream::app);
+    for (int i(0); i < _vec.rows(); ++i){
+        save_file<<_vec(i,0)<< "\t";
+    }
+    save_file<<"\n";
+    save_file.flush();
+    save_file.close();
 }
 
 void DDP_KKTRunner::saveValue(double _value, const char * _name){

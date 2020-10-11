@@ -8,8 +8,9 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     struct timeval tbegin,tend;
     double texec = 0.0;
     commandVecTab_t u_0;
+    time_step_ = time_step;
     double dt = time_step;
-    unsigned int N = int(time_horizon/time_step);
+    N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
@@ -302,22 +303,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     // cout << "\tTime of derivative (second): " << lastTraj.time_derivative.sum() << " (" << 100.0*lastTraj.time_derivative.sum()/texec << "%)" << endl;
     // cout << "\tTime of backward pass (second): " << lastTraj.time_backward.sum() << " (" << 100.0*lastTraj.time_backward.sum()/texec << "%)" << endl;
 
-    #if useUDPSolver
-    cout << "\t\tUDP backward propagation (second): " << lastTraj.time_range1.sum() << " (" << 100.0*lastTraj.time_range1.sum()/texec << "%)" << endl;
-    cout << "\t\t\t20 multi-threading computation (second): " << lastTraj.time_range2.sum() << " (" << 100.0*lastTraj.time_range2.sum()/texec << "%)" << endl;
-    cout << "\t\t\tMain thread computation (second): " << lastTraj.time_range3.sum() << " (" << 100.0*lastTraj.time_range3.sum()/texec << "%)" << endl;
-    cout << "\tTime of forward pass (second): " << lastTraj.time_forward.sum() << " (" << 100.0*lastTraj.time_forward.sum()/texec << "%)" << endl;
-    cout << "\tTotal number of a forward dynamics in main thread: " << finalTimeProfile.counter0_ << endl;
-    cout << "\tTotal number of a forward dynamics in one worker thread: " << finalTimeProfile.counter1_ << endl;
-    cout << "\tTotal number of a forward dynamics in one worker thread: " << finalTimeProfile.counter2_ << endl;
-    // cout << "-----------" << endl;
-    cout << "\tTime of one RBT block in main thread (second): " << finalTimeProfile.time_period1 << " (" << 100.0*finalTimeProfile.time_period1/texec << "%)" << endl;
-    cout << "\tTime of one RBT block in one worker thread (second): " << finalTimeProfile.time_period2 << " (" << 100.0*finalTimeProfile.time_period2/texec << "%)" << endl;
-    cout << "\tTime of one RBT block in one worker thread (second): " << finalTimeProfile.time_period3 << " (" << 100.0*finalTimeProfile.time_period3/texec << "%)" << endl;
-    cout << "\tTime of update func (second): " << finalTimeProfile.time_period4 << " (" << 100.0*finalTimeProfile.time_period4/texec << "%)" << endl;
-    #endif
-
-
     cout << "lastTraj.xList[" << N << "]:" << xnew[N].transpose() << endl;
     cout << "lastTraj.uList[" << N-1 << "]:" << unew[N-1].transpose() << endl;
 
@@ -497,6 +482,90 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
     }
     }
     return xubar;
+}
+
+void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
+    lcm_.subscribe(kLcmTimeChannel_ADMM,
+                        &ADMM_KKTRunner::HandleRobotTime, this);
+    lcmt_iiwa_status iiwa_state;
+    lcmt_schunk_wsg_status wsg_status;
+    lcmt_object_status object_state;
+    iiwa_state.num_joints = kIiwaArmNumJoints;
+    object_state.num_joints = 7;
+    iiwa_state.joint_position_measured.resize(kIiwaArmNumJoints, 0.);   
+    iiwa_state.joint_velocity_estimated.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_position_commanded.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_position_ipo.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_measured.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_commanded.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_external.resize(kIiwaArmNumJoints, 0.);
+    
+    //////////////// !!!!!!!!!! /////////////////////
+    // Warning: just for visualization since the gripper_position_output_port has been depricated in latest drake update
+    // actual_position_mm = finger1 -- negative
+    // actual_speed_mm_per_s = finger2 -- positive
+    // maximum width = 110
+
+    wsg_status.actual_position_mm = -25;
+    wsg_status.actual_speed_mm_per_s = 25;
+    
+    object_state.joint_position_measured.resize(7, 0.);   
+    object_state.joint_velocity_estimated.resize(7, 0.);
+    object_state.joint_position_commanded.resize(7, 0.);
+    object_state.joint_position_ipo.resize(7, 0.);
+    object_state.joint_torque_measured.resize(7, 0.);
+    object_state.joint_torque_commanded.resize(7, 0.);
+    object_state.joint_torque_external.resize(7, 0.);
+
+    drake::log()->info("Publishing trajectory to visualizer");
+    plan_finished_ = false;
+
+    while(true){
+        while (0 == lcm_.handleTimeout(10) || iiwa_state.utime == -1 
+        || plan_finished_) { }
+
+        // if(!start_publish){
+        //   start_time = robot_time_.utime;     
+        //   cout << "start_time: " << start_time << endl; 
+        //   start_publish = true;
+        // }
+
+        // Update status time to simulation time
+        // Note: utime is in microseconds
+        iiwa_state.utime = robot_time_.utime;
+        wsg_status.utime = robot_time_.utime;
+        // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
+        step_ = int(((robot_time_.utime) / 1000)*(0.001*realtime_rate/(time_step_/InterpolationScale)));
+        std::cout << step_ << std::endl;
+        
+        if(step_ >= N*InterpolationScale)
+        {
+            drake::log()->info("Interpolated trajectory has been published");
+            plan_finished_ = true;
+            break;
+        }
+
+        // pass the interpolated traj to lcm
+        for (int32_t j=0; j < iiwa_state.num_joints; ++j) { 
+            iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
+        }
+
+        lcm_.publish(kLcmStatusChannel_ADMM, &iiwa_state);
+        
+
+        for (int joint = 0; joint < 7; joint++) 
+        {
+            object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
+        }
+
+        lcm_.publish(kLcmObjectStatusChannel_ADMM, &object_state);
+        lcm_.publish(kLcmSchunkStatusChannel_ADMM, &wsg_status);
+    }
+}
+
+void ADMM_KKTRunner::HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+                      const lcmt_robot_time* robot_time) {
+        robot_time_ = *robot_time;
 }
 
 void ADMM_KKTRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name){

@@ -18,7 +18,7 @@
 #include "drake/lcmt_motion_plan_query.hpp"
 #include "drake/traj_gen/config.h"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -160,7 +160,9 @@ lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal,
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
 
     DDP_KKTRunner runner;
-    return runner.RunDDP_KKT(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
+    auto return_ptr =  runner.RunDDP_KKT(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
+    runner.RunVisualizer(1.0);
+    return return_ptr;
 }
 
 lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
@@ -200,7 +202,9 @@ lcmt_manipulator_traj GetADMM_KKTRes(VectorXd q_init, VectorXd q_goal,
     VectorXd::Map(&qv_goal[13], q_goal.size()) = q_goal;
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
     ADMM_KKTRunner runner;
-    return runner.RunADMM_KKT(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
+    auto return_ptr = runner.RunADMM_KKT(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
+    runner.RunVisualizer(1.0);
+    return return_ptr;
 }
 
 };
