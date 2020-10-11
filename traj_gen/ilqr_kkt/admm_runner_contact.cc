@@ -3,7 +3,7 @@
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
-lcmt_manipulator_traj ADMM_KKTRunner::RunADMM(fullstateVec_t xinit, fullstateVec_t xgoal,
+lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
   double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
@@ -528,9 +528,9 @@ void ADMM_KKTRunner::saveValue(double _value, const char * _name){
 }
 
 void ADMM_KKTRunner::clean_file(const char * _file_name, std::string & _ret_file){
-    std::list<std::string>::iterator iter = std::find(admm_gs_filename_string.begin(), admm_gs_filename_string.end(), _file_name);
-    if(admm_gs_filename_string.end() == iter){
-        admm_gs_filename_string.push_back(_file_name);
+    std::list<std::string>::iterator iter = std::find(admm_kkt_gs_filename_string.begin(), admm_kkt_gs_filename_string.end(), _file_name);
+    if(admm_kkt_gs_filename_string.end() == iter){
+        admm_kkt_gs_filename_string.push_back(_file_name);
         remove(_ret_file.c_str());
     }
 }

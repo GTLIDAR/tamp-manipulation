@@ -217,9 +217,9 @@ void DDP_KKTRunner::saveValue(double _value, const char * _name){
 }
 
 void DDP_KKTRunner::clean_file(const char * _file_name, std::string & _ret_file){
-    std::list<std::string>::iterator iter = std::find(gs_fileName_string.begin(), gs_fileName_string.end(), _file_name);
-    if(gs_fileName_string.end() == iter){
-        gs_fileName_string.push_back(_file_name);
+    std::list<std::string>::iterator iter = std::find(gs_kkt_fileName_string.begin(), gs_kkt_fileName_string.end(), _file_name);
+    if(gs_kkt_fileName_string.end() == iter){
+        gs_kkt_fileName_string.push_back(_file_name);
         remove(_ret_file.c_str());
     }
 }

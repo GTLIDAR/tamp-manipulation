@@ -39,8 +39,8 @@ using namespace Eigen;
 
 /* DDP trajectory generation */
 
-static std::list< const char*> gs_fileName;
-static std::list< std::string > gs_fileName_string;
+static std::list< const char*> gs_kkt_fileName;
+static std::list< std::string > gs_kkt_fileName_string;
 
 namespace drake {
 namespace traj_gen {

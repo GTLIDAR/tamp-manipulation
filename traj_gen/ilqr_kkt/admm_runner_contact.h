@@ -60,8 +60,8 @@ using namespace Eigen;
 
 /* ADMM trajectory generation */
 
-static std::list< const char*> admm_gs_filename;
-static std::list< std::string > admm_gs_filename_string;
+static std::list< const char*> admm_kkt_gs_filename;
+static std::list< std::string > admm_kkt_gs_filename_string;
 
 namespace drake {
 namespace traj_gen {
@@ -76,7 +76,7 @@ using math::RollPitchYaw;
 
 class ADMM_KKTRunner {
   public:
-  lcmt_manipulator_traj RunADMM(fullstateVec_t xinit, fullstateVec_t xgoal,
+  lcmt_manipulator_traj RunADMM_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
     double time_horizon, double time_step, string action_name);
 
   projfullStateAndCommandTab_t projection(const fullstateVecTab_t& xnew,
