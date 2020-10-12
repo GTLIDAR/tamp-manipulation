@@ -640,12 +640,13 @@ void ManipulationStation<T>::Finalize(
   switch (setup_) {
     case Setup::kNone:
     case Setup::kConveyorBelt: {
-      q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      // q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
       break;
     }
     case Setup::kObjectSorting: {
-      // q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
-      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+      q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      // q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
       break;
     }
     case Setup::kManipulationClass: {

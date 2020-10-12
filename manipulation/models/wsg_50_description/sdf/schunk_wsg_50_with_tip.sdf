@@ -119,6 +119,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="left_bottom">
 	<pose> -0.008 0.041 0 0 0 0 </pose>
@@ -127,6 +131,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="left_left">
 	<pose> -0.008 0.031 -0.01 0 0 0 </pose>
@@ -143,6 +151,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>                      
       <collision name="collision">
         <laser_retro>0</laser_retro>
@@ -232,6 +244,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="right_bottom">
 	<pose> -0.008 0.041 0 0 0 0 </pose>
@@ -240,6 +256,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="right_left">
 	<pose> -0.008 0.031 -0.01 0 0 0 </pose>
@@ -248,6 +268,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>
       <collision name="right_right">
 	<pose> -0.008 0.031 0.01 0 0 0 </pose>
@@ -256,6 +280,10 @@
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
+        <drake_compliance>
+        <static_friction>3</static_friction>
+        <dynamic_friction>3</dynamic_friction>
+      </drake_compliance>
       </collision>                  
       <collision name="collision">
         <laser_retro>0</laser_retro>
@@ -311,6 +339,132 @@
           </contact>
         </surface>
       </collision>
+    </link>
+    <link name="left_ball_contact1">
+    <pose>-0.003 0.065 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="left_ball_contact2">
+    <pose>-0.003 0.052 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="left_ball_contact3">
+    <pose>-0.008 0.0685 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="right_ball_contact1">
+    <pose>0.003 0.065 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="right_ball_contact2">
+    <pose>0.003 0.052 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
+    </link>
+    <link name="right_ball_contact3">
+    <pose>0.008 0.0685 0 0 0 0</pose>
+      <inertial>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>.001</radius>
+          </sphere>
+        </geometry>
+      </visual>
     </link>
     <joint name="left_finger_sliding_joint" type="prismatic">
       <parent>body</parent>
@@ -379,6 +533,48 @@
           </suspension>
         </ode>
       </physics>
+    </joint>
+    <joint name="left_finger_contact_ball1" type="fixed">
+      <parent>left_finger</parent>
+      <child>left_ball_contact1</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="left_finger_contact_ball2" type="fixed">
+      <parent>left_finger</parent>
+      <child>left_ball_contact2</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="left_finger_contact_ball3" type="fixed">
+      <parent>left_finger</parent>
+      <child>left_ball_contact3</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="right_finger_contact_ball1" type="fixed">
+      <parent>right_finger</parent>
+      <child>right_ball_contact1</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="right_finger_contact_ball2" type="fixed">
+      <parent>right_finger</parent>
+      <child>right_ball_contact2</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="right_finger_contact_ball3" type="fixed">
+      <parent>right_finger</parent>
+      <child>right_ball_contact3</child>
+      <axis>
+          <xyz>0 1 0</xyz>
+      </axis>
     </joint>
     <static>0</static>
     <allow_auto_disable>1</allow_auto_disable>
