@@ -10,7 +10,7 @@ from drake import lcmt_schunk_wsg_command, lcmt_schunk_wsg_status, lcmt_manipula
 
 from utils.traj_utils import dict_to_lcmt_manipulator_traj
 
-JSON_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/traj20201011T182315.json"
+JSON_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/good_admm_static_traj20201012T055500.json"
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 
