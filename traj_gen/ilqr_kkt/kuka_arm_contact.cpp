@@ -384,7 +384,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
         
         if (action_name_.compare("push")==0){        
             VectorXd dry_friction(6);
-            dry_friction << 0, 0, 0, -2.0, 0, 0;
+            dry_friction << 0, 0, 0, -0.0, 0, 0;
             Bias_MJ.middleRows<6>(0) += dry_friction;
         }
         Bias_MJ.middleRows<7>(6) += tau;
@@ -411,6 +411,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
         // MatrixXd M_JInv = M_J.inverse();
         // VectorXd Acc_total = M_JInv*Bias_MJ;
         VectorXd force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
+        // cout << force.transpose() << endl;
         VectorXd Acc_total = M_Inv * (Bias_MJ + Jac.transpose() * force);
         VectorXd ang_dd_obj = Acc_total.topRows(3);
         VectorXd pos_dd_obj = Acc_total.middleRows<3>(3);

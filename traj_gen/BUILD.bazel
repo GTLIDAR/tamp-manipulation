@@ -177,3 +177,21 @@ drake_cc_library(
         "//traj_gen:config",
     ],
 )
+
+drake_cc_binary(
+    name = "rerun_multi_traj",
+    srcs = ["rerun_multi_traj.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//traj_gen:config",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:motion_plan_query",
+    ],
+)

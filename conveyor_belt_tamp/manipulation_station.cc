@@ -641,8 +641,8 @@ void ManipulationStation<T>::Finalize(
     case Setup::kNone:
     case Setup::kConveyorBelt: {
       // q0_iiwa << -0.935018, 0.786996, -0.90662, -1.31144, 0.614953, 1.32472, -0.268566;
-      // q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
-      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+      q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      // q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
       break;
     }
     case Setup::kObjectSorting: {

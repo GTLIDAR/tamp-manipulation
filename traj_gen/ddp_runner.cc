@@ -103,6 +103,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     #endif
     joint_state_traj.resize(N+1);
     joint_state_traj_interp.resize(N*InterpolationScale+1);
+    position_traj_interp.resize(N*InterpolationScale+1);
     for(unsigned int i=0;i<=N;i++){
       joint_state_traj[i] = lastTraj.xList[i];
     }
@@ -113,8 +114,14 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
       for(unsigned int j=0;j<N*InterpolationScale;j++){
        unsigned int index = j/10;
        joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;
+       if(i<stateSize/2){
+         position_traj_interp[j](i,0) = joint_state_traj_interp[j](i,0);
+       }
       }
       joint_state_traj_interp[N*InterpolationScale](i,0) = joint_state_traj[N](i,0);
+      if(i<stateSize/2){
+         position_traj_interp[N*InterpolationScale](i,0) = joint_state_traj_interp[N*InterpolationScale](i,0);
+       }
     }
 
     texec=(static_cast<double>(1000*(tend.tv_sec-tbegin.tv_sec)+((tend.tv_usec-tbegin.tv_usec)/1000)))/1000.;
@@ -152,7 +159,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     cout << "lastTraj.xList[0]:" << lastTraj.xList[0].transpose() << endl;
     cout << "lastTraj.uList[0]:" << lastTraj.uList[0].transpose() << endl;
 
-    for(unsigned int i=N-50;i<=N;i++){
+    for(unsigned int i=N-5;i<=N;i++){
       cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
     }
     // saving data file

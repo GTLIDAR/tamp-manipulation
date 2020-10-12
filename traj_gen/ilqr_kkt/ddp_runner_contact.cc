@@ -58,7 +58,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
                                     Vector3d(0, 0, 0.053));
     plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
-    // const ModelInstanceIndex object_model =
+    const ModelInstanceIndex object_model =
     parser.AddModelFromFile(box_sdf_path0, "object");
 
     plant_.Finalize();
@@ -104,6 +104,8 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     #endif
     joint_state_traj.resize(N+1);
     joint_state_traj_interp.resize(N*InterpolationScale+1);
+    position_traj_interp.resize(N*InterpolationScale+1);
+
     for(unsigned int i=0;i<=N;i++){
     joint_state_traj[i] = lastTraj.xList[i];
     }
@@ -111,11 +113,17 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
 
     //linear interpolation to 1ms
     for(unsigned int i=0;i<fullstateSize;i++){
-    for(unsigned int j=0;j<N*InterpolationScale;j++){
-    unsigned int index = j/10;
-    joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;
-    }
-    joint_state_traj_interp[N*InterpolationScale](i,0) = joint_state_traj[N](i,0);
+      for(unsigned int j=0;j<N*InterpolationScale;j++){
+       unsigned int index = j/10;
+       joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;
+       if(i>12 && i<13+stateSize/2){
+         position_traj_interp[j](i-13,0) = joint_state_traj_interp[j](i,0);
+       }
+      }
+      joint_state_traj_interp[N*InterpolationScale](i,0) = joint_state_traj[N](i,0);
+      if(i>12 && i<13+stateSize/2){
+         position_traj_interp[N*InterpolationScale](i-13,0) = joint_state_traj_interp[N*InterpolationScale](i,0);
+       }
     }
 
     texec=(static_cast<double>(1000*(tend.tv_sec-tbegin.tv_sec)+((tend.tv_usec-tbegin.tv_usec)/1000)))/1000.;
@@ -143,6 +151,21 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     // for(unsigned int i=N-50;i<=N;i++){
     //   cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
     // }
+
+    // Do the forward kinamtics for the EE to check the performance
+    for(unsigned int i=N-2;i<=N;i++){      
+        auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
+        auto xyz = Eigen::Vector3d(0, 0, 0);
+        math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
+        plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
+        plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].middleRows<7>(13));
+        plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
+        const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
+        const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
+        const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
+        cout << "ee[" << i << "]:" << X_Wee.translation().transpose() << endl;
+    }
+
     // saving data file
     for(unsigned int i=0;i<N;i++){
       saveVector(joint_state_traj[i], "joint_trajectory");

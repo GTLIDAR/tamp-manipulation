@@ -101,7 +101,6 @@ class ADMM_KKTRunner {
 
   void clean_file(const char * _file_name, std::string & _ret_file);
 
- private:
   void HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
                         const lcmt_robot_time* robot_time);
 
@@ -116,6 +115,7 @@ class ADMM_KKTRunner {
   commandVecTab_t torque_traj;
   fullstateVecTab_t joint_state_traj_interp;
   commandVecTab_t torque_traj_interp;
+  stateVecTab_half_t position_traj_interp;
   // unsigned int traj_knot_number_ = 0;
 };
 
