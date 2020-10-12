@@ -8,8 +8,8 @@ from drake import lcmt_manipulator_traj
 
 from utils.traj_utils import dict_to_lcmt_multi_wp_manip_query, lcmt_manipulator_traj_to_dict
 
-JSON_QUERY_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/admm_queries20201010T211846.json"
-JSON_DDP_TRAJ_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/traj20201010T211845.json"
+JSON_QUERY_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/admm_queries20201011T182316.json"
+JSON_DDP_TRAJ_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/good_ddp_static_traj20201011T182315.json"
 
 MIN_TIME_STEP = 0.001
 
