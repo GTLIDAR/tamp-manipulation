@@ -332,6 +332,9 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     ptr->n_time_steps = N*InterpolationScale;
     //ptr->cost = lastTraj.finalCost;
     ptr->cost = final_cost[ADMMiterMax];
+    if (ptr->cost <= 0.1) {
+      ptr->cost = std::nan("1");
+    }
       //============================================
 
     for (int32_t i=0; i < ptr->n_time_steps; ++i) {
