@@ -7,6 +7,8 @@ load(
     "drake_cc_library",
 )
 
+package(default_visibility = ["//visibility:public"])
+
 drake_cc_library(
     name = "manipulation_station",
     srcs = [
@@ -111,6 +113,25 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
+    name = "single_traj_test_contact",
+    srcs = ["single_traj_test_contact.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//traj_gen:config",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:motion_plan_query",
+    ],
+)
+
+drake_cc_binary(
     name = "single_traj_test",
     srcs = ["single_traj_test.cc",],
     deps = [
@@ -121,6 +142,28 @@ drake_cc_binary(
         "//math:geometric_transform",
         "//traj_gen:admm_runner",
         "//traj_gen:ddp_runner",
+        "//traj_gen:config",
+        # "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        # "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:motion_plan_query",
+    ],
+)
+
+drake_cc_binary(
+    name = "multi_traj_test",
+    srcs = ["multi_traj_test.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//traj_gen:config",
         "//lcmtypes:manipulator_traj",
         "//lcmtypes:motion_plan_query",
     ],
@@ -177,6 +220,27 @@ drake_cc_binary(
         "//lcmtypes:manipulator_traj",
         "//traj_gen:ddp_runner",
         "//traj_gen:admm_runner",
+    ],
+)
+
+drake_cc_binary(
+    name = "pddl_multi_wp_query_handler_contact",
+    srcs = ["pddl_multi_wp_query_handler_contact.cc",],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//lcmtypes:multi_wp_manip_query",
+        "//lcmtypes:manipulator_traj",
+        "//traj_gen:ddp_runner",
+        "//traj_gen:admm_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
     ],
 )
 

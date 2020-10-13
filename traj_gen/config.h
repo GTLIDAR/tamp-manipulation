@@ -13,7 +13,10 @@
 #define DISABLE_QPBOX 1
 #define ENABLE_FULLDDP 0
 #define DISABLE_FULLDDP 1
+#define INCLUDE_OBJECT 1
+#define DIRECT_INVERSE 0
 #define WHOLE_BODY 1
+#define VISUALIZE 1
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD
@@ -21,15 +24,12 @@
 #define NUMBER_OF_THREAD 1 //12
 #endif
 
-// #if WHOLE_BODY
-// #define stateSize 18 
-// #define commandSize 9 
-// #define fullstatecommandSize 27 
-// #else
 #define stateSize 14
 #define commandSize 7
-#define fullstatecommandSize 21
-// #endif
+#define statecommandSize 21
+
+#define fullstateSize 27 // object: 7+6; kuka: 7+7 (the joints for wsg cannot be optimized) 
+#define fullstatecommandSize 34 // add the size of torques
 
 // #define TimeHorizon 2
 // #define TimeStep 0.005
@@ -39,7 +39,7 @@ const int32_t kNumJoints = 7;
 
 #define BOXWEIGHT 0.122
 
-#define UDP_TRAJ_DIR "/home/zhigen/drake/traj_gen/trajectory/"
+#define UDP_TRAJ_DIR "/home/ziyi/code/drake/traj_gen/trajectory_data/"
 const char* const kLcmQueryResultsChannel = "TREE_SEARCH_QUERY_RESULTS";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 
@@ -53,6 +53,11 @@ typedef Eigen::Matrix<double,stateSize,1> stateVec_t;                       // s
 typedef Eigen::Matrix<double,1,stateSize> stateVecTrans_t;                  // 1 x stateSize
 typedef Eigen::Matrix<double,stateSize,stateSize> stateMat_t;               // stateSize x stateSize
 typedef Eigen::Matrix<double,stateSize,stateSize> stateTens_t[stateSize];   // stateSize x stateSize x stateSize
+
+typedef Eigen::Matrix<double,fullstateSize,1> fullstateVec_t;                       // fullstateSize x 1
+typedef Eigen::Matrix<double,1,fullstateSize> fullstateVecTrans_t;                  // 1 x fullstateSize
+typedef Eigen::Matrix<double,fullstateSize,fullstateSize> fullstateMat_t;               // fullstateSize x fullstateSize
+typedef Eigen::Matrix<double,fullstateSize,fullstateSize> fullstateTens_t[fullstateSize];   // fullstateSize x fullstateSize x fullstateSize
 
 // typedef for commandSize types
 typedef Eigen::Matrix<double,commandSize,1> commandVec_t;                           // commandSize x 1
@@ -73,6 +78,17 @@ typedef Eigen::Matrix<double,stateSize+commandSize,1> stateAug_t;               
 typedef Eigen::Matrix<double,1,1> scalar_t;                                                     // 1 x 1
 typedef Eigen::Matrix<double,stateSize+commandSize,1> projStateAndCommand_t;                    // 21 x 1
 
+typedef Eigen::Matrix<double,fullstateSize,commandSize> fullstateR_commandC_t;                          // fullstateSize x commandSize
+typedef Eigen::Matrix<double,fullstateSize,commandSize> fullstateR_commandC_fullstateD_t[stateSize];        // fullstateSize x commandSize x fullstateSize
+typedef Eigen::Matrix<double,fullstateSize,commandSize> fullstateR_commandC_commandD_t[commandSize];    // fullstateSize x commandSize x commandSize
+typedef Eigen::Matrix<double,commandSize,fullstateSize> commandR_fullstateC_t;                          // commandSize x fullstateSize
+typedef Eigen::Matrix<double,commandSize,fullstateSize> commandR_fullstateC_fullstateD_t[stateSize];        // commandSize x fullstateSize x fullstateSize
+typedef Eigen::Matrix<double,commandSize,fullstateSize> commandR_fullstateC_commandD_t[commandSize];    // commandSize x fullstateSize x commandSize
+typedef Eigen::Matrix<double,fullstateSize,fullstateSize> fullstateR_fullstateC_commandD_t[commandSize];        // fullstateSize x fullstateSize x commandSize
+typedef Eigen::Matrix<double,commandSize,commandSize> commandR_commandC_fullstateD_t[stateSize];    // commandSize x commandSize x fullstateSize
+typedef Eigen::Matrix<double,fullstateSize+commandSize,1> fullstateAug_t;                               // fullstateSize + commandSize x 1
+typedef Eigen::Matrix<double,fullstateSize+commandSize,1> projfullStateAndCommand_t;                    // 34 x 1
+
 // typedef for half commandSize and stateSize types
 typedef Eigen::Matrix<double,stateSize/2,1> stateVec_half_t;                                    // stateSize/2 x 1
 typedef Eigen::Matrix<double,stateSize/2,stateSize/2> stateMat_half_t;                          // stateSize/2 x stateSize/2
@@ -89,9 +105,18 @@ typedef std::vector<commandR_stateC_t> commandR_stateC_tab_t;
 typedef std::vector<stateVec_half_t> stateVecTab_half_t;
 typedef std::vector<projStateAndCommand_t> projStateAndCommandTab_t;
 
+typedef std::vector<fullstateVec_t> fullstateVecTab_t;
+typedef std::vector<fullstateMat_t> fullstateMatTab_t;
+typedef std::vector<fullstateR_commandC_t> fullstateR_commandC_tab_t;
+typedef std::vector<commandR_fullstateC_t> commandR_fullstateC_tab_t;
+typedef std::vector<projfullStateAndCommand_t> projfullStateAndCommandTab_t;
+
 //typedef std::vector<stateTens_t> stateTensTab_t;
 typedef std::vector<std::vector<stateMat_t> > stateTensTab_t;
 typedef std::vector<std::vector<stateR_commandC_t> > stateR_commandC_Tens_t;
+
+typedef std::vector<std::vector<fullstateMat_t> > fullstateTensTab_t;
+typedef std::vector<std::vector<fullstateR_commandC_t> > fullstateR_commandC_Tens_t;
 
 }  // namespace
 }  // namespace kuka_iiwa_arm

@@ -200,21 +200,6 @@ void HandleQuery(
         traj_.gripper_force = forces;
         traj_.gripper_width = widths;
 
-        // add wait time in traj
-        if (query->wait_time) {
-            int wait_time_steps = query->wait_time / query->time_step;
-            traj_.n_time_steps += wait_time_steps;
-            double time_step = query->time_step;
-            for (int ts = 0; ts < wait_time_steps; ts++) {
-                traj_.times_sec.push_back(traj_.times_sec.back()+time_step);
-                traj_.states.push_back(traj_.states.back());
-                traj_.torques.push_back(traj_.torques.back());
-                traj_.gripper_width.push_back(traj_.gripper_width.back());
-                traj_.gripper_force.push_back(traj_.gripper_force.back());
-            }
-            std::cout<<"wait traj added.\n";
-        }
-
         AppendTrajectory(total_traj_, traj_);
 
         if (isnan(traj_.cost)) {
@@ -232,6 +217,21 @@ void HandleQuery(
             break;
         }
         ClearTrajectory(traj_);
+    }
+
+    // add wait time in traj
+    if (query->wait_time) {
+        int wait_time_steps = query->wait_time / query->time_step;
+        traj_.n_time_steps += wait_time_steps;
+        double time_step = query->time_step;
+        for (int ts = 0; ts < wait_time_steps; ts++) {
+            total_traj_.times_sec.push_back(total_traj_.times_sec.back()+time_step);
+            total_traj_.states.push_back(total_traj_.states.back());
+            total_traj_.torques.push_back(total_traj_.torques.back());
+            total_traj_.gripper_width.push_back(total_traj_.gripper_width.back());
+            total_traj_.gripper_force.push_back(total_traj_.gripper_force.back());
+        }
+        std::cout<<"wait traj added.\n";
     }
 
     lcm_.publish(FLAGS_result_channel, &total_traj_);

@@ -11,11 +11,13 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/traj_gen/admm_runner.h"
 #include "drake/traj_gen/ddp_runner.h"
+// #include "drake/traj_gen/ilqr_kkt/ddp_runner_contact.h"
 
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
+#include "drake/traj_gen/config.h"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -86,6 +88,9 @@ void Run(const lcmt_motion_plan_query* query) {
         return;
     }
 
+    // q_goal << -1.43793, 0.71893, -0.313679, -1.17462, 0.213281, 1.27488, -0.169404;
+    // q_goal << -1.00343, 0.997431, -0.744752, -1.41766, 0.73145, 1.0159, -0.339804;
+    q_goal << 1.71627, -1.30988, -2.51169, -1.5873, -2.82295, 1.40921, 2.47325;
     lcmt_manipulator_traj traj;
     if (FLAGS_use_admm) {
         traj = GetADMMRes(iiwa_q, q_goal, query);
@@ -116,6 +121,8 @@ const lcmt_motion_plan_query* current_query_;
 lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to ddp\n";
+    std::cout<<"ddp initial pos: " << q_init.transpose() << std::endl;
+    std::cout<<"ddp goal pos: " << q_goal.transpose() << std::endl;
 
     VectorXd qv_init;
     qv_init = Eigen::VectorXd::Zero(stateSize);
@@ -134,6 +141,8 @@ lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
 lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
     const lcmt_motion_plan_query* query) {
     std::cout<<"IK Successful, sent to admm\n";
+    std::cout<<"admm initial pos: " << q_init.transpose() << std::endl;
+    std::cout<<"admm goal pos: " << q_goal.transpose() << std::endl;
 
     VectorXd qv_init;
     qv_init = Eigen::VectorXd::Zero(stateSize);
@@ -158,23 +167,34 @@ int main(int argc, char* argv[]) {
     drake::conveyor_belt_tamp::TrajTestRunner runner;
     drake::lcmt_motion_plan_query query;
     query.dim_q = 7;
-    query.name = "Test";
+    query.name = "push";
     query.level = 0;
-    query.time_horizon = 2;
+    query.time_horizon = 1.0;
     query.time_step = 0.005;
     query.wait_time = 0;
 
-    double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
+    // double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
+    // double prev_q[] = {-0.133372, 0.251457, -0.0461879, -1.21048, 0.0324702, 0.928553, -0.190112};
+    // double prev_q[] = {1.84849, 1.30959, -0.0757701, -1.37273, -1.29295, 1.59139, 2.68207}; //for pushing
+    double prev_q[] = {-0.099479, 1.80031, -1.69171, -1.72316, 2.56677, 0.312838, -0.777406};
+    // double prev_q[] = {-0.935018, 0.786996, -0.90662, -1.31144, 0.614953, 1.32472, -0.268566};
     // double prev_q[] = {-0.9498766005895738, -1.4303909653637479, 2.0864686773500476, -1.4801119967595946, 0.11195986419142938, 0.889741592707635, -0.003942442475240289};
     query.prev_q = std::vector<double>(prev_q, prev_q+sizeof(prev_q)/sizeof(double));
 
-    query.desired_ee[0] = 0.4;
-    query.desired_ee[1] = 0.05;
-    query.desired_ee[2] = 0.35;
-    query.desired_ee[3] = 0;
-    query.desired_ee[4] = 1.57;
-    query.desired_ee[5] = -1.57;
-
+    // query.desired_ee[0] = 0.4;
+    // query.desired_ee[1] = 0.05;
+    // query.desired_ee[2] = 0.35;
+    // query.desired_ee[3] = 0;
+    // query.desired_ee[4] = 1.57;
+    // query.desired_ee[5] = -1.57;
+    
+    // for pushing
+    query.desired_ee[0] = 0.5;
+    query.desired_ee[1] = 0.55;
+    query.desired_ee[2] = 0.0816099;
+    query.desired_ee[3] = 1.42092e-12;
+    query.desired_ee[4] = 0.0292037;
+    query.desired_ee[5] = 4.26875e-12;
     // query.desired_ee[0] = 0.5656;
     // query.desired_ee[1] = 0.0;
     // query.desired_ee[2] = 0.25;

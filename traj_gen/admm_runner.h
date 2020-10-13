@@ -91,7 +91,6 @@ class ADMMRunner {
 
   void clean_file(const char * _file_name, std::string & _ret_file);
 
- private:
   // lcm::LCM lcm_;
   // lcmt_manipulator_traj ddp_traj_;
 
@@ -100,6 +99,7 @@ class ADMMRunner {
   commandVecTab_t torque_traj;
   stateVecTab_t joint_state_traj_interp;
   commandVecTab_t torque_traj_interp;
+  stateVecTab_half_t position_traj_interp;
   // unsigned int traj_knot_number_ = 0;
 };
 

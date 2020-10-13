@@ -59,13 +59,13 @@ void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);
 void clean_file(const char * _file_name, std::string & _ret_file);
 
-private:
 
 //UDP parameters
 stateVecTab_t joint_state_traj;
 commandVecTab_t torque_traj;
 stateVecTab_t joint_state_traj_interp;
 commandVecTab_t torque_traj_interp;
+stateVecTab_half_t position_traj_interp;
 };
 
 } // namespace kuka_iiwa_arm

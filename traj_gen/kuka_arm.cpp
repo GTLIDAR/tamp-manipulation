@@ -284,9 +284,18 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         // }
 
         //=============================================
-        vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
+        // Cholesky decomposition (not much speedup)
+        MatrixXd M_Inv = M_.llt().solve(Matrix<double,9,9>::Identity()); 
+        vd = (M_Inv*(tau + tau_g - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
-
+        for (int j = 0; j < Xdot_new.rows(); j++) {
+            if (isnan(Xdot_new(j))) {
+                std::cout<<"New Xdot contains NaN"<<"\n";
+                // std::cout<<Xdot_new.transpose()<<"\n";
+                break;
+            }
+        }
+        
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
             finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;

@@ -8,15 +8,20 @@ package(
     default_visibility = [":__subpackages__"],
 )
 
+drake_cc_library(
+    name = "config",
+    hdrs = ["config.h"],
+    visibility = ["//visibility:public"],
+)
 
 drake_cc_library(
     name = "cost_function_kuka_arm",
     srcs = ["cost_function_kuka_arm.cc",],
-    hdrs = ["cost_function_kuka_arm.h",
-            "config.h",],
+    hdrs = ["cost_function_kuka_arm.h",],
     visibility = ["//visibility:public"],
     deps = [
         "@eigen",
+        "//traj_gen:config",
     ]
 )
 
@@ -24,10 +29,11 @@ drake_cc_library(
     name = "cost_function_kuka_arm_track",
     srcs = ["cost_function_kuka_arm_track.cc",],
     hdrs = ["cost_function_kuka_arm_track.h",
-            "config.h",],
+            ],
     visibility = ["//visibility:public"],
     deps = [
         "@eigen",
+        "//traj_gen:config",
     ]
 )
 
@@ -35,7 +41,6 @@ drake_cc_library(
     name = "kuka_arm",
     srcs = ["kuka_arm.cpp",],
     hdrs = ["kuka_arm.h",
-            "config.h",
             "cost_function_kuka_arm.h",
             ],
     visibility = ["//visibility:public"],
@@ -53,6 +58,7 @@ drake_cc_library(
         "//multibody/parsing",
         "//math:geometric_transform",
         "//common:find_resource",
+        "//traj_gen:config",
     ],
 )
 
@@ -60,7 +66,6 @@ drake_cc_library(
     name = "kuka_arm_track",
     srcs = ["kuka_arm_track.cc",],
     hdrs = ["kuka_arm_track.h",
-            "config.h",
             "cost_function_kuka_arm_track.h",
             ],
     visibility = ["//visibility:public"],
@@ -78,6 +83,7 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
+        "//traj_gen:config",
     ]
 )
 
@@ -85,7 +91,6 @@ drake_cc_library(
     name = "ilqrsolver",
     srcs = ["ilqrsolver.cpp",],
     hdrs = ["ilqrsolver.h",
-            "config.h",
             "kuka_arm.h",
             "cost_function_kuka_arm.h",],
     visibility = ["//visibility:public"],
@@ -94,6 +99,7 @@ drake_cc_library(
         "//common:find_resource",
         "//multibody/plant",
         "//multibody/parsing",
+        "//traj_gen:config",
     ]
 )
 
@@ -101,7 +107,6 @@ drake_cc_library(
     name = "ilqrsolver_track",
     srcs = ["ilqrsolver_track.cc",],
     hdrs = ["ilqrsolver_track.h",
-            "config.h",
             "kuka_arm_track.h",
             "cost_function_kuka_arm_track.h",],
     visibility = ["//visibility:public"],
@@ -110,14 +115,14 @@ drake_cc_library(
         "//common:find_resource",
         "//multibody/plant",
         "//multibody/parsing",
+        "//traj_gen:config",
     ]
 )
 
 drake_cc_library(
     name = "ddp_runner",
     srcs = ["ddp_runner.cc",],
-    hdrs = ["ddp_runner.h",
-            "config.h",],
+    hdrs = ["ddp_runner.h",],
     visibility = ["//visibility:public"],
     data = [
         "//examples/kuka_iiwa_arm:models",
@@ -138,14 +143,14 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
+        "//traj_gen:config",
     ],
 )
 
 drake_cc_library(
     name = "admm_runner",
     srcs = ["admm_runner.cc",],
-    hdrs = ["admm_runner.h",
-            "config.h",],
+    hdrs = ["admm_runner.h",],
     visibility = ["//visibility:public"],
     data = [
         "//examples/kuka_iiwa_arm:models",
@@ -169,5 +174,24 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/parsing",
         "//math:geometric_transform",
+        "//traj_gen:config",
+    ],
+)
+
+drake_cc_binary(
+    name = "rerun_multi_traj",
+    srcs = ["rerun_multi_traj.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//traj_gen:config",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:motion_plan_query",
     ],
 )

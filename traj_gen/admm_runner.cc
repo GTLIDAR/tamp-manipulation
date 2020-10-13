@@ -55,11 +55,15 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     commandVecTab_t u_temp2;
     projStateAndCommandTab_t xubar;
     vector<double> res_x;
+    vector<double> res_x_pos;
+    vector<double> res_x_vel;
     vector<double> res_u;
     vector<double> res_xlambda;
     vector<double> res_ulambda;
     vector<double> final_cost;
     res_x.resize(ADMMiterMax);
+    res_x_pos.resize(ADMMiterMax);
+    res_x_vel.resize(ADMMiterMax);
     res_u.resize(ADMMiterMax);
     res_xlambda.resize(ADMMiterMax);
     res_ulambda.resize(ADMMiterMax);
@@ -155,7 +159,6 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
     // KukaArm_TRK KukaArmModel(dt, N, xgoal);
-
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight, vel_weight, torque_weight, N); //postion/velocity/torque weights
     ILQRSolver_TRK testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
@@ -218,6 +221,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
         // Save residuals for all iterations
         res_x[i] += (xnew[j] - xbar[j]).norm();
+        res_x_pos[i] += (xnew[j].head(kNumJoints) - xbar[j].head(kNumJoints)).norm();
+        res_x_vel[i] += (xnew[j].tail(kNumJoints) - xbar[j].tail(kNumJoints)).norm();
         res_u[i] += (unew[j] - ubar[j]).norm();
 
         res_xlambda[i] += vel_weight*(xbar[j] - xbar_old[j]).norm();
@@ -227,6 +232,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       x_lambda[N] += xnew[N] - xbar[N];
 
       res_x[i] += (xnew[N] - xbar[N]).norm();
+      res_x_pos[i] += (xnew[N].head(kNumJoints) - xbar[N].head(kNumJoints)).norm();
+      res_x_vel[i] += (xnew[N].tail(kNumJoints) - xbar[N].tail(kNumJoints)).norm();
       res_xlambda[i] += 0*(xbar[N] - xbar_old[N]).norm();
 
       // get the cost without augmented Lagrangian terms
@@ -251,6 +258,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     #endif
     joint_state_traj.resize(N+1);
     joint_state_traj_interp.resize(N*InterpolationScale+1);
+    position_traj_interp.resize(N*InterpolationScale+1);
+    
     for(unsigned int i=0;i<=N;i++){
       joint_state_traj[i] = xnew[i];
     }
@@ -261,8 +270,14 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       for(unsigned int j=0;j<N*InterpolationScale;j++){
        unsigned int index = j/10;
        joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;
+       if(i<stateSize/2){
+         position_traj_interp[j](i,0) = joint_state_traj_interp[j](i,0);
+       }
       }
       joint_state_traj_interp[N*InterpolationScale](i,0) = joint_state_traj[N](i,0);
+      if(i<stateSize/2){
+         position_traj_interp[N*InterpolationScale](i,0) = joint_state_traj_interp[N*InterpolationScale](i,0);
+       }
     }
 
     texec=(static_cast<double>(1000*(tend.tv_sec-tbegin.tv_sec)+((tend.tv_usec-tbegin.tv_usec)/1000)))/1000.;
@@ -312,6 +327,12 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM");
     }
 
+    for(unsigned int i=0;i<ADMMiterMax;i++)
+    {
+      saveValue(res_x_pos[i], "residual_x_pos_push");
+      saveValue(res_x_vel[i], "residual_x_vel_push");
+      saveValue(res_u[i], "residual_u_push");
+    }
     cout << "-------- ADMM Trajectory Generation Finished! --------" << endl;
 
     for(unsigned int i=0;i<ADMMiterMax;i++)
@@ -319,6 +340,25 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       cout << "res_x[" << i << "]:" << res_x[i] << endl;
     }
     cout << endl;
+
+    for(unsigned int i=0;i<ADMMiterMax;i++)
+    {
+      cout << "res_x_pos[" << i << "]:" << res_x_pos[i] << endl;
+    }
+    cout << endl;
+
+    for(unsigned int i=0;i<ADMMiterMax;i++)
+    {
+      cout << "res_x_vel[" << i << "]:" << res_x_vel[i] << endl;
+    }
+    cout << endl;
+
+    for(unsigned int i=0;i<ADMMiterMax;i++)
+    {
+      cout << "res_u[" << i << "]:" << res_u[i] << endl;
+    }
+    cout << endl;
+
     for(unsigned int i=0;i<=ADMMiterMax;i++)
     {
       cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
@@ -366,7 +406,7 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
 
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
       joint_limit = 2.0;
-      vel_limit = 0.5;
+      vel_limit = 1.5;
       torque_limit = 30;
     } else {
       joint_limit = 2.75;
