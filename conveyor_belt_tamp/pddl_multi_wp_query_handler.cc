@@ -17,6 +17,7 @@
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
+DEFINE_double(gripper_push_width, 50, "Width gripper closes to in mm");
 
 DEFINE_string(
     KukaIiwaUrdf,
@@ -180,7 +181,7 @@ void HandleQuery(
         } else if (query->name.find("grasp")==0) {
             widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
         } else if (query->name.find("push")==0) {
-            widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
+            widths.assign(traj_.n_time_steps, FLAGS_gripper_push_width);
         } else if (query->name.find("throw")==0) {
             if (i < q_sol.size()-2) {
                 widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
@@ -222,7 +223,7 @@ void HandleQuery(
     // add wait time in traj
     if (query->wait_time) {
         int wait_time_steps = query->wait_time / query->time_step;
-        traj_.n_time_steps += wait_time_steps;
+        total_traj_.n_time_steps += wait_time_steps;
         double time_step = query->time_step;
         for (int ts = 0; ts < wait_time_steps; ts++) {
             total_traj_.times_sec.push_back(total_traj_.times_sec.back()+time_step);

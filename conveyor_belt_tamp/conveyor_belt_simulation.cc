@@ -289,7 +289,7 @@ int do_main(int argc, char* argv[]) {
         context,
         &state,
         station->GetConveyorBeltId(),
-        drake::Vector1d(0.075)
+        drake::Vector1d(geo_setup["belt_vel"][1].asDouble())
     );
 
     // VectorX<double> q0_iiwa(7);

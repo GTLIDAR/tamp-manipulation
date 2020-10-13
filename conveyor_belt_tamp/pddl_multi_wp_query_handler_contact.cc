@@ -19,6 +19,7 @@
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
+DEFINE_double(gripper_push_width, 50, "Width gripper closes to in mm");
 
 DEFINE_string(
     KukaIiwaUrdf,
@@ -164,6 +165,9 @@ void HandleQuery(
     VectorXd qo_init;
     VectorXd qo_final;
 
+    VectorXd q_init;
+    q_init = iiwa_q;
+
     for (size_t i = 0; i < q_sol.size()-1; i++) {
         if (query->option.compare("ddp")==0) {
             if (query->use_object) {
@@ -183,11 +187,11 @@ void HandleQuery(
                     qo_final[j] = query->q_desired_object[i][j];
                 }
                 traj_ = GetDDPContactRes(
-                    q_sol[i], q_sol[i+1], qo_init, qo_final, query->time_horizon[i], query->time_step, query->name
+                    q_init, q_sol[i+1], qo_init, qo_final, query->time_horizon[i], query->time_step, query->name
                 );
             } else {
                 traj_ = 
-                    GetDDPRes(q_sol[i], q_sol[i+1], query->time_horizon[i], query->time_step);
+                    GetDDPRes(q_init, q_sol[i+1], query->time_horizon[i], query->time_step);
             }
 
         } else if (query->option.compare("admm")==0) {
@@ -208,14 +212,18 @@ void HandleQuery(
                     qo_final[j] = query->q_desired_object[i][j];
                 }
                 traj_ = GetADMMContactRes(
-                    q_sol[i], q_sol[i+1], qo_init, qo_final, query->time_horizon[i], query->time_step, query->name
+                    q_init, q_sol[i+1], qo_init, qo_final, query->time_horizon[i], query->time_step, query->name
                 );
             } else {
                 traj_ = 
-                    GetADMMRes(q_sol[i], q_sol[i+1], query->time_horizon[i], query->time_step, query->name);
+                    GetADMMRes(q_init, q_sol[i+1], query->time_horizon[i], query->time_step, query->name);
             }
         } else {
             std::cout<<"Invalid Traj Op Option. Only support ddp or admm!\n";
+        }
+
+        for (int j = 0; j < traj_.dim_states; j++) {
+            q_init[j] = traj_.states[traj_.n_time_steps-1][j];
         }
 
         std::vector<double> widths;
@@ -228,7 +236,7 @@ void HandleQuery(
         } else if (query->name.find("release")==0) {
             widths.assign(traj_.n_time_steps, FLAGS_gripper_open_width);
         } else if (query->name.find("grasp")==0) {
-            widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
+            widths.assign(traj_.n_time_steps, FLAGS_gripper_push_width);
         } else if (query->name.find("push")==0) {
             widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
         } else if (query->name.find("throw")==0) {
@@ -272,7 +280,7 @@ void HandleQuery(
     // add wait time in traj
     if (query->wait_time) {
         int wait_time_steps = query->wait_time / query->time_step;
-        traj_.n_time_steps += wait_time_steps;
+        total_traj_.n_time_steps += wait_time_steps;
         double time_step = query->time_step;
         for (int ts = 0; ts < wait_time_steps; ts++) {
             total_traj_.times_sec.push_back(total_traj_.times_sec.back()+time_step);

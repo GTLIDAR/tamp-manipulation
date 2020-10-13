@@ -294,7 +294,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
             }
         }
         // std::cout<<"tau_g: " << endl << tau_g.transpose()<<"\n";
-        DRAKE_DEMAND(nan_tau_g_true == false);
+        // DRAKE_DEMAND(nan_tau_g_true == false);
 
         plant_->CalcMassMatrix(*context, &M_);
         plant_->CalcBiasTerm(*context, &Cv);
@@ -309,7 +309,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
             }
         }
         // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
-        DRAKE_DEMAND(nan_Cv_true == false);
+        // DRAKE_DEMAND(nan_Cv_true == false);
         
         // M_iiwa = M_.block<7, 7>(6, 6);
         // Cv_iiwa = Cv.middleRows<7>(6);
@@ -403,7 +403,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
             }
         }
         // std::cout<<"Bias_MJ: " << endl << Bias_MJ.transpose()<<"\n";
-        DRAKE_DEMAND(nan_BiasMJ_true == false);
+        // DRAKE_DEMAND(nan_BiasMJ_true == false);
 
         //=============================================
         // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
@@ -424,7 +424,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
         VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
         Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
         
-        bool nan_Xdot_true = false;
+        // bool nan_Xdot_true = false;
         for (int j = 0; j < Xdot_new.rows(); j++) {
             if (isnan(Xdot_new(j))) {
                 std::cout<<"New Xdot contains NaN"<<"\n";
@@ -433,7 +433,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
             }
         }
         // std::cout<<"Xdot: " << endl << Xdot_new<<"\n";
-        DRAKE_DEMAND(nan_Xdot_true == false);
+        // DRAKE_DEMAND(nan_Xdot_true == false);
         
 
         // if(nan_true){
@@ -514,7 +514,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
             }
         }
         // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
-        DRAKE_DEMAND(nan_Cv_true == false);
+        // DRAKE_DEMAND(nan_Cv_true == false);
         // M_iiwa = M_.block<7, 7>(6, 6);
         // Cv_iiwa = Cv.middleRows<7>(6);
         // tau_g_iiwa = tau_g.middleRows<7>(6);
@@ -601,7 +601,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
             }
             if(nan_MJInv_true){break;}
         }
-        DRAKE_DEMAND(nan_MJInv_true == false);
+        // DRAKE_DEMAND(nan_MJInv_true == false);
 
         // angular velocity cannot be directly integrated because orientation is not commutive
         VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
@@ -617,7 +617,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
             }
         }
         // std::cout<<"Xdot: " << endl << Xdot_new<<"\n";
-        DRAKE_DEMAND(nan_Xdot_true == false);
+        // DRAKE_DEMAND(nan_Xdot_true == false);
 
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
