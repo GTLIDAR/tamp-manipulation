@@ -61,7 +61,7 @@ class ReplayTraj {
     //======================================================================
     // (Test only) Reading Saved Trajectory
     std::string _file_name = UDP_TRAJ_DIR;
-    _file_name += "position_concatenated_DDP_move"; //"joint_trajectory_ADMM";
+    _file_name += "position_concatenated_DDP"; //"joint_trajectory_ADMM";
     _file_name += ".csv";
     ifstream myfile(_file_name);
     if(!myfile) 
@@ -131,19 +131,34 @@ class ReplayTraj {
       // else {
       //   ptr->gripper_width.push_back(100.0);
       // }
+    //   if (i < NumberofKnotPt*InterpolationScale+1000) { // at this point *10 cuz interpolated
+    //     ptr->gripper_width.push_back(100.0);
+    //   } 
+    //   else if (i >= NumberofKnotPt*InterpolationScale+1000 && i < 2*NumberofKnotPt*InterpolationScale){
+    //     ptr->gripper_width.push_back(30.0);
+    //   }
+
+    //   else if (i >= 2*NumberofKnotPt*InterpolationScale && i < 3*NumberofKnotPt*InterpolationScale-500) { // at this point *10 cuz interpolated
+    //     ptr->gripper_width.push_back(30.0);
+    //   } 
+
+    //   else {
+    //     ptr->gripper_width.push_back(100.0);
+    //   }
+
       if (i < NumberofKnotPt*InterpolationScale+1000) { // at this point *10 cuz interpolated
-        ptr->gripper_width.push_back(100.0);
+        ptr->gripper_width.push_back(50.0);
       } 
       else if (i >= NumberofKnotPt*InterpolationScale+1000 && i < 2*NumberofKnotPt*InterpolationScale){
-        ptr->gripper_width.push_back(30.0);
+        ptr->gripper_width.push_back(50.0);
       }
 
       else if (i >= 2*NumberofKnotPt*InterpolationScale && i < 3*NumberofKnotPt*InterpolationScale-500) { // at this point *10 cuz interpolated
-        ptr->gripper_width.push_back(30.0);
+        ptr->gripper_width.push_back(50.0);
       } 
 
       else {
-        ptr->gripper_width.push_back(100.0);
+        ptr->gripper_width.push_back(50.0);
       }
 
     }

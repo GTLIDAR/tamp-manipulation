@@ -2031,7 +2031,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
         "  3. switch to a continuous model (discrete update period is zero), "
         "     though this might affect the simulation run time.",
         context0.get_time(), this->time_step());
-    throw std::runtime_error(msg);
+    // throw std::runtime_error(msg);
   }
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a

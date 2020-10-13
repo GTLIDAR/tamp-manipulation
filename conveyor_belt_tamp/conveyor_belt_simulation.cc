@@ -64,34 +64,34 @@ int do_main(int argc, char* argv[]) {
     if (sim_setup["enable_objects"].asBool()) {
     // setup objects
     auto kConveyorBeltTopZInWorld = geo_setup["kConveyorBeltTopZInWorld"].asDouble();
-    auto xAdditionalOffset = geo_setup["xAdditionalOffset"].asDouble();
-    auto yAdditionalOffset = geo_setup["yAdditionalOffset"].asDouble();
+    // auto xAdditionalOffset = geo_setup["xAdditionalOffset"].asDouble();
+    // auto yAdditionalOffset = geo_setup["yAdditionalOffset"].asDouble();
 
     // box_0 first red box
     {
-    const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
+    // const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
     
-    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
-        object_init_pos["box_0"][3].asDouble(),
-        object_init_pos["box_0"][4].asDouble(),
-        object_init_pos["box_0"][5].asDouble()
-    ));
+    // auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+    //     object_init_pos["box_0"][3].asDouble(),
+    //     object_init_pos["box_0"][4].asDouble(),
+    //     object_init_pos["box_0"][5].asDouble()
+    // ));
 
-    auto xyz = Eigen::Vector3d(
-                // object_init_pos["box_0"][0].asDouble() + xAdditionalOffset,
-                // object_init_pos["box_0"][1].asDouble() + yAdditionalOffset,
-                // object_init_pos["box_0"][2].asDouble() + kConveyorBeltTopZInWorld
-                (FLAGS_belt_width+FLAGS_table_width)/2+0.036 + xAdditionalOffset,
-                -0.2 + yAdditionalOffset,
-                object_init_pos["box_0"][2].asDouble() + kConveyorBeltTopZInWorld
-    );
+    // auto xyz = Eigen::Vector3d(
+    //             // object_init_pos["box_0"][0].asDouble() + xAdditionalOffset,
+    //             // object_init_pos["box_0"][1].asDouble() + yAdditionalOffset,
+    //             // object_init_pos["box_0"][2].asDouble() + kConveyorBeltTopZInWorld
+    //             (FLAGS_belt_width+FLAGS_table_width)/2+0.036 + xAdditionalOffset,
+    //             -0.2 + yAdditionalOffset,
+    //             object_init_pos["box_0"][2].asDouble() + kConveyorBeltTopZInWorld
+    // );
 
-    math::RigidTransform<double> X_WO(
-        math::RotationMatrix<double>(rpy),
-        xyz
-    );
+    // math::RigidTransform<double> X_WO(
+    //     math::RotationMatrix<double>(rpy),
+    //     xyz
+    // );
     
-    station->AddManipulandFromFile(box_sdf_path0, X_WO);
+    // station->AddManipulandFromFile(box_sdf_path0, X_WO);
     // }
     // // box_1 outside black box
     // {
@@ -141,14 +141,14 @@ int do_main(int argc, char* argv[]) {
     // station->AddManipulandFromFile(black_box_urdf_path2, X_W2);
     }
     ///////////////////////////////// box_3 first large box
-    // const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
-    // math::RigidTransform<double> X_WOO1(
-    //     math::RotationMatrix<double>::MakeYRotation(-M_PI_2), //math::RotationMatrix<double>::Identity()
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.04, //0.01
-    //                     0.3, //-1
-    //                     kConveyorBeltTopZInWorld+0.1)
-    // );
-    // station->AddManipulandFromFile(large_box_sdf_path01, X_WOO1);
+    const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
+    math::RigidTransform<double> X_WOO1(
+        math::RotationMatrix<double>::MakeYRotation(-M_PI_2), //math::RotationMatrix<double>::Identity()
+        Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.036, //0.01
+                        0.3, //-1
+                        kConveyorBeltTopZInWorld+0.1)
+    );
+    station->AddManipulandFromFile(large_box_sdf_path01, X_WOO1);
 
     // // box_4 red box behind first big box
     // const std::string box_sdf_path2 = "drake/conveyor_belt_tamp/models/boxes/redblock2.urdf";
