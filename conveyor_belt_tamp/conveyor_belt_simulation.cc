@@ -33,7 +33,7 @@ using lcm::LCM;
 namespace drake {
 namespace conveyor_belt_tamp {
 namespace manipulation_station {
-DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/geo_setup_multi_wp_stationary.json",
+DEFINE_string(geo_setup_file, "drake/conveyor_belt_tamp/setup/conveyor_belt/geo_setup.json",
     "file for geometry setup");
 DEFINE_string(sim_setup_file, "drake/conveyor_belt_tamp/setup/sim_setup.json",
     "file for simulatino setup");
@@ -62,8 +62,6 @@ int do_main(int argc, char* argv[]) {
     if (sim_setup["enable_objects"].asBool()) {
     // setup objects
     auto kConveyorBeltTopZInWorld = geo_setup["kConveyorBeltTopZInWorld"].asDouble();
-    auto xAdditionalOffset = geo_setup["xAdditionalOffset"].asDouble();
-    auto yAdditionalOffset = geo_setup["yAdditionalOffset"].asDouble();
 
     // box_0 first red box
     {
@@ -76,8 +74,8 @@ int do_main(int argc, char* argv[]) {
     ));
 
     auto xyz = Eigen::Vector3d(
-                object_init_pos["box_0"][0].asDouble() + xAdditionalOffset,
-                object_init_pos["box_0"][1].asDouble() + yAdditionalOffset,
+                object_init_pos["box_0"][0].asDouble(),
+                object_init_pos["box_0"][1].asDouble(),
                 object_init_pos["box_0"][2].asDouble() + kConveyorBeltTopZInWorld
     );
 
@@ -99,8 +97,8 @@ int do_main(int argc, char* argv[]) {
     ));
 
     auto xyz = Eigen::Vector3d(
-                object_init_pos["box_1"][0].asDouble() + xAdditionalOffset,
-                object_init_pos["box_1"][1].asDouble() + yAdditionalOffset,
+                object_init_pos["box_1"][0].asDouble(),
+                object_init_pos["box_1"][1].asDouble(),
                 object_init_pos["box_1"][2].asDouble() + kConveyorBeltTopZInWorld
     );
 
@@ -123,8 +121,8 @@ int do_main(int argc, char* argv[]) {
     ));
 
     auto xyz = Eigen::Vector3d(
-                object_init_pos["box_2"][0].asDouble() + xAdditionalOffset,
-                object_init_pos["box_2"][1].asDouble() + yAdditionalOffset,
+                object_init_pos["box_2"][0].asDouble(),
+                object_init_pos["box_2"][1].asDouble(),
                 object_init_pos["box_2"][2].asDouble() + kConveyorBeltTopZInWorld
     );
 
@@ -135,21 +133,34 @@ int do_main(int argc, char* argv[]) {
     
     station->AddManipulandFromFile(black_box_urdf_path2, X_W2);
     }
-    // // box_3 first large box
-    // const std::string large_box_sdf_path01 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
-    // math::RigidTransform<double> X_WOO1(
-    //     math::RotationMatrix<double>::MakeYRotation(-M_PI_2), //math::RotationMatrix<double>::Identity()
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.01, //0.01
-    //                     -1.0 + yAdditionalOffset, //-1
-    //                     kConveyorBeltTopZInWorld+0.1)
-    // );
-    // station->AddManipulandFromFile(large_box_sdf_path01, X_WOO1);
 
+    {
+    // box_3 first large box
+    const std::string box_sdf_path3 = "drake/conveyor_belt_tamp/models/boxes/large_red_box2.urdf";
+
+    auto rpy = math::RollPitchYawd(Eigen::Vector3d(
+        object_init_pos["box_3"][3].asDouble(),
+        object_init_pos["box_3"][4].asDouble(),
+        object_init_pos["box_3"][5].asDouble()
+    ));
+
+    auto xyz = Eigen::Vector3d(
+                object_init_pos["box_3"][0].asDouble(),
+                object_init_pos["box_3"][1].asDouble(),
+                object_init_pos["box_3"][2].asDouble() + kConveyorBeltTopZInWorld
+    );
+    
+    math::RigidTransform<double> X_W3(
+        math::RotationMatrix<double>(rpy),
+        xyz
+    );
+    station->AddManipulandFromFile(box_sdf_path3, X_W3);
+    }
     // // box_4 red box behind first big box
     // const std::string box_sdf_path2 = "drake/conveyor_belt_tamp/models/boxes/redblock2.urdf";
     // math::RigidTransform<double> X_WO2(
     //     math::RotationMatrix<double>::Identity(),
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.11,
+    //     Eigen::Vector3d((geo_setup["belt_width"].asDouble()+geo_setup["table_width"].asDouble())/2+0.11,
     //                     -1.35 + yAdditionalOffset,//-1.8,
     //                     kConveyorBeltTopZInWorld+0.1)
     // );
@@ -159,7 +170,7 @@ int do_main(int argc, char* argv[]) {
     // const std::string black_box_urdf_path3 = "drake/conveyor_belt_tamp/models/boxes/black_box3.urdf";
     // math::RigidTransform<double> X_WO6(
     //     math::RotationMatrix<double>::Identity(),
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.012,
+    //     Eigen::Vector3d((geo_setup["belt_width"].asDouble()+geo_setup["table_width"].asDouble())/2+0.012,
     //                     -1.75 + yAdditionalOffset,
     //                     kConveyorBeltTopZInWorld+0.1)
     // );
@@ -169,7 +180,7 @@ int do_main(int argc, char* argv[]) {
     // const std::string large_box_sdf_path = "drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf";
     // math::RigidTransform<double> X_WO4(
     //     math::RotationMatrix<double>::MakeYRotation(-M_PI_2), //math::RotationMatrix<double>::Identity()
-    //     Eigen::Vector3d((FLAGS_belt_width+FLAGS_table_width)/2+0.01, //0.01
+    //     Eigen::Vector3d((geo_setup["belt_width"].asDouble()+geo_setup["table_width"].asDouble())/2+0.01, //0.01
     //                     -2.3 + yAdditionalOffset, //-1
     //                     kConveyorBeltTopZInWorld+0.1)
     // );
@@ -275,22 +286,22 @@ int do_main(int argc, char* argv[]) {
         context,
         &state,
         station->GetConveyorBeltId(),
-        drake::Vector1d(0.1)
+        drake::Vector1d(geo_setup["belt_vel"][1].asDouble())
     );
 
-    VectorX<double> q0_iiwa(7);
-    q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
-    std::cout<<"IIWA Position was: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
+    // VectorX<double> q0_iiwa(7);
+    // q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+    // std::cout<<"IIWA Position was: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
 
 
-    plant.SetPositions(
-        context,
-        &state,
-        station->GetIiwaModel(),
-        q0_iiwa
-    );
+    // plant.SetPositions(
+    //     context,
+    //     &state,
+    //     station->GetIiwaModel(),
+    //     q0_iiwa
+    // );
 
-    std::cout<<"IIWA Position set to: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
+    // std::cout<<"IIWA Position set to: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
 
     simulator.set_publish_every_time_step(false);
     simulator.set_target_realtime_rate(sim_setup["target_realtime_rate"].asDouble());

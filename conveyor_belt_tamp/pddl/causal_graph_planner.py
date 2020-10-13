@@ -17,7 +17,6 @@ drake_path = "/home/zhigen/code/drake"
 from causal_graph.tools import build_causal_graph, get_subproblems, generate_subtask
 from search_tree.tamp_node import PddlTampNode
 from search_tree.tamp_tree import PddlTree
-from search_tree.motion_plan_runner import ConveyorBeltManipMotionPlanRunner
 from search_tree.multi_wp_motion_plan_runner import MultiWPConveyorBeltManipMotionPlanRunner
 
 from pyperplan import _parse, _ground
@@ -288,7 +287,7 @@ class CausalGraphTampPlanner(object):
         root = PddlTampNode.make_root_node(init_state)
         root.traj = prev_goal.traj
         root.time = prev_goal.time
-        root.final_ee = prev_goal.parent.move_query.desired_ee[-1]
+        root.final_ee = prev_goal.final_ee
         root.placed_object = prev_goal.placed_object
         root.g = prev_goal.g
 
@@ -302,19 +301,11 @@ def main():
     problem = _parse(domain_file, problem_file)
     task = _ground(problem)
 
-    if MULTI_WP:
-        geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup_multi_wp.json"
-        traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup_multi_wp.json"
-        motion_planner = MultiWPConveyorBeltManipMotionPlanRunner(
-            geo_setup_file, traj_setup_file
-        )
-    else:
-        # geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup.json"
-        geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup_stationary.json"
-        traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup.json"
-        motion_planner = ConveyorBeltManipMotionPlanRunner(
-            geo_setup_file, traj_setup_file
-        )
+    geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/geo_setup_multi_wp.json"
+    traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/traj_setup_multi_wp.json"
+    motion_planner = MultiWPConveyorBeltManipMotionPlanRunner(
+        geo_setup_file, traj_setup_file
+    )
 
 
     planner = CausalGraphTampPlanner(task, motion_planner)

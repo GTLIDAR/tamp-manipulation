@@ -70,6 +70,13 @@ void HandleQuery(
     const lcmt_multi_wp_manip_query* query
 ) {
     current_query_ = *query;
+    if (query->wait_time < 0) {
+        std::cout<<"Negative wait time, this usually means push is not feasible\n";
+        traj_ = GetInfCost();
+        lcm_.publish(FLAGS_result_channel, &traj_);
+        return;
+    }
+
     // initialize
     VectorXd iiwa_q = VectorXd::Zero(query->dim_q);
     for (int i = 0; i < query->dim_q; i++) {
@@ -77,11 +84,12 @@ void HandleQuery(
     }
 
     std::vector<VectorXd> q_sol;
+    q_sol.push_back(iiwa_q);
     bool ik_feasible;
     if (query->bypass_ik) {
         std::cout<<"Bypassing IK...\n";
         ik_feasible = true;
-        q_sol.push_back(iiwa_q);
+        
         VectorXd q_goal = VectorXd::Zero(query->dim_q);
         for (int n_wp = 0; n_wp < query->n_wp; n_wp++) {
             for (int i = 0; i < query->dim_q; i++) {
@@ -96,8 +104,8 @@ void HandleQuery(
             FLAGS_ee_name
         );
 
-        
         std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
+        std::vector<VectorXd> q_sol_wp;
         
         for (int i = 0; i < query->n_wp; i++) {
             ConstraintRelaxingIk::IkCartesianWaypoint wp;
@@ -117,10 +125,18 @@ void HandleQuery(
             wp.constrain_orientation = query->constrain_orientation[i];
 
             wp_vec.push_back(wp);
-            std::cout<<"WP added "<<xyz<<"\n";
+            ik_feasible = ik.PlanSequentialTrajectory(wp_vec, q_sol.back(), &q_sol_wp);
+            
+            if (!ik_feasible) {
+                break;
+            }
+
+            q_sol.push_back(q_sol_wp.back());
+            wp_vec.clear();
+            q_sol_wp.clear();
         }
 
-        ik_feasible = ik.PlanSequentialTrajectory(wp_vec, iiwa_q, &q_sol);
+        
     }
 
     // lcmt_manipulator_traj traj;
@@ -163,11 +179,15 @@ void HandleQuery(
         } else if (query->name.find("push")==0) {
             widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
         } else if (query->name.find("throw")==0) {
-            for (int j = 0; j < traj_.n_time_steps; j++) {
-                if (j < traj_.n_time_steps/5.) {
-                    widths.push_back(FLAGS_gripper_close_width);
-                } else {
-                    widths.push_back(FLAGS_gripper_open_width);
+            if (i < q_sol.size()-2) {
+                widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
+            } else {
+                for (int j = 0; j < traj_.n_time_steps; j++) {
+                    if (j < traj_.n_time_steps/5.) {
+                        widths.push_back(FLAGS_gripper_close_width);
+                    } else {
+                        widths.push_back(FLAGS_gripper_open_width);
+                    }
                 }
             }
         } else {
@@ -176,6 +196,21 @@ void HandleQuery(
         }
         traj_.gripper_force = forces;
         traj_.gripper_width = widths;
+
+        // add wait time in traj
+        if (query->wait_time) {
+            int wait_time_steps = query->wait_time / query->time_step;
+            traj_.n_time_steps += wait_time_steps;
+            double time_step = query->time_step;
+            for (int ts = 0; ts < wait_time_steps; ts++) {
+                traj_.times_sec.push_back(traj_.times_sec.back()+time_step);
+                traj_.states.push_back(traj_.states.back());
+                traj_.torques.push_back(traj_.torques.back());
+                traj_.gripper_width.push_back(traj_.gripper_width.back());
+                traj_.gripper_force.push_back(traj_.gripper_force.back());
+            }
+            std::cout<<"wait traj added.\n";
+        }
 
         AppendTrajectory(total_traj_, traj_);
 

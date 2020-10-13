@@ -1,0 +1,94 @@
+{
+    "durative_action_time": 1.5,
+    "gripper_wait_time": 0.25,
+
+    "ddp_time_step": 0.01,
+    "admm_time_step": 0.005,
+    "manual_time_step": 0.005,
+    "min_time_step": 0.001,
+
+    "ddp_max_iter": 15,
+    "admm_max_iter": 10,
+
+    "gripper_force": 80,
+    "gripper_open_width": 100,
+    "gripper_close_width": 20,
+
+    "init_iiwa_pos": [0, 0, 0, 0, 0, 0, 0],
+    "init_gripper_pos": [100],
+
+    "n_joints": 7,
+
+    "release": {
+        "traj_op": false,
+        "time_horizon": [0.5],
+        "gripper_open": 1,
+        "cost": 0,
+        "constrain_orientation": [true]
+    },
+
+    "grasp": {
+        "traj_op": false,
+        "time_horizon": [0.5],
+        "gripper_open": -1,
+        "cost": 0,
+        "constrain_orientation": [true]
+    },
+
+    "move-to-object-top": {
+        "traj_op": true,
+        "time_horizon": [2.5, 0.5],
+        "wait_time": 0,
+        "constrain_orientation": [true, true],
+        "init_offset_wp": [0, 0, 0.15, 0, 0, 0],
+        "init_offset_constrain_orientation": true,
+        "init_offset_time": 1
+    },
+
+    "move-to-object-side": {
+        "traj_op": true,
+        "time_horizon": [2.5, 0.5],
+        "wait_time": 0,
+        "constrain_orientation": [true, true],
+        "init_offset_wp": [0, 0, 0.15, 0, 0, 0],
+        "init_offset_constrain_orientation": true,
+        "init_offset_time": 1
+    },
+
+    "move-to-bin": {
+        "traj_op": true,
+        "time_horizon": [2.5, 0.5],
+        "wait_time": 0,
+        "constrain_orientation": [true, true],
+        "init_offset_wp": [0, 0, 0.15, 0, 0, 0],
+        "init_offset_constrain_orientation": true,
+        "init_offset_time": 1
+    },
+
+    "throw": {
+        "traj_op": true,
+        "time_horizon": [2.0, 2.0],
+        "wait_time": 0,
+        "init_config": [-5.64005e-11, -0.055303, -5.62781e-11, -1.92669, -4.73749e-13, 1.24361, -1.15284e-10],
+        "goal_config": [-3.40486e-12, 0.743339, 8.16463e-12,  -0.5, 8.20197e-12, -0.6 ,-1.01735e-11],
+        "release_timing": 80
+    },
+
+    "throw-right": {
+        "traj_op": true,
+        "time_horizon": [2.0, 2.0],
+        "wait_time": 0,
+        "init_config": [ -0.682902,0.406249,-0.170987,-1.38828,0.0847343,1.33398,-0.8574],
+        "goal_config": [ 0.0, 0.711523, -0.0295682,-0.914529, 0.0262518 , -0.45 ,-0.469425],
+        "release_timing": 80
+    },
+    "throw-left": {
+        "traj_op": true,
+        "time_horizon": [2.0, 2.0],
+        "wait_time": 0,
+        "init_config": [0.685637, 0.385565, 0.186732, -1.41797, -0.0877832, 1.32615, 0.877454],
+        "goal_config": [-0.2, 1.085565, 0.186732, -0.61797, -0.0877832, -0.55, 0.277454],
+        "release_timing": 80
+    }
+
+}

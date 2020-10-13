@@ -10,7 +10,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <box size="0.065 0.055 0.15" />
+        <box size="0.065 0.055 0.17" />
       </geometry>
       <material name="blackish">
         <color rgba="0.1 0.1 0.1 1.0" />
@@ -34,30 +34,30 @@
      -->
     <collision>
       <geometry>
-        <box size="0.064 0.054 0.149" />
+        <box size="0.064 0.054 0.169" />
       </geometry>
     </collision>
 
     <collision>
-      <origin xyz="-0.0825 -0.0275 -0.075" rpy="0 0 0"/>
+      <origin xyz="-0.0825 -0.0275 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="-0.0825 0.0275 -0.075" rpy="0 0 0"/>
+      <origin xyz="-0.0825 0.0275 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.0825 0.0275 -0.075" rpy="0 0 0"/>
+      <origin xyz="0.0825 0.0275 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.0825 -0.0275 -0.075" rpy="0 0 0"/>
+      <origin xyz="0.0825 -0.0275 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
@@ -65,53 +65,53 @@
 
     <!-- Add some spheres near the center too -->
     <collision>
-      <origin xyz="-0.0 -0.0275 -0.075" rpy="0 0 0"/>
+      <origin xyz="-0.0 -0.0275 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
 
     <collision>
-      <origin xyz="-0.0 0.0275 -0.075" rpy="0 0 0"/>
+      <origin xyz="-0.0 0.0275 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
 
     <collision>
-      <origin xyz="-0.0325 -0.0275 0.075" rpy="0 0 0"/>
+      <origin xyz="-0.0325 -0.0275 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="-0.0325 0.0275 0.075" rpy="0 0 0"/>
+      <origin xyz="-0.0325 0.0275 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.0325 0.0275 0.075" rpy="0 0 0"/>
+      <origin xyz="0.0325 0.0275 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.0325 -0.0275 0.075" rpy="0 0 0"/>
-      <geometry>
-        <sphere radius="1e-7"/>
-      </geometry>
-    </collision>
-
-    <collision>
-      <origin xyz="-0.0 -0.0275 0.075" rpy="0 0 0"/>
+      <origin xyz="0.0325 -0.0275 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
 
     <collision>
-      <origin xyz="-0.0 0.0275 0.075" rpy="0 0 0"/>
+      <origin xyz="-0.0 -0.0275 0.085" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <origin xyz="-0.0 0.0275 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>

@@ -13,6 +13,7 @@ struct lcmt_multi_wp_manip_query {
 
     double time_horizon[n_wp]; // time duration of 
     double time_step; // time_step size for traj op
+    double wait_time; // time to hold stationery at the end
 
     double desired_ee[n_wp][6]; // xyz rpy of each waypoints
     double q_goal[n_wp][dim_q];

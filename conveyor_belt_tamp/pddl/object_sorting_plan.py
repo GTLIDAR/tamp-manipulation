@@ -2,10 +2,6 @@
 
 import time
 from pathlib import Path
-from datetime import datetime
-import copy
-import json
-import numpy as np
 
 from causal_graph_planner import CausalGraphTampPlanner
 
@@ -15,7 +11,6 @@ drake_path = str(Path(__file__).parent.parent.parent.absolute())
 from causal_graph.tools import build_causal_graph, get_subproblems, generate_subtask
 from search_tree.tamp_node import PddlTampNode
 from search_tree.tamp_tree import PddlTree
-from search_tree.motion_plan_runner import ConveyorBeltManipMotionPlanRunner
 from search_tree.multi_wp_motion_plan_runner import MultiWPStaionaryManipMotionPlanRunner
 
 from pyperplan import _parse, _ground

@@ -12,7 +12,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <box size="0.06 0.06 0.15" />
+        <box size="0.06 0.06 0.17" />
       </geometry>
       <material name="red">
         <color rgba="0.8 0.1 0.1 0.9" />
@@ -34,57 +34,58 @@
       https://github.com/RobotLocomotion/drake/issues/6254 tracks the
       difficulty in supporting face-to-face contact.
      -->
+    <contact_coefficients kd="1.0" kp="1000.0" mu="1"/>
     <collision>
       <geometry>
-        <box size="0.059 0.059 0.149" />
+        <box size="0.059 0.059 0.169" />
       </geometry>
     </collision>
 
     <collision>
-      <origin xyz="-0.03 -0.03 -0.075" rpy="0 0 0"/>
+      <origin xyz="-0.03 -0.03 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="-0.03 0.03 -0.075" rpy="0 0 0"/>
+      <origin xyz="-0.03 0.03 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.03 0.03 -0.075" rpy="0 0 0"/>
+      <origin xyz="0.03 0.03 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.03 -0.03 -0.075" rpy="0 0 0"/>
+      <origin xyz="0.03 -0.03 -0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
 
     <collision>
-      <origin xyz="-0.03 -0.03 0.075" rpy="0 0 0"/>
+      <origin xyz="-0.03 -0.03 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="-0.03 0.03 0.075" rpy="0 0 0"/>
+      <origin xyz="-0.03 0.03 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.03 0.03 0.075" rpy="0 0 0"/>
+      <origin xyz="0.03 0.03 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.03 -0.03 0.075" rpy="0 0 0"/>
+      <origin xyz="0.03 -0.03 0.085" rpy="0 0 0"/>
       <geometry>
         <sphere radius="1e-7"/>
       </geometry>

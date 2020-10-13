@@ -328,11 +328,11 @@ void ManipulationStation<T>::SetupConveyorBeltStation(
     internal::AddAndWeldModelFrom(sdf_path, "bin_2", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
 
-    // // throw bin
-    // X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
-    //                               Vector3d(1.75, 0., kTableTopZInWorld-bin_height-0.05));
-    // internal::AddAndWeldModelFrom(sdf_path, "bin_3", plant_->world_frame(),
-    //                               "bin_base", X_WC, plant_);
+    // throw bin
+    X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
+                                  Vector3d(1.75, 0., kTableTopZInWorld-bin_height-0.05));
+    internal::AddAndWeldModelFrom(sdf_path, "bin_3", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
   }
 
   // The `z` coordinate of the top of the table in the world frame.
@@ -341,7 +341,7 @@ void ManipulationStation<T>::SetupConveyorBeltStation(
   // 0.057m thus giving the surface height (`z`) in world coordinates as
   // 0.736 + 0.057 / 2.
   const auto X_WI = RigidTransform<double>(
-    RollPitchYaw<double>(0, 0, 0), Vector3d(0.2, 0, kTableTopZInWorld));
+    RollPitchYaw<double>(0, 0, 0), Vector3d(0., 0, kTableTopZInWorld));
   // add IIWA and WSG
   AddLidarIiwa(collision_model, X_WI);
   AddLidarWsg(schunk_model);
