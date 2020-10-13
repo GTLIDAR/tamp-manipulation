@@ -9,6 +9,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/quaternion.h"
 #include "drake/traj_gen/admm_runner.h"
 #include "drake/traj_gen/ddp_runner.h"
 #include "drake/traj_gen/ilqr_kkt/ddp_runner_contact.h"
@@ -36,6 +37,9 @@ DEFINE_string(
 );
 DEFINE_string(ee_name, "iiwa_link_ee", "Name of the end effector link");
 
+using namespace Eigen;
+using namespace std;
+
 using lcm::LCM;
 using drake::manipulation::planner::ConstraintRelaxingIk;
 using drake::traj_gen::kuka_iiwa_arm::ADMMRunner;
@@ -45,6 +49,7 @@ using drake::traj_gen::kuka_iiwa_arm::DDP_KKTRunner;
 using drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYaw;
+using drake::math::RotationMatrix;
 using drake::traj_gen::kuka_iiwa_arm::fullstateVec_t;
 
 namespace drake {
@@ -155,6 +160,31 @@ lcmt_manipulator_traj GetADMM_KKTRes(VectorXd q_init, VectorXd q_goal) {
 
 };
 
+VectorXd get_q_object_final(VectorXd q_obj_init, RigidTransformd EE_initial, RigidTransformd EE_final){
+    Vector3d xyz_obj = q_obj_init.bottomRows(3);
+    Vector4d qua_obj_init = q_obj_init.topRows(4);
+    Quaternion<double> quaternion_obj(qua_obj_init(0), qua_obj_init(1), qua_obj_init(2), qua_obj_init(3));
+    RotationMatrix<double> rot_obj(quaternion_obj);
+
+    Vector3d xyz_ee_init = EE_initial.translation();
+    RotationMatrix<double> rot_ee_init = EE_initial.rotation();
+
+    Vector3d xyz_ee_final = EE_final.translation();
+    RotationMatrix<double> rot_ee_final = EE_final.rotation();
+
+    Vector3d xyz_ee_obj_init = xyz_obj - xyz_ee_init;
+    RotationMatrix<double> rot_ee_init_final = rot_ee_init * rot_ee_final.transpose();
+    Vector3d xyz_ee_obj_final = rot_ee_init_final * xyz_ee_obj_init;
+    Vector3d xyz_obj_final = xyz_ee_final + xyz_ee_obj_final;
+
+    RotationMatrix<double> rot_obj_final = rot_ee_init_final * rot_obj;
+    Vector4d quaternion_obj_final = rot_obj_final.ToQuaternionAsVector4();
+    VectorXd q_obj_final(7);
+    q_obj_final.topRows(4) = quaternion_obj_final;
+    q_obj_final.bottomRows(3) = xyz_obj_final;
+    return q_obj_final;
+}
+
 int do_main() {
     drake::conveyor_belt_tamp::TrajTestRunner runner;
 
@@ -176,6 +206,7 @@ int do_main() {
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
     std::string action = "move";
     std::vector<Eigen::VectorXd> ik_res;
+    RigidTransformd EE_init, EE_final;
     if (action.compare("push")==0){
         std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> wp_vec;
         //waypoint (0)
@@ -194,6 +225,7 @@ int do_main() {
             4.26875e-12
         );
         // rpy0.To
+        EE_init = RigidTransformd(rpy0, xyz0);
         wp0.pose.set_translation(xyz0);
         wp0.pose.set_rotation(rpy0);
         wp0.constrain_orientation = true;
@@ -215,6 +247,7 @@ int do_main() {
             4.26875e-12
         );
 
+        EE_final = RigidTransformd(rpy1, xyz1);
         wp1.pose.set_translation(xyz1);
         wp1.pose.set_rotation(rpy1);
         wp1.constrain_orientation = true;
@@ -243,13 +276,16 @@ int do_main() {
             (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
             0.0,
             0.3
+            // 0.5800000000000001, -0.1, 0.275
         );
         const math::RollPitchYaw<double> rpy0(
             0,
             1.57079632679,
             1.57079632679
+            // 0.0, 1.5708, 0.0
         );
         // rpy0.To
+        EE_init = RigidTransformd(rpy0, xyz0);
         wp0.pose.set_translation(xyz0);
         wp0.pose.set_rotation(rpy0);
         wp0.constrain_orientation = true;
@@ -261,13 +297,17 @@ int do_main() {
             (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
             0.3,
             0.5
+            // 0.03, -0.47, 0.25
         );
         const math::RollPitchYaw<double> rpy1(
-            0,
-            1.57079632679,
-            1.57079632679
+            0.0,
+            // 1.57079632679,
+            0.707,
+            0.707
+            // 0.0, 1.57, -1.57
         );
 
+        EE_final = RigidTransformd(rpy1, xyz1);
         wp1.pose.set_translation(xyz1);
         wp1.pose.set_rotation(rpy1);
         wp1.constrain_orientation = true;
@@ -288,17 +328,15 @@ int do_main() {
         cout << ik_res[y].transpose() << endl;
         }
 
-        // object initial and final states
-        Vector3d object_pos_init = xyz0;
-        object_pos_init(2, 0) -= 0.21;
-        Vector3d object_pos_goal = xyz1;
-        object_pos_goal(2, 0) -= 0.21;
 
     }
     xinit.setZero();
     xinit.topRows(13) << 1, 0, 0, 0,
+    // 0.5800000000000001, -0.1, 0.1, 0, 0, 0, 0, 0, 0;
     (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
     
+    VectorXd q_obj_final = get_q_object_final(xinit.topRows(7), EE_init, EE_final);
+    cout << q_obj_final << endl;
     // xinit.topRows(13) << 1, 0, 0, 0, 
     // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
     
@@ -308,8 +346,10 @@ int do_main() {
     xinit.middleRows<7>(13) = ik_res[1];
 
     xgoal.setZero();
-    xgoal.topRows(13) << 1, 0, 0, 0, 
-    (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0.3, 0.29, 0, 0, 0, 0, 0, 0;
+    xgoal.topRows(7) = q_obj_final;
+    // xgoal.topRows(13) << 1, 0, 0, 0, 
+    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0.3, 0.29, 0, 0, 0, 0, 0, 0;
+
     // xgoal.topRows(13) << 1, 0, 0, 0, 
     // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x+0.3, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
     xgoal.middleRows<7>(13) = ik_res[2];
