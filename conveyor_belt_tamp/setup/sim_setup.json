@@ -1,6 +1,6 @@
 {
     "target_realtime_rate": 1,
-    "enable_objects": false,
-    "integration_timestep": 0.001,
+    "enable_objects": true,
+    "integration_timestep": 0.0005,
     "discrete_update_period": 0.0005
 }

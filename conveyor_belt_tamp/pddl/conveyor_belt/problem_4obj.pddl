@@ -28,11 +28,11 @@
 
     (unobstructed box_1 box_0)
     (unobstructed box_1 box_1)
-    ; (unobstructed box_1 box_2)
+    (unobstructed box_1 box_2)
     (unobstructed box_1 box_3)
 
     (unobstructed box_2 box_0)
-    (unobstructed box_2 box_1)
+    ; (unobstructed box_2 box_1)
     (unobstructed box_2 box_2)
     (unobstructed box_2 box_3)
 
@@ -46,9 +46,9 @@
 (:goal (and
     ;todo: put the goal condition here
     (in box_0 bin_3)
-    ;(in box_1 bin_1)
-    ;(in box_2 bin_2)
-    ;(in box_3 bin_0)
+    (in box_1 bin_1)
+    (in box_2 bin_2)
+    (in box_3 bin_0)
 ))
 
 ;un-comment the following line if metric is needed

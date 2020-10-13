@@ -341,7 +341,7 @@ void ManipulationStation<T>::SetupConveyorBeltStation(
   // 0.057m thus giving the surface height (`z`) in world coordinates as
   // 0.736 + 0.057 / 2.
   const auto X_WI = RigidTransform<double>(
-    RollPitchYaw<double>(0, 0, 0), Vector3d(0., 0, kTableTopZInWorld));
+    RollPitchYaw<double>(0, 0, 0), Vector3d(0.05, 0, kTableTopZInWorld));
   // add IIWA and WSG
   AddLidarIiwa(collision_model, X_WI);
   AddLidarWsg(schunk_model);
@@ -640,8 +640,8 @@ void ManipulationStation<T>::Finalize(
   switch (setup_) {
     case Setup::kNone:
     case Setup::kConveyorBelt: {
-      // q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
-      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+      q0_iiwa << 0, 0, 0, 0, 0, 0, 0;
+      // q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
       break;
     }
     case Setup::kObjectSorting: {

@@ -10,7 +10,7 @@
     "ddp_max_iter": 15,
     "admm_max_iter": 10,
 
-    "gripper_force": 80,
+    "gripper_force": 40,
     "gripper_open_width": 100,
     "gripper_close_width": 20,
 
@@ -37,32 +37,49 @@
 
     "move-to-object-top": {
         "traj_op": true,
-        "time_horizon": [2.5, 0.5],
+        "time_horizon": [2.5, 1],
         "wait_time": 0,
         "constrain_orientation": [true, true],
-        "init_offset_wp": [0, 0, 0.15, 0, 0, 0],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
         "init_offset_constrain_orientation": true,
         "init_offset_time": 1
     },
 
     "move-to-object-side": {
         "traj_op": true,
-        "time_horizon": [2.5, 0.5],
+        "time_horizon": [2.5, 1],
         "wait_time": 0,
         "constrain_orientation": [true, true],
-        "init_offset_wp": [0, 0, 0.15, 0, 0, 0],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
         "init_offset_constrain_orientation": true,
         "init_offset_time": 1
     },
 
     "move-to-bin": {
         "traj_op": true,
-        "time_horizon": [2.5, 0.5],
+        "time_horizon": [2.5, 1],
         "wait_time": 0,
         "constrain_orientation": [true, true],
-        "init_offset_wp": [0, 0, 0.15, 0, 0, 0],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
         "init_offset_constrain_orientation": true,
         "init_offset_time": 1
+    },
+
+    "move-to-push": {
+        "traj_op": true,
+        "time_horizon": [2.5, 1],
+        "wait_time": 0,
+        "constrain_orientation": [true, true],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
+        "init_offset_constrain_orientation": true,
+        "init_offset_time": 1
+    },
+
+    "push": {
+        "traj_op": true,
+        "time_horizon": [2.5, 1],
+        "wait_time": 0,
+        "constrain_orientation": [true, true]
     },
 
     "throw": {

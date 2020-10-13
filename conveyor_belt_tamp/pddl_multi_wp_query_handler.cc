@@ -128,7 +128,10 @@ void HandleQuery(
             ik_feasible = ik.PlanSequentialTrajectory(wp_vec, q_sol.back(), &q_sol_wp);
             
             if (!ik_feasible) {
+                std::cout<<"infeasible at wp "<<i<<"\n";
                 break;
+            } else {
+                std::cout<<"feasible at wp "<<i<<"\n";
             }
 
             q_sol.push_back(q_sol_wp.back());

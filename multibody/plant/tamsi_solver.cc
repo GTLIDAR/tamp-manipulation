@@ -212,9 +212,12 @@ T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     DRAKE_ASSERT(abs(b) > std::numeric_limits<double>::epsilon());
   } else {
     // The determinant, Δ = b² - 4ac, of the quadratic equation.
-    const T Delta = b * b - 4 * a * c;  // Uppercase, as in Δ.
+    T Delta = b * b - 4 * a * c;  // Uppercase, as in Δ.
     // Geometry tell us that a real solution does exist i.e. Delta > 0.
-    DRAKE_DEMAND(Delta > 0);
+    // DRAKE_DEMAND(Delta > 0);
+    if (Delta < 0) {
+      Delta = 0;
+    }
     const T sqrt_Delta = sqrt(Delta);
 
     // To avoid loss of significance, when 4ac is relatively small compared
