@@ -18,8 +18,10 @@ from pyperplan import _parse, _ground
 TRAJ_OPTION = "ddp"
 
 def main():
-    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/domain_4obj.pddl"
-    problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/problem_4obj.pddl"
+    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/domain_4obj.pddl"
+    # problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/problem_4obj.pddl"
+    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/domain_10obj.pddl"
+    problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/problem_10obj.pddl"
 
     problem = _parse(domain_file, problem_file)
     task = _ground(problem)
