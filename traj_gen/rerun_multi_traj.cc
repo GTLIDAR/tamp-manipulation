@@ -49,7 +49,7 @@ const int32_t kNumJoints = 7;
 class ReplayTraj {
   public:
   void Run() {
-    double time_horizon_ = 1.0;
+    double time_horizon_ = 2.0;
     double time_step_ = 0.005;
     // int NumberofKnotPt = 2000;
     int NumberofKnotPt = int(time_horizon_/time_step_);
@@ -61,7 +61,7 @@ class ReplayTraj {
     //======================================================================
     // (Test only) Reading Saved Trajectory
     std::string _file_name = UDP_TRAJ_DIR;
-    _file_name += "position_concatenated_DDP"; //"joint_trajectory_ADMM";
+    _file_name += "position_concatenated_DDP_move"; //"joint_trajectory_ADMM";
     _file_name += ".csv";
     ifstream myfile(_file_name);
     if(!myfile) 

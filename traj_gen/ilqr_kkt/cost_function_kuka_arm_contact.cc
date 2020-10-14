@@ -4,7 +4,7 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N)
+CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N, std::string action_name)
 {
     
 
@@ -13,11 +13,25 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N)
     // l = sigma(xQx+uRu) + xfQfxf
     if(INCLUDE_OBJECT){
         // num_state = 27; object=7+6; kuka=7+7
-        double pos_obj_scale = 0;
-        double vel_obj_scale = 0;
-        double pos_obj_f_scale = 0;//0.001;
-        double vel_obj_f_scale = 0;//10;
+        double pos_obj_scale;
+        double vel_obj_scale;
+        double pos_obj_f_scale;
+        double vel_obj_f_scale;
         double torqoe_scale = 30;//100;
+        
+        if (action_name.compare("push")==0){
+            pos_obj_scale = 10;
+            vel_obj_scale = 10;
+            pos_obj_f_scale = 100;//0.001;
+            vel_obj_f_scale = 100;//10;
+        }
+        else{
+            pos_obj_scale = 0;
+            vel_obj_scale = 0;
+            pos_obj_f_scale = 0;//0.001;
+            vel_obj_f_scale = 0;//10;
+        }
+
         double pos_iiwa_scale = 10;
         double vel_iiwa_scale = 10;
         double pos_iiwa_f_scale = 100;//0.001;

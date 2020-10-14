@@ -19,7 +19,7 @@ class CostFunctionKukaArm_TRK_Contact
 public:
     CostFunctionKukaArm_TRK_Contact(double pos_obj_weight, double pos_iiwa_weight, 
                                     double vel_obj_weight, double vel_iiwa_weight,
-                                    double torque_weight, unsigned int N);
+                                    double torque_weight, unsigned int N, std::string action_name);
 private:
 protected:
 	fullstateMat_t Q;

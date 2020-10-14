@@ -87,7 +87,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     }
     //======================================
     KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
-    CostFunctionKukaArm_Contact costKukaArm(N);
+    CostFunctionKukaArm_Contact costKukaArm(N, action_name);
     ILQR_KKTSolver testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 

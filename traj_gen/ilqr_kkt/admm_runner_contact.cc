@@ -15,7 +15,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 5;
+    unsigned int ADMMiterMax = 10;
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -167,13 +167,13 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     pos_obj_weight = 0;
     pos_iiwa_weight = 20; 
     vel_obj_weight = 0;
-    vel_iiwa_weight = 20;
-    torque_weight = 20;
+    vel_iiwa_weight = 1000;
+    torque_weight = 10;
 
-    CostFunctionKukaArm_TRK_Contact costKukaArm_init(0, 0, 0, 0, 0, N); //only for initialization
+    CostFunctionKukaArm_TRK_Contact costKukaArm_init(0, 0, 0, 0, 0, N, action_name); //only for initialization
     CostFunctionKukaArm_TRK_Contact costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
                                                      vel_obj_weight, vel_iiwa_weight, 
-                                                     torque_weight, N); //postion/velocity/torque weights
+                                                     torque_weight, N, action_name); //postion/velocity/torque weights
     ILQRSolver_TRK_Contact testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
     ILQRSolver_TRK_Contact testSolverKukaArm_init(KukaArmModel,costKukaArm_init,ENABLE_FULLDDP,ENABLE_QPBOX); //only for initialization
 
@@ -319,13 +319,15 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
 
     // saving data file
     for(unsigned int i=0;i<N;i++){
-      saveVector(joint_state_traj[i], "joint_trajectory_ADMM");
-      saveVector(torque_traj[i], "joint_torque_command_ADMM");
+      saveVector(joint_state_traj[i], "joint_trajectory_ADMM_contact");
+      saveVector(torque_traj[i], "joint_torque_command_ADMM_contact");
+      saveVector(xubar[i], "xubar_ADMM_contact");
     }
-    saveVector(xnew[N], "joint_trajectory_ADMM");
+    saveVector(xnew[N], "joint_trajectory_ADMM_contact");
+    saveVector(xubar[N], "xubar_ADMM_contact");
 
     for(unsigned int i=0;i<=N*InterpolationScale;i++){
-      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM");
+      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_contact");
     }
 
     for(unsigned int i=0;i<ADMMiterMax;i++)
@@ -401,21 +403,24 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
     double pos_limit_obj;
     double vel_limit_obj;
     double joint_limit_iiwa;
-    double vel_limit_iiwa;
-    double torque_limit;
+    // double vel_limit_iiwa;
+    // double torque_limit;
+    double vel_limit_iiwa [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5}; 
+    double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
+    // double torque_limit [] = {15, 15, 15, 15, 15, 15, 15};
 
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
       pos_limit_obj = 10; // not used for object now
       vel_limit_obj = 10;
       joint_limit_iiwa = 3.0;
-      vel_limit_iiwa = 1.5;
-      torque_limit = 30;
+      // vel_limit_iiwa = 1.5;
+      // torque_limit = 30;
     } else {
       pos_limit_obj = 10; // not used for object now
       vel_limit_obj = 10;
       joint_limit_iiwa = 3.0;
-      vel_limit_iiwa = 1.5;
-      torque_limit = 30;
+      // vel_limit_iiwa = 1.5;
+      // torque_limit = 30;
     }
 
     for(unsigned int i=0;i<NumberofKnotPt+1;i++){
@@ -432,7 +437,7 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
         }
         }
 
-        else if(j >= 7 && 13){//velocity constraints for obj
+        else if(j >= 7 && j < 13){//velocity constraints for obj
 
         if(xnew[i](j,0) > vel_limit_obj){
             xubar[i](j,0) = vel_limit_obj;
@@ -460,11 +465,11 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
 
         else if(j >= 20 && j < 27){//velocity constraints for iiwa
 
-        if(xnew[i](j,0) > vel_limit_iiwa){
-            xubar[i](j,0) = vel_limit_iiwa;
+        if(xnew[i](j,0) > vel_limit_iiwa[j-20]){
+            xubar[i](j,0) = vel_limit_iiwa[j-20];
         }
-        else if(xnew[i](j,0) < -vel_limit_iiwa){
-            xubar[i](j,0) = -vel_limit_iiwa;
+        else if(xnew[i](j,0) < -vel_limit_iiwa[j-20]){
+            xubar[i](j,0) = -vel_limit_iiwa[j-20];
         }
         else{
             xubar[i](j,0) = xnew[i](j,0);
@@ -473,18 +478,18 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
 
         else{//torque constraints
         if(i<NumberofKnotPt){
-            if(unew[i](j,0) > torque_limit){
-            xubar[i](j,0) = torque_limit;
+            if(unew[i](j,0) > torque_limit[j-27]){
+            xubar[i](j,0) = torque_limit[j-27];
             }
-            else if(unew[i](j,0) < -torque_limit){
-            xubar[i](j,0) = -torque_limit;
+            else if(unew[i](j,0) < -torque_limit[j-27]){
+            xubar[i](j,0) = -torque_limit[j-27];
             }
             else{
-            xubar[i](j,0) = unew[i](j,0);
+            xubar[i](j,0) = unew[i](j-27,0);
             }
         }
         else{
-            xubar[i].setZero();
+            xubar[i].bottomRows(commandSize) = VectorXd::Zero(commandSize);
         }
         }
     }

@@ -258,32 +258,32 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         // VectorXd Cv_iiwa(7);
         VectorXd tau_g_iiwa;
         VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
-        bool nan_tau_g_true = false;
+        // bool nan_tau_g_true = false;
         for (int j = 0; j < tau_g.rows(); j++) {
             if (isnan(tau_g(j))) {
                 std::cout<<"tau_g contains NaN"<<"\n";
-                nan_tau_g_true = true;
+                // nan_tau_g_true = true;
                 // std::cout<<Xdot_new.transpose()<<"\n";
                 break;
             }
         }
         // std::cout<<"tau_g: " << endl << tau_g.transpose()<<"\n";
-        DRAKE_DEMAND(nan_tau_g_true == false);
+        // DRAKE_DEMAND(nan_tau_g_true == false);
 
         plant_->CalcMassMatrix(*context, &M_);
         plant_->CalcBiasTerm(*context, &Cv);
         
-        bool nan_Cv_true = false;
+        // bool nan_Cv_true = false;
         for (int j = 0; j < Cv.rows(); j++) {
             if (isnan(Cv(j))) {
                 std::cout<<"Cv contains NaN"<<"\n";
-                nan_Cv_true = true;
+                // nan_Cv_true = true;
                 // std::cout<<Xdot_new.transpose()<<"\n";
                 break;
             }
         }
         // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
-        DRAKE_DEMAND(nan_Cv_true == false);
+        // DRAKE_DEMAND(nan_Cv_true == false);
         
         // M_iiwa = M_.block<7, 7>(6, 6);
         // Cv_iiwa = Cv.middleRows<7>(6);
@@ -367,17 +367,17 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         Acc_Bias.middleRows<3>(3) = -Acc_Bias_right - 500*Jac_right*qd_full;
         // Acc_Bias.middleRows<3>(6) = -Acc_Bias_down_left - 500*Jac_down_left*qd_full;
         // Acc_Bias.middleRows<3>(9) = -Acc_Bias_down_right - 500*Jac_down_right*qd_full;
-        bool nan_BiasMJ_true = false;
+        // bool nan_BiasMJ_true = false;
         for (int j = 0; j < Bias_MJ.rows(); j++) {
             if (isnan(Bias_MJ(j))) {
                 std::cout<<"Bias_MJ contains NaN"<<"\n";
-                nan_BiasMJ_true = true;
+                // nan_BiasMJ_true = true;
                 // std::cout<<Xdot_new.transpose()<<"\n";
                 break;
             }
         }
         // std::cout<<"Bias_MJ: " << endl << Bias_MJ.transpose()<<"\n";
-        DRAKE_DEMAND(nan_BiasMJ_true == false);
+        // DRAKE_DEMAND(nan_BiasMJ_true == false);
 
         //=============================================
         // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
@@ -397,7 +397,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
         Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
         
-        bool nan_Xdot_true = false;
+        // bool nan_Xdot_true = false;
         for (int j = 0; j < Xdot_new.rows(); j++) {
             if (isnan(Xdot_new(j))) {
                 std::cout<<"New Xdot contains NaN"<<"\n";
@@ -406,7 +406,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
             }
         }
         // std::cout<<"Xdot: " << endl << Xdot_new<<"\n";
-        DRAKE_DEMAND(nan_Xdot_true == false);
+        // DRAKE_DEMAND(nan_Xdot_true == false);
         
 
         // if(nan_true){

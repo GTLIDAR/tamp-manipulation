@@ -17,7 +17,7 @@ namespace kuka_iiwa_arm {
 class CostFunctionKukaArm_Contact
 {
 public:
-    CostFunctionKukaArm_Contact(unsigned int N);
+    CostFunctionKukaArm_Contact(unsigned int N, std::string action_name);
 private:
 protected:
 	fullstateMat_t Q;
