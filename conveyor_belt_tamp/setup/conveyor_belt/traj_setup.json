@@ -73,7 +73,7 @@
         "time_horizon": [2, 1],
         "wait_time": 0,
         "constrain_orientation": [true, true],
-        "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
         "init_offset_constrain_orientation": true,
         "init_offset_time": 1
     },
@@ -83,7 +83,7 @@
         "time_horizon": [2, 1],
         "wait_time": 0,
         "constrain_orientation": [true, true],
-        "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
+        "init_offset_wp": [0, 0, 0.2, 0, 0, 0],
         "init_offset_constrain_orientation": true,
         "init_offset_time": 1
     },
@@ -106,7 +106,7 @@
 
     "throw-right": {
         "traj_op": true,
-        "time_horizon": [2.0, 2.0],
+        "time_horizon": [2.0, 1],
         "wait_time": 0,
         "init_config": [ -0.682902,0.406249,-0.170987,-1.38828,0.0847343,1.33398,-0.8574],
         "goal_config": [ 0.0, 0.711523, -0.0295682,-0.914529, 0.0262518 , -0.45 ,-0.469425],
@@ -115,7 +115,7 @@
     
     "throw-left": {
         "traj_op": true,
-        "time_horizon": [2.0, 2.0],
+        "time_horizon": [2.0, 1],
         "wait_time": 0,
         "init_config": [0.685637, 0.385565, 0.186732, -1.41797, -0.0877832, 1.32615, 0.877454],
         "goal_config": [-0.2, 1.085565, 0.186732, -0.61797, -0.0877832, -0.55, 0.277454],

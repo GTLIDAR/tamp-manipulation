@@ -64,7 +64,7 @@ int do_main(int argc, char* argv[]) {
     if (sim_setup["enable_objects"].asBool()) {
     // setup objects
     auto kConveyorBeltTopZInWorld = geo_setup["kConveyorBeltTopZInWorld"].asDouble();
-
+    auto yInitOffset = geo_setup["yInitOffset"].asDouble();
     // box_0 first red box
     {
     const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
@@ -77,7 +77,7 @@ int do_main(int argc, char* argv[]) {
 
     auto xyz = Eigen::Vector3d(
                 object_init_pos["box_0"][0].asDouble(),
-                object_init_pos["box_0"][1].asDouble(),
+                object_init_pos["box_0"][1].asDouble() + yInitOffset,
                 object_init_pos["box_0"][2].asDouble() + kConveyorBeltTopZInWorld
     );
 
@@ -100,7 +100,7 @@ int do_main(int argc, char* argv[]) {
 
     auto xyz = Eigen::Vector3d(
                 object_init_pos["box_1"][0].asDouble(),
-                object_init_pos["box_1"][1].asDouble(),
+                object_init_pos["box_1"][1].asDouble() + yInitOffset,
                 object_init_pos["box_1"][2].asDouble() + kConveyorBeltTopZInWorld
     );
 
@@ -124,7 +124,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
                     object_init_pos["box_2"][0].asDouble(),
-                    object_init_pos["box_2"][1].asDouble(),
+                    object_init_pos["box_2"][1].asDouble() + yInitOffset,
                     object_init_pos["box_2"][2].asDouble() + kConveyorBeltTopZInWorld
         );
 
@@ -148,7 +148,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
                     object_init_pos["box_3"][0].asDouble(),
-                    object_init_pos["box_3"][1].asDouble(),
+                    object_init_pos["box_3"][1].asDouble() + yInitOffset,
                     object_init_pos["box_3"][2].asDouble() + kConveyorBeltTopZInWorld
         );
         
@@ -170,7 +170,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
             object_init_pos["box_4"][0].asDouble(),
-            object_init_pos["box_4"][1].asDouble(),
+            object_init_pos["box_4"][1].asDouble() + yInitOffset,
             object_init_pos["box_4"][2].asDouble() + kConveyorBeltTopZInWorld
         );
         
@@ -193,7 +193,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
                 object_init_pos["box_5"][0].asDouble(),
-                object_init_pos["box_5"][1].asDouble(),
+                object_init_pos["box_5"][1].asDouble() + yInitOffset,
                 object_init_pos["box_5"][2].asDouble() + kConveyorBeltTopZInWorld
         );
         
@@ -216,7 +216,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
                 object_init_pos["box_6"][0].asDouble(),
-                object_init_pos["box_6"][1].asDouble(),
+                object_init_pos["box_6"][1].asDouble() + yInitOffset,
                 object_init_pos["box_6"][2].asDouble() + kConveyorBeltTopZInWorld
         );
         
@@ -239,7 +239,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
                 object_init_pos["box_7"][0].asDouble(),
-                object_init_pos["box_7"][1].asDouble(),
+                object_init_pos["box_7"][1].asDouble() + yInitOffset,
                 object_init_pos["box_7"][2].asDouble() + kConveyorBeltTopZInWorld
         );
         
@@ -262,7 +262,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
                 object_init_pos["box_8"][0].asDouble(),
-                object_init_pos["box_8"][1].asDouble(),
+                object_init_pos["box_8"][1].asDouble() + yInitOffset,
                 object_init_pos["box_8"][2].asDouble() + kConveyorBeltTopZInWorld
         );
         
@@ -285,7 +285,7 @@ int do_main(int argc, char* argv[]) {
 
         auto xyz = Eigen::Vector3d(
                 object_init_pos["box_9"][0].asDouble(),
-                object_init_pos["box_9"][1].asDouble(),
+                object_init_pos["box_9"][1].asDouble() + yInitOffset,
                 object_init_pos["box_9"][2].asDouble() + kConveyorBeltTopZInWorld
         );
         
