@@ -75,6 +75,38 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
+    name = "conveyor_belt_simulation_3obj",
+    srcs = [
+        "conveyor_belt_simulation_3obj.cc",
+    ],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//conveyor_belt_tamp:models",
+        "//conveyor_belt_tamp:setup",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "@jsoncpp",
+        ":manipulation_station",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/analysis",
+        "//systems/lcm:lcm_interface_system",
+        "//systems/lcm:lcm_subscriber_system",
+        "//systems/lcm:lcm_publisher_system",
+        "//geometry:geometry_visualization",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//math:geometric_transform",
+        "//common:find_resource",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:schunk",
+        "//lcmtypes:combined_object_state",
+    ],
+)
+
+drake_cc_binary(
     name = "kuka_plan_runner",
     srcs = ["kuka_plan_runner.cc",],
     deps = [
