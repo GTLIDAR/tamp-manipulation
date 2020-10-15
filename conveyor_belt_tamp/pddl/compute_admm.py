@@ -11,7 +11,8 @@ from utils.traj_utils import dict_to_lcmt_multi_wp_manip_query, lcmt_manipulator
 JSON_QUERY_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/admm_queries20201014T143840.json"
 JSON_DDP_TRAJ_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/traj20201014T143839.json"
 
-MIN_TIME_STEP = 0.002
+MIN_TIME_STEP = 0.001
+MAX_TIME_STEP = 0.005
 
 class MotionQueryHandler:
     def __init__(self, query_file, ddp_traj_file):
@@ -64,10 +65,14 @@ class MotionQueryHandler:
         total_time = 0
         for self.q_idx in range(len(self._queries)):
             self._cur_query = self._queries[self.q_idx]
+
             if self._cur_query is None:
                 print("No move query in this action. Keeping original trajectory")
                 self.trajs.append(self._ddp_traj[self.q_idx])
                 continue
+
+            if self._cur_query.time_step > MAX_TIME_STEP:
+                self._cur_query.time_step = MAX_TIME_STEP
 
             print("Computing ADMM "+str(self.q_idx+1)+"/"+str(len(self._queries)))
             print("Action: "+self._cur_query.name)
@@ -89,6 +94,8 @@ class MotionQueryHandler:
     
     def run_single_traj(self, q_idx):
         self._cur_query = self._queries[q_idx]
+        if self._cur_query.time_step > MAX_TIME_STEP:
+            self._cur_query.time_step = MAX_TIME_STEP
         
         if self._cur_query is None:
             print("No move query in this action. Keeping original trajectory")

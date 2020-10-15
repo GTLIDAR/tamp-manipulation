@@ -13,26 +13,12 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
-    unsigned int iterMax = 12;
-    unsigned int ADMMiterMax = 12;
-
-    double pos_weight;
-    double vel_weight;
-    double torque_weight;
-    pos_weight = 5;
-    vel_weight = 20;
-    torque_weight = 0;
-
-    if (time_horizon<=1.5) {
-      iterMax = 20;
-      ADMMiterMax = 25;
-      // pos_weight = 5;
-      // vel_weight = 20;
-    }
+    unsigned int iterMax = 15;
+    unsigned int ADMMiterMax = 5;
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
-    //   ADMMiterMax = 15;
+    //   ADMMiterMax = 5;
     // }
 
 
@@ -159,6 +145,12 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
     // KukaArm_TRK KukaArmModel(dt, N, xgoal);
+    double pos_weight;
+    double vel_weight;
+    double torque_weight;
+    pos_weight = 5;
+    vel_weight = 20;
+    torque_weight = 0;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight, vel_weight, torque_weight, N); //postion/velocity/torque weights
     ILQRSolver_TRK testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
@@ -222,7 +214,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
         // Save residuals for all iterations
         res_x[i] += (xnew[j] - xbar[j]).norm();
         res_x_pos[i] += (xnew[j].head(kNumJoints) - xbar[j].head(kNumJoints)).norm();
-        res_x_vel[i] += (xnew[j].tail(kNumJoints) - xbar[j].tail(kNumJoints)).norm();
+        res_x_vel[i] += (xnew[j].tail(7) - xbar[j].tail(7)).norm();
+        // res_x_vel[i] += pow(xnew[j](7) - xbar[j](7), 2.0);
         res_u[i] += (unew[j] - ubar[j]).norm();
 
         res_xlambda[i] += vel_weight*(xbar[j] - xbar_old[j]).norm();
@@ -233,7 +226,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
       res_x[i] += (xnew[N] - xbar[N]).norm();
       res_x_pos[i] += (xnew[N].head(kNumJoints) - xbar[N].head(kNumJoints)).norm();
-      res_x_vel[i] += (xnew[N].tail(kNumJoints) - xbar[N].tail(kNumJoints)).norm();
+      res_x_vel[i] += (xnew[N].tail(7) - xbar[N].tail(7)).norm();
+      // res_x_vel[i] += pow(xnew[N](7) - xbar[N](7), 2.0);
       res_xlambda[i] += 0*(xbar[N] - xbar_old[N]).norm();
 
       // get the cost without augmented Lagrangian terms
@@ -318,13 +312,15 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // saving data file
     for(unsigned int i=0;i<N;i++){
-      saveVector(joint_state_traj[i], "joint_trajectory_ADMM");
-      saveVector(torque_traj[i], "joint_torque_command_ADMM");
+      saveVector(joint_state_traj[i], "joint_trajectory_ADMM_test");
+      saveVector(torque_traj[i], "joint_torque_command_ADMM_test");
+      saveVector(xubar[i], "xubar_ADMM_test");
     }
-    saveVector(xnew[N], "joint_trajectory_ADMM");
+    saveVector(xnew[N], "joint_trajectory_ADMM_test");
+    saveVector(xubar[N], "xubar_ADMM_test");
 
     for(unsigned int i=0;i<=N*InterpolationScale;i++){
-      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM");
+      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_test");
     }
 
     for(unsigned int i=0;i<ADMMiterMax;i++)
@@ -372,9 +368,6 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     ptr->n_time_steps = N*InterpolationScale;
     //ptr->cost = lastTraj.finalCost;
     ptr->cost = final_cost[ADMMiterMax];
-    if (ptr->cost <= 0.1) {
-      ptr->cost = std::nan("1");
-    }
       //============================================
 
     for (int32_t i=0; i < ptr->n_time_steps; ++i) {
@@ -401,17 +394,19 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
     xubar.resize(NumberofKnotPt+1);
 
     double joint_limit;
-    double vel_limit;
-    double torque_limit;
+    // double vel_limit;
+    double vel_limit [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5}; 
+    // double torque_limit;
+    double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
 
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
       joint_limit = 2.0;
-      vel_limit = 1.5;
-      torque_limit = 30;
+      // vel_limit = 1.5;
+      // torque_limit = 15;
     } else {
-      joint_limit = 2.75;
-      vel_limit = 0.25;
-      torque_limit = 30;
+      joint_limit = 3.0;
+      // vel_limit = 1.5;
+      // torque_limit = 15;
     }
 
     for(unsigned int i=0;i<NumberofKnotPt+1;i++){
@@ -430,11 +425,11 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
 
         else if(j >= stateSize/2 && j < stateSize){//velocity constraints
 
-        if(xnew[i](j,0) > vel_limit){
-            xubar[i](j,0) = vel_limit;
+        if(xnew[i](j,0) > vel_limit[j-7]){
+            xubar[i](j,0) = vel_limit[j-7];
         }
-        else if(xnew[i](j,0) < -vel_limit){
-            xubar[i](j,0) = -vel_limit;
+        else if(xnew[i](j,0) < -vel_limit[j-7]){
+            xubar[i](j,0) = -vel_limit[j-7];
         }
         else{
             xubar[i](j,0) = xnew[i](j,0);
@@ -443,22 +438,23 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
 
         else{//torque constraints
         if(i<NumberofKnotPt){
-            if(unew[i](j,0) > torque_limit){
-            xubar[i](j,0) = torque_limit;
+            if(unew[i](j,0) > torque_limit[j-14]){
+            xubar[i](j,0) = torque_limit[j-14];
             }
-            else if(unew[i](j,0) < -torque_limit){
-            xubar[i](j,0) = -torque_limit;
+            else if(unew[i](j,0) < -torque_limit[j-14]){
+            xubar[i](j,0) = -torque_limit[j-14];
             }
             else{
-            xubar[i](j,0) = unew[i](j,0);
+            xubar[i](j,0) = unew[i](j-14,0);
             }
         }
         else{
-            xubar[i].setZero();
+            xubar[i].bottomRows(commandSize) = VectorXd::Zero(commandSize);
         }
         }
     }
     }
+    // xubar.assign(NumberofKnotPt+1, Eigen::VectorXd(stateSize+commandSize));
     return xubar;
 }
 
