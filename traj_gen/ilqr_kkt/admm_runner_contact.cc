@@ -15,7 +15,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 10;
+    unsigned int ADMMiterMax = 5;
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -165,10 +165,10 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     double torque_weight;
 
     pos_obj_weight = 0;
-    pos_iiwa_weight = 20; 
+    pos_iiwa_weight = 10; 
     vel_obj_weight = 0;
-    vel_iiwa_weight = 1000;
-    torque_weight = 10;
+    vel_iiwa_weight = 10;
+    torque_weight = 0;
 
     CostFunctionKukaArm_TRK_Contact costKukaArm_init(0, 0, 0, 0, 0, N, action_name); //only for initialization
     CostFunctionKukaArm_TRK_Contact costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
@@ -549,7 +549,7 @@ void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
         wsg_status.utime = robot_time_.utime;
         // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
         step_ = int(((robot_time_.utime) / 1000)*(0.001*realtime_rate/(time_step_/InterpolationScale)));
-        std::cout << step_ << std::endl;
+        // std::cout << step_ << std::endl;
         
         if(step_ >= N*InterpolationScale)
         {
