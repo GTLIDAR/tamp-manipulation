@@ -229,16 +229,14 @@ void HandleQuery(
         std::vector<double> widths;
         std::vector<double> forces;
         forces.assign(traj_.n_time_steps, query->gripper_force);
-        if (query->name.find("move")==0) {
-            widths.assign(traj_.n_time_steps, query->prev_gripper_width);
-        } else if (query->name.find("wait")==0) {
+        if (query->name.find("wait")==0) {
             widths.assign(traj_.n_time_steps, query->prev_gripper_width);
         } else if (query->name.find("release")==0) {
             widths.assign(traj_.n_time_steps, FLAGS_gripper_open_width);
         } else if (query->name.find("grasp")==0) {
-            widths.assign(traj_.n_time_steps, FLAGS_gripper_push_width);
-        } else if (query->name.find("push")==0) {
             widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
+        } else if (query->name.find("push")==0) {
+            widths.assign(traj_.n_time_steps, FLAGS_gripper_push_width);
         } else if (query->name.find("throw")==0) {
             if (i < q_sol.size()-2) {
                 widths.assign(traj_.n_time_steps, FLAGS_gripper_close_width);
@@ -251,6 +249,10 @@ void HandleQuery(
                     }
                 }
             }
+        } else if (query->name.find("move-to-object")==0) {
+            widths.assign(traj_.n_time_steps, FLAGS_gripper_open_width);
+        } else if (query->name.find("move")==0) {
+            widths.assign(traj_.n_time_steps, query->prev_gripper_width);
         } else {
             std::cout << "This shouldn't happen, Assigning gripper to previous state\n";
             widths.assign(traj_.n_time_steps, query->prev_gripper_width);

@@ -117,6 +117,7 @@
     )
     :effect (and 
         (not (free ?r))
+        (not (on ?b ?cb))
         (moved-to-push ?r ?b ?bin)
     )
 )

@@ -1,4 +1,4 @@
-(define (problem 4obj_problem) (:domain conveyor_belt_4obj)
+(define (problem 10obj_problem) (:domain conveyor_belt_10obj)
 (:objects
     iiwa - robot
 
@@ -148,7 +148,7 @@
     (in box_4 bin_0)
     (in box_5 bin_2)
     (in box_6 bin_2)
-    (in box_7 bin_0)
+    (in box_7 bin_3)
     (in box_8 bin_1)
     (in box_9 bin_0)
 ))

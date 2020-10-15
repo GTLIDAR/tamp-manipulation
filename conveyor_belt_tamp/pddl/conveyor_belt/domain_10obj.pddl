@@ -1,6 +1,6 @@
 ;Header and description
 
-(define (domain conveyor_belt_4obj)
+(define (domain conveyor_belt_10obj)
 
 ;remove requirements that are not needed
 (:requirements :strips :typing)
@@ -146,6 +146,7 @@
     )
     :effect (and 
         (not (free ?r))
+        (not (on ?b ?cb))
         (moved-to-push ?r ?b ?bin)
     )
 )
