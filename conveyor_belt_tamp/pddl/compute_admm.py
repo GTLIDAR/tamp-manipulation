@@ -8,10 +8,10 @@ from drake import lcmt_manipulator_traj
 
 from utils.traj_utils import dict_to_lcmt_multi_wp_manip_query, lcmt_manipulator_traj_to_dict
 
-JSON_QUERY_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/admm_queries20201011T182316.json"
-JSON_DDP_TRAJ_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/good_ddp_static_traj20201011T182315.json"
+JSON_QUERY_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/admm_queries20201014T143840.json"
+JSON_DDP_TRAJ_FILENAME = "/home/zhigen/code/drake/conveyor_belt_tamp/results/traj20201014T143839.json"
 
-MIN_TIME_STEP = 0.001
+MIN_TIME_STEP = 0.002
 
 class MotionQueryHandler:
     def __init__(self, query_file, ddp_traj_file):
@@ -34,6 +34,7 @@ class MotionQueryHandler:
         self._cur_query = None
         self._completed = False
         self.trajs = []
+        self.q_idx = 0
     
     def _query_results_handler(self, channel, msg):
         print("message received.")
@@ -42,7 +43,7 @@ class MotionQueryHandler:
 
         if not data.n_time_steps:
             print("IK Infeasible")
-        elif data.cost==float('inf') or math.isnan(data.cost) or data.cost==0:
+        elif data.cost==float('inf') or math.isnan(data.cost) or data.cost<=1:
             if self._cur_query.time_step/2 >= MIN_TIME_STEP:
                 self._cur_query.time_step /= 2
                 self._lcm.publish("TREE_SEARCH_QUERY", self._cur_query.encode())
@@ -51,21 +52,24 @@ class MotionQueryHandler:
                 return
             else:
                 print("Minimum time step reached. Trajectory cannot be found.")
+                self.trajs.append(self._ddp_traj[self.q_idx])
+                self._completed = True
+                return
         
         self.trajs.append(lcmt_manipulator_traj_to_dict(data))
         self._completed = True
 
     def Run(self):
-        q_idx = 0
+        self.q_idx = 0
         total_time = 0
-        for q_idx in range(len(self._queries)):
-            self._cur_query = self._queries[q_idx]
+        for self.q_idx in range(len(self._queries)):
+            self._cur_query = self._queries[self.q_idx]
             if self._cur_query is None:
                 print("No move query in this action. Keeping original trajectory")
-                self.trajs.append(self._ddp_traj[q_idx])
+                self.trajs.append(self._ddp_traj[self.q_idx])
                 continue
 
-            print("Computing ADMM "+str(q_idx+1)+"/"+str(len(self._queries)))
+            print("Computing ADMM "+str(self.q_idx+1)+"/"+str(len(self._queries)))
             print("Action: "+self._cur_query.name)
 
             self._completed = False

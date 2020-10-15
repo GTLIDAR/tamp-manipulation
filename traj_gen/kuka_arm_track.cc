@@ -292,13 +292,7 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         VectorXd Cv(plant_->num_velocities());
         Cv.setZero();
         plant_->CalcBiasTerm(*context, &Cv);
-        for (int j = 0; j < Cv.rows(); j++) {
-            if (isnan(Cv(j))) {
-                std::cout<<"Cv contains NaN"<<"\n";
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+
         // if (globalcnt % 10 == 0) {
         //     std::cout<<"tau_g "<<tau_g<<"\n";
         //     std::cout<<"Cv "<<Cv<<"\n";
