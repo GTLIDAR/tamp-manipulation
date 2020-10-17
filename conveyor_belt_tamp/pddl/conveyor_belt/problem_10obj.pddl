@@ -144,13 +144,13 @@
     (in box_0 bin_3)
     (in box_1 bin_1)
     (in box_2 bin_1)
-    (in box_3 bin_3)
+    (in box_3 bin_0)
     (in box_4 bin_0)
     (in box_5 bin_2)
     (in box_6 bin_2)
     (in box_7 bin_3)
     (in box_8 bin_1)
-    (in box_9 bin_0)
+    ; (in box_9 bin_0)
 ))
 
 ;un-comment the following line if metric is needed

@@ -20,18 +20,18 @@ TRAJ_OPTION = "ddp"
 def main():
     # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/domain_4obj.pddl"
     # problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/problem_4obj.pddl"
-    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/domain_10obj.pddl"
-    # problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/problem_10obj.pddl"
-    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/obj_cost/domain_3obj.pddl"
-    problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/obj_cost/problem_3obj.pddl"
+    domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/domain_10obj.pddl"
+    problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/problem_10obj.pddl"
+    # domain_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/obj_cost/domain_3obj.pddl"
+    # problem_file = drake_path + "/conveyor_belt_tamp/pddl/conveyor_belt/obj_cost/problem_3obj.pddl"
 
     problem = _parse(domain_file, problem_file)
     task = _ground(problem)
 
-    # geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt/geo_setup.json"
-    # traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt/traj_setup.json"
-    geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt_obj_cost/geo_setup.json"
-    traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt_obj_cost/traj_setup.json"
+    geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt/geo_setup.json"
+    traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt/traj_setup.json"
+    # geo_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt_obj_cost/geo_setup.json"
+    # traj_setup_file = drake_path + "/conveyor_belt_tamp/setup/conveyor_belt_obj_cost/traj_setup.json"
 
     motion_planner = MultiWPConveyorBeltManipMotionPlanRunner(
         geo_setup_file, traj_setup_file
