@@ -135,7 +135,7 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/kuka_connector_description:models",
-        # "//conveyor_belt_tamp:models",
+        # "//manipulation_tamp:models",
         "//manipulation/models/ycb:models",
     ],
     deps = [
@@ -190,7 +190,7 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/kuka_connector_description:models",
-        "//conveyor_belt_tamp:models",
+        "//manipulation_tamp:models",
     ],
     deps = [
         "//examples/kuka_iiwa_arm:iiwa_common",
@@ -221,7 +221,7 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/kuka_connector_description:models",
-        "//conveyor_belt_tamp:models",
+        "//manipulation_tamp:models",
 
     ],
     deps = [
@@ -271,7 +271,7 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/kuka_connector_description:models",
-        "//conveyor_belt_tamp:models",
+        "//manipulation_tamp:models",
     ],
     deps = [
         "//examples/kuka_iiwa_arm:iiwa_common",
@@ -302,7 +302,7 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/kuka_connector_description:models",
-        "//conveyor_belt_tamp:models",
+        "//manipulation_tamp:models",
     ],
     deps = [
         "//examples/kuka_iiwa_arm:iiwa_common",

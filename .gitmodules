@@ -1,0 +1,3 @@
+[submodule "pyperplan"]
+	path = manipulation_tamp/planner/pyperplan
+	url = https://github.com/zhigenzhao/pyperplan.git

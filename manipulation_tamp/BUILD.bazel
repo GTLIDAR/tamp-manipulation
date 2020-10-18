@@ -1,0 +1,310 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "manipulation_station",
+    srcs = [
+        "manipulation_station.cc",
+    ],
+    hdrs = [
+        "manipulation_station.h",
+    ],
+    data = [
+        ":models",
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/ycb:models",
+        "//manipulation/models/kuka_connector_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:find_resource",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_position_controller",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework",
+        "//systems/sensors:rgbd_sensor",
+        "//manipulation_tamp:object_state_estimator",
+    ],
+)
+
+drake_cc_binary(
+    name = "conveyor_belt_simulation",
+    srcs = [
+        "conveyor_belt_simulation.cc",
+    ],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation_tamp:models",
+        "//manipulation_tamp:setup",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "@jsoncpp",
+        ":manipulation_station",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/analysis",
+        "//systems/lcm:lcm_interface_system",
+        "//systems/lcm:lcm_subscriber_system",
+        "//systems/lcm:lcm_publisher_system",
+        "//geometry:geometry_visualization",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//math:geometric_transform",
+        "//common:find_resource",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:schunk",
+        "//lcmtypes:combined_object_state",
+    ],
+)
+
+drake_cc_binary(
+    name = "conveyor_belt_simulation_3obj",
+    srcs = [
+        "conveyor_belt_simulation_3obj.cc",
+    ],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation_tamp:models",
+        "//manipulation_tamp:setup",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "@jsoncpp",
+        ":manipulation_station",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/analysis",
+        "//systems/lcm:lcm_interface_system",
+        "//systems/lcm:lcm_subscriber_system",
+        "//systems/lcm:lcm_publisher_system",
+        "//geometry:geometry_visualization",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//math:geometric_transform",
+        "//common:find_resource",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:schunk",
+        "//lcmtypes:combined_object_state",
+    ],
+)
+
+drake_cc_binary(
+    name = "kuka_plan_runner",
+    srcs = ["kuka_plan_runner.cc",],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common:find_resource",
+        "//multibody/tree",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:generic_string_msg",
+        "//lcmtypes:schunk",
+    ]
+)
+
+drake_cc_library(
+    name = "object_state_estimator",
+    srcs = ["object_state_estimator.cc"],
+    hdrs = ["object_state_estimator.h"],
+    deps = [
+        "//systems/framework",
+        "//multibody/plant",
+        "//lcmtypes:combined_object_state",
+        "//math:geometric_transform",
+        "//multibody/math:spatial_velocity"
+    ]
+)
+
+drake_cc_binary(
+    name = "object_state_listener",
+    srcs = ["object_state_listener.cc"],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//lcmtypes:combined_object_state",
+    ]
+)
+
+drake_cc_binary(
+    name = "single_traj_test_contact",
+    srcs = ["single_traj_test_contact.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//traj_gen:config",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:motion_plan_query",
+    ],
+)
+
+drake_cc_binary(
+    name = "single_traj_test",
+    srcs = ["single_traj_test.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//traj_gen:config",
+        # "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        # "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:motion_plan_query",
+    ],
+)
+
+drake_cc_binary(
+    name = "multi_traj_test",
+    srcs = ["multi_traj_test.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//traj_gen:config",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:motion_plan_query",
+    ],
+)
+
+drake_cc_binary(
+    name = "pddl_query_handler",
+    srcs = ["pddl_query_handler.cc",],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//lcmtypes:motion_plan_query",
+        "//lcmtypes:manipulator_traj",
+        "//traj_gen:ddp_runner",
+        "//traj_gen:admm_runner",
+    ],
+)
+
+drake_cc_binary(
+    name = "multi_wp_traj_test",
+    srcs = ["multi_wp_traj_test.cc",],
+    deps = [
+        "@lcm",
+        "@gflags",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//traj_gen:admm_runner",
+        "//traj_gen:ddp_runner",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:multi_wp_manip_query",
+    ],
+)
+
+drake_cc_binary(
+    name = "pddl_multi_wp_query_handler",
+    srcs = ["pddl_multi_wp_query_handler.cc",],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//lcmtypes:multi_wp_manip_query",
+        "//lcmtypes:manipulator_traj",
+        "//traj_gen:ddp_runner",
+        "//traj_gen:admm_runner",
+    ],
+)
+
+drake_cc_binary(
+    name = "pddl_multi_wp_query_handler_contact",
+    srcs = ["pddl_multi_wp_query_handler_contact.cc",],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common:find_resource",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//lcmtypes:multi_wp_manip_query",
+        "//lcmtypes:manipulator_traj",
+        "//traj_gen:ddp_runner",
+        "//traj_gen:admm_runner",
+        "//traj_gen/ilqr_kkt:ddp_runner_contact",
+        "//traj_gen/ilqr_kkt:admm_runner_contact",
+    ],
+)
+
+drake_cc_binary(
+    name = "object_sorting_simulation",
+    srcs = [
+        "object_sorting_simulation.cc",
+    ],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation_tamp:models",
+        "//manipulation_tamp:setup",
+    ],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "@jsoncpp",
+        ":manipulation_station",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/analysis",
+        "//systems/lcm:lcm_interface_system",
+        "//systems/lcm:lcm_subscriber_system",
+        "//systems/lcm:lcm_publisher_system",
+        "//geometry:geometry_visualization",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//math:geometric_transform",
+        "//common:find_resource",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:schunk",
+        "//lcmtypes:combined_object_state",
+    ],
+)
+
