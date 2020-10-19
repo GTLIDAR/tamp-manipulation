@@ -26,12 +26,12 @@ bazel run //:install -- ~+/build/install
 add pydrake to PYTHONPATH<br />
 Ubuntu 20.04
 ```
-echo "export PYTHONPATH=/path/to/drake/build/install/lib/python3.8/site-packages:${PYTHONPATH} >> ~/.bashrc
+echo "export PYTHONPATH=/path/to/drake/build/install/lib/python3.8/site-packages:${PYTHONPATH}" >> ~/.bashrc
 source ~/.bashrc
 ```
 Ubuntu 18.04
 ```
-echo "export PYTHONPATH=/path/to/drake/build/install/lib/python3.6/site-packages:${PYTHONPATH} >> ~/.bashrc
+echo "export PYTHONPATH=/path/to/drake/build/install/lib/python3.6/site-packages:${PYTHONPATH}" >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -42,7 +42,6 @@ python3 -m pip install numpy scipy matplotlib networkx
 git submodule update --init --recursive
 cd /path/to/drake/manipulation_tamp/planner/pyperplan
 sudo ./setup.py install
-source ~/.bashrc
 ```
 
 
