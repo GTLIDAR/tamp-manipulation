@@ -11,9 +11,8 @@ The code is run on Ubuntu 18.04 and 20.04 and Python 3.6 or newer.
 ## Setup
 drake setup
 ```
-git clone https://github.gatech.edu/GeorgiaTechLIDARGroup/drake.git
-cd drake
-git checkout manipulation-tamp-RAL
+git clone https://github.com/GTLIDAR/tamp-manipulation.git
+cd tamp-manipulation
 sudo ./setup/ubuntu/install_prereqs.sh
 ```
 
