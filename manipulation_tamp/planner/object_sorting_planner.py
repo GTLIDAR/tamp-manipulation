@@ -3,6 +3,7 @@
 import time
 import os
 import sys
+from datetime import datetime
 
 from causal_graph.causal_graph_planner import CausalGraphTampPlanner
 
@@ -46,11 +47,11 @@ def main():
 
     start = time.time()
     planner.plan(option=TRAJ_OPTION)
-    # planner.plan_multiple(n_sols=-1, total_depth_limit=-1, option="ddp", show=False)
     end = time.time()
     print("Total Planning Time: ", end - start, "sec")
     
-    planner.save_traj()
+    filename = "object_sorting_plan"+datetime.now().strftime("%Y%m%dT%H%M%S")+".json"
+    planner.save_traj(filename=filename)
     planner.save_move_query_sequence()
     print("Branching Factors", planner.branching_factor)
     print("Tree Size", planner.num_nodes)

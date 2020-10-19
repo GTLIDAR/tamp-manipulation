@@ -28,10 +28,10 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
 
     std::string box_sdf_path0;
     if (action_name.compare("push")==0){
-        box_sdf_path0 = FindResourceOrThrow("drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf");
+        box_sdf_path0 = FindResourceOrThrow("drake/manipulation_tamp/models/boxes/large_red_box.urdf");
     }
     else{
-        box_sdf_path0 = FindResourceOrThrow("drake/conveyor_belt_tamp/models/boxes/redblock.urdf");
+        box_sdf_path0 = FindResourceOrThrow("drake/manipulation_tamp/models/boxes/redblock.urdf");
     }
 
     std::string urdf_;

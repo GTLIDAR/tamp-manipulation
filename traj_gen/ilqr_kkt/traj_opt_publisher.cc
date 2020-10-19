@@ -117,8 +117,8 @@ public:
           FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
         std::string connectorPath = 
           FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
-        const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/redblock.urdf";
-        // const std::string box_sdf_path0 = "drake/conveyor_belt_tamp/models/boxes/large_red_box.urdf";
+        const std::string box_sdf_path0 = "drake/manipulation_tamp/models/boxes/redblock.urdf";
+        // const std::string box_sdf_path0 = "drake/manipulation_tamp/models/boxes/large_red_box.urdf";
 
         std::string urdf_;
         auto plant_ = multibody::MultibodyPlant<double>(0.0);

@@ -225,7 +225,6 @@ class MultiWPStaionaryManipMotionPlanRunner(BasicManipMotionPlanRunner):
                 + np.array(self._traj_setup[op_name]["init_offset_wp"])).tolist()
             ee_desired_list = [wp]
             time_horizon_list = [self._traj_setup[op_name]["init_offset_time"]]
-            node.time += self._traj_setup[op_name]["init_offset_time"]
             constrain_orientation_list = [self._traj_setup[op_name]["init_offset_constrain_orientation"]]
         else:
             ee_desired_list = []
@@ -236,6 +235,7 @@ class MultiWPStaionaryManipMotionPlanRunner(BasicManipMotionPlanRunner):
         ee_desired_list.extend(self._query.get_desired_ee_pos(node))
         node.final_ee = ee_desired_list[-1]
         time_horizon_list.extend(self._traj_setup[op_name]["time_horizon"])
+        node.time = node.parent.time + sum(time_horizon_list)
         constrain_orientation_list.extend(self._traj_setup[op_name]["constrain_orientation"])
         print("Prev q:", q_prev)
         print("DESIRED EE:", ee_desired_list)

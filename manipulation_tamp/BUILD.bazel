@@ -145,63 +145,6 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "single_traj_test_contact",
-    srcs = ["single_traj_test_contact.cc",],
-    deps = [
-        "@lcm",
-        "@gflags",
-        "//common:find_resource",
-        "//manipulation/planner:constraint_relaxing_ik",
-        "//math:geometric_transform",
-        "//traj_gen:admm_runner",
-        "//traj_gen:ddp_runner",
-        "//traj_gen/ilqr_kkt:ddp_runner_contact",
-        "//traj_gen/ilqr_kkt:admm_runner_contact",
-        "//traj_gen:config",
-        "//lcmtypes:manipulator_traj",
-        "//lcmtypes:motion_plan_query",
-    ],
-)
-
-drake_cc_binary(
-    name = "single_traj_test",
-    srcs = ["single_traj_test.cc",],
-    deps = [
-        "@lcm",
-        "@gflags",
-        "//common:find_resource",
-        "//manipulation/planner:constraint_relaxing_ik",
-        "//math:geometric_transform",
-        "//traj_gen:admm_runner",
-        "//traj_gen:ddp_runner",
-        "//traj_gen:config",
-        # "//traj_gen/ilqr_kkt:ddp_runner_contact",
-        # "//traj_gen/ilqr_kkt:admm_runner_contact",
-        "//lcmtypes:manipulator_traj",
-        "//lcmtypes:motion_plan_query",
-    ],
-)
-
-drake_cc_binary(
-    name = "multi_traj_test",
-    srcs = ["multi_traj_test.cc",],
-    deps = [
-        "@lcm",
-        "@gflags",
-        "//common:find_resource",
-        "//manipulation/planner:constraint_relaxing_ik",
-        "//math:geometric_transform",
-        "//traj_gen:admm_runner",
-        "//traj_gen:ddp_runner",
-        "//traj_gen/ilqr_kkt:ddp_runner_contact",
-        "//traj_gen/ilqr_kkt:admm_runner_contact",
-        "//traj_gen:config",
-        "//lcmtypes:manipulator_traj",
-        "//lcmtypes:motion_plan_query",
-    ],
-)
-
-drake_cc_binary(
     name = "pddl_query_handler",
     srcs = ["pddl_query_handler.cc",],
     data = [
@@ -217,22 +160,6 @@ drake_cc_binary(
         "//lcmtypes:manipulator_traj",
         "//traj_gen:ddp_runner",
         "//traj_gen:admm_runner",
-    ],
-)
-
-drake_cc_binary(
-    name = "multi_wp_traj_test",
-    srcs = ["multi_wp_traj_test.cc",],
-    deps = [
-        "@lcm",
-        "@gflags",
-        "//common:find_resource",
-        "//manipulation/planner:constraint_relaxing_ik",
-        "//math:geometric_transform",
-        "//traj_gen:admm_runner",
-        "//traj_gen:ddp_runner",
-        "//lcmtypes:manipulator_traj",
-        "//lcmtypes:multi_wp_manip_query",
     ],
 )
 
