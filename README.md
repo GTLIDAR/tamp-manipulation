@@ -41,7 +41,7 @@ sudo apt install python3 python3-pip
 python3 -m pip install numpy scipy matplotlib networkx
 git submodule update --init --recursive
 cd /path/to/drake/manipulation_tamp/planner/pyperplan
-sudo ./setup.py install
+sudo python3 setup.py install
 ```
 
 
