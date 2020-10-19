@@ -20,10 +20,10 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N, std::st
         double torqoe_scale = 30;//100;
         
         if (action_name.compare("push")==0){
-            pos_obj_scale = 10;
-            vel_obj_scale = 10;
-            pos_obj_f_scale = 100;//0.001;
-            vel_obj_f_scale = 100;//10;
+            pos_obj_scale = 0;
+            vel_obj_scale = 0;
+            pos_obj_f_scale = 0;//0.001;
+            vel_obj_f_scale = 0;//10;
         }
         else{
             pos_obj_scale = 0;

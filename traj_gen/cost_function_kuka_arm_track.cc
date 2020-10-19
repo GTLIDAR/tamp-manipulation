@@ -8,8 +8,8 @@ CostFunctionKukaArm_TRK::CostFunctionKukaArm_TRK(double pos_weight, double vel_w
 {    
     pos_scale = 10;
     vel_scale = 10;
-    pos_f_scale = 100;//0.001;
-    vel_f_scale = 10;//10;
+    pos_f_scale = 1000;
+    vel_f_scale = 10;
     torque_scale = 1;//100;
     rho_pos_weight = pos_weight;
     rho_vel_weight = vel_weight;

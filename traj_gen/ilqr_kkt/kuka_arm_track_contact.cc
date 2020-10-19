@@ -235,7 +235,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         qd_full.topRows(6) = qd_obj;
         qd_full.bottomRows(9) = qd_iiwa_full;
 
-        Quaternion<double> qua_obj_eigen(qua_obj);
+        Quaternion<double> qua_obj_eigen(qua_obj(0), qua_obj(1), qua_obj(2), qua_obj(3));
 
         math::RigidTransform<double> X_WO(qua_obj_eigen, pos_obj);
 

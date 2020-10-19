@@ -14,7 +14,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 30;
+    unsigned int ADMMiterMax = 5;
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -148,8 +148,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double pos_weight;
     double vel_weight;
     double torque_weight;
-    pos_weight = 20;
-    vel_weight = 1000;
+    pos_weight = 5;
+    vel_weight = 20;
     torque_weight = 0;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight, vel_weight, torque_weight, N); //postion/velocity/torque weights
@@ -312,22 +312,22 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // saving data file
     for(unsigned int i=0;i<N;i++){
-      saveVector(joint_state_traj[i], "joint_trajectory_ADMM_test");
-      saveVector(torque_traj[i], "joint_torque_command_ADMM_test");
-      saveVector(xubar[i], "xubar_ADMM_test");
+      saveVector(joint_state_traj[i], "joint_trajectory_ADMM_demo");
+      saveVector(torque_traj[i], "joint_torque_command_ADMM_demo");
+      saveVector(xubar[i], "xubar_ADMM_demo");
     }
-    saveVector(xnew[N], "joint_trajectory_ADMM_test");
-    saveVector(xubar[N], "xubar_ADMM_test");
+    saveVector(xnew[N], "joint_trajectory_ADMM_demo");
+    saveVector(xubar[N], "xubar_ADMM_demo");
 
     for(unsigned int i=0;i<=N*InterpolationScale;i++){
-      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_test");
+      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_demo");
     }
 
     for(unsigned int i=0;i<ADMMiterMax;i++)
     {
-      saveValue(res_x_pos[i], "residual_x_pos_push");
-      saveValue(res_x_vel[i], "residual_x_vel_push");
-      saveValue(res_u[i], "residual_u_push");
+      saveValue(res_x_pos[i], "residual_x_pos_move_demo_nocontact");
+      saveValue(res_x_vel[i], "residual_x_vel_move_demo_nocontact");
+      saveValue(res_u[i], "residual_u_move_demo_nocontact");
     }
     cout << "-------- ADMM Trajectory Generation Finished! --------" << endl;
 
@@ -397,14 +397,15 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
     // double vel_limit;
     double vel_limit [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5}; 
     // double torque_limit;
-    double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
+    // double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
+    double torque_limit [] = {15, 15, 15, 15, 15, 15, 15};
 
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
-      joint_limit = 2.0;
+      joint_limit = 2.8;
       // vel_limit = 1.5;
       // torque_limit = 15;
     } else {
-      joint_limit = 3.0;
+      joint_limit = 2.8;
       // vel_limit = 1.5;
       // torque_limit = 15;
     }
@@ -425,11 +426,11 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
 
         else if(j >= stateSize/2 && j < stateSize){//velocity constraints
 
-        if(xnew[i](j,0) > vel_limit[j-7]){
-            xubar[i](j,0) = vel_limit[j-7];
+        if(xnew[i](j,0) > vel_limit[j-stateSize/2]){
+            xubar[i](j,0) = vel_limit[j-stateSize/2];
         }
-        else if(xnew[i](j,0) < -vel_limit[j-7]){
-            xubar[i](j,0) = -vel_limit[j-7];
+        else if(xnew[i](j,0) < -vel_limit[j-stateSize/2]){
+            xubar[i](j,0) = -vel_limit[j-stateSize/2];
         }
         else{
             xubar[i](j,0) = xnew[i](j,0);
@@ -438,14 +439,14 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
 
         else{//torque constraints
         if(i<NumberofKnotPt){
-            if(unew[i](j,0) > torque_limit[j-14]){
+            if(unew[i](j-stateSize,0) > torque_limit[j-stateSize]){
             xubar[i](j,0) = torque_limit[j-14];
             }
-            else if(unew[i](j,0) < -torque_limit[j-14]){
-            xubar[i](j,0) = -torque_limit[j-14];
+            else if(unew[i](j-stateSize,0) < -torque_limit[j-stateSize]){
+            xubar[i](j,0) = -torque_limit[j-stateSize];
             }
             else{
-            xubar[i](j,0) = unew[i](j-14,0);
+            xubar[i](j,0) = unew[i](j-stateSize,0);
             }
         }
         else{

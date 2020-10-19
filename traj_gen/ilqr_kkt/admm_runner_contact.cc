@@ -146,9 +146,9 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
 
     u_0.resize(N);
     for(unsigned i=0;i<N;i++){
-    //   u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
+      u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
         // cout << "u_0: " << u_0[i].transpose() << endl;
-        u_0[i].setZero();
+        // u_0[i].setZero();
         // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
     }
     
@@ -168,7 +168,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     pos_iiwa_weight = 10; 
     vel_obj_weight = 0;
     vel_iiwa_weight = 10;
-    torque_weight = 0;
+    torque_weight = 1;
 
     CostFunctionKukaArm_TRK_Contact costKukaArm_init(0, 0, 0, 0, 0, N, action_name); //only for initialization
     CostFunctionKukaArm_TRK_Contact costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
@@ -319,22 +319,22 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
 
     // saving data file
     for(unsigned int i=0;i<N;i++){
-      saveVector(joint_state_traj[i], "joint_trajectory_ADMM_contact");
-      saveVector(torque_traj[i], "joint_torque_command_ADMM_contact");
-      saveVector(xubar[i], "xubar_ADMM_contact");
+      saveVector(joint_state_traj[i], "joint_trajectory_ADMM_contact_demo");
+      saveVector(torque_traj[i], "joint_torque_command_ADMM_contact_demo");
+      saveVector(xubar[i], "xubar_ADMM_contact_demo");
     }
-    saveVector(xnew[N], "joint_trajectory_ADMM_contact");
-    saveVector(xubar[N], "xubar_ADMM_contact");
+    saveVector(xnew[N], "joint_trajectory_ADMM_contact_demo");
+    saveVector(xubar[N], "xubar_ADMM_contact_demo");
 
     for(unsigned int i=0;i<=N*InterpolationScale;i++){
-      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_contact");
+      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_contact_demo");
     }
 
     for(unsigned int i=0;i<ADMMiterMax;i++)
     {
-      saveValue(res_x_pos_iiwa[i], "residual_x_pos_push");
-      saveValue(res_x_vel_iiwa[i], "residual_x_vel_push");
-      saveValue(res_u[i], "residual_u_push");
+      saveValue(res_x_pos_iiwa[i], "residual_x_pos_push_demo");
+      saveValue(res_x_vel_iiwa[i], "residual_x_vel_push_demo");
+      saveValue(res_u[i], "residual_u_push_demo");
     }
     cout << "-------- ADMM Trajectory Generation Finished! --------" << endl;
 
@@ -406,8 +406,7 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
     // double vel_limit_iiwa;
     // double torque_limit;
     double vel_limit_iiwa [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5}; 
-    double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
-    // double torque_limit [] = {15, 15, 15, 15, 15, 15, 15};
+    double torque_limit [] = {100, 100, 50, 50, 50, 30, 30};
 
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
       pos_limit_obj = 10; // not used for object now
@@ -478,10 +477,10 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
 
         else{//torque constraints
         if(i<NumberofKnotPt){
-            if(unew[i](j,0) > torque_limit[j-27]){
+            if(unew[i](j-27,0) > torque_limit[j-27]){
             xubar[i](j,0) = torque_limit[j-27];
             }
-            else if(unew[i](j,0) < -torque_limit[j-27]){
+            else if(unew[i](j-27,0) < -torque_limit[j-27]){
             xubar[i](j,0) = -torque_limit[j-27];
             }
             else{
