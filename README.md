@@ -40,8 +40,6 @@ source ~/.bashrc
 ```
 sudo apt install python3 python3-pip
 python3 -m pip install numpy scipy matplotlib networkx
-git clone https://github.gatech.edu/GeorgiaTechLIDARGroup/pddl_planning.git
-cd pddl_planning
 git submodule update --init --recursive
 cd /path/to/drake/manipulation_tamp/planner/pyperplan
 sudo ./setup.py install
