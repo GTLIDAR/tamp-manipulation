@@ -228,108 +228,42 @@ stateVec_t KukaArm_TRK::kuka_arm_dynamics(const stateVec_t& X, const commandVec_
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
 
-        for (int i=0; i < M_.rows(); i++) {
-            for (int j = 0; j < M_.cols(); j++) {
-                if (isnan(M_(i, j))) {
-                    if (globalcnt < 5) {
-                        std::cout<<"Mass Matrix contains NaN"<<"\n";
-                        std::cout<<M_<<"\n";
-                        // while (std::getc(stdin)==EOF) {}
-                    }
+        // for (int i=0; i < M_.rows(); i++) {
+        //     for (int j = 0; j < M_.cols(); j++) {
+        //         if (isnan(M_(i, j))) {
+        //             if (globalcnt < 5) {
+        //                 std::cout<<"Mass Matrix contains NaN"<<"\n";
+        //                 std::cout<<M_<<"\n";
+        //                 // while (std::getc(stdin)==EOF) {}
+        //             }
 
-                    break;
-                }
-            }
-        }
-        //===================
-        // External Force
-        //==================
-
-        // TODO: Add external force for MBP
-        // if (action_name_.compare("push")==0) {
-        // // 1) Pushing External Force
-        //     const auto &body_pose_fk = robot_thread_->CalcFramePoseInWorldFrame(
-        //                             cache_, robot_thread_->get_body(10), Isometry3d::Identity());
-        //     // cout << "forward kinematics init\n" << body_pose_fk.linear() << endl;
-        //     // cout << "forward kinematics init\n" << body_pose_fk.translation() << endl << endl;
-        //     if (body_pose_fk.translation().x() > 0.088 ) { // {pushing: 0.087 ; sliding: 0.186; throwing: }
-        //         drake::WrenchVector<double> tw;
-        //         tw  <<  0,0,0,-0.6*BOXWEIGHT*9.81,0,0; // pushing (rx, ry, rz, tx, ty, tz)
-        //         // tw  <<  0,0,0,0,-0.6*BOXWEIGHT*9.81,0; // sliding
-        //         RigidBody<double> const & rb = (*robot_thread_).get_body(10);
-        //         f_ext[&rb] = tw;
-        //     }
-        // } else if (action_name_.compare("throw")==0) {
-
-        // // 2) Throwing External Force
-        //     const auto &body_pose_fk = robot_thread_->CalcFramePoseInWorldFrame(
-        //                             cache_, robot_thread_->get_body(10), Isometry3d::Identity());
-        //     math::RotationMatrix<double> R_init(body_pose_fk.linear());
-        //     math::RollPitchYaw<double> rpy_init(R_init);
-        //     if (body_pose_fk.translation().x() < 0.720779) {        // {pushing: 0.087 ; sliding: 0.186; throwing: 0.720779}
-        //         drake::WrenchVector<double> tw;
-        //         tw  <<  0,0,0,0,0,-BOXWEIGHT*9.81*sin(-rpy_init.pitch_angle());
-        //         RigidBody<double> const & rb = (*robot_thread_).get_body(10);
-        //         f_ext[&rb] = tw;
+        //             break;
+        //         }
         //     }
         // }
-
-        //========================================
-
-
-        //gettimeofday(&tend_period,NULL);
-        //finalTimeProfile.time_period3 += ((double)(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
-
-        //gettimeofday(&tbegin_period,NULL);
-
-        // VectorX<double> bias_term_ = robot_thread_->dynamicsBiasTerm(cache_, f_ext);  // Bias term: M * vd + h = tau + J^T * lambda
-
-        // MultibodyForces<double> f_ext(*plant_);
-        // VectorXd vdot(plant_->num_velocities());
-        // vdot.setZero();
-        // VectorXd bias_term_ = plant_->CalcInverseDynamics(*context, vdot, f_ext);
+       
         VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
         VectorXd Cv(plant_->num_velocities());
         Cv.setZero();
         plant_->CalcBiasTerm(*context, &Cv);
-        for (int j = 0; j < Cv.rows(); j++) {
-            if (isnan(Cv(j))) {
-                std::cout<<"Cv contains NaN"<<"\n";
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
-        // if (globalcnt % 10 == 0) {
-        //     std::cout<<"tau_g "<<tau_g<<"\n";
-        //     std::cout<<"Cv "<<Cv<<"\n";
-        //     std::cout<<"q_full\n";
-        //     std::cout<<q_full<<"\n";
-        //     std::cout<<"qd_full"<<"\n";
-        //     std::cout<<qd_full<<"\n";
-        //     std::cout<<"M-1"<<M_.inverse()<<"\n";
+        // for (int j = 0; j < Cv.rows(); j++) {
+        //     if (isnan(Cv(j))) {
+        //         std::cout<<"Cv contains NaN"<<"\n";
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
         // }
 
-        //gettimeofday(&tend_period,NULL);
-        //finalTimeProfile.time_period4 += ((double)(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)+((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
-
-        //=============================================
-        // Gravity compensation?? - From Yuki
-
-        //Set false for doing only gravity comp
-        //     VectorX<double> gtau = robot_thread_->inverseDynamics(cache_, f_ext, qd_0, false);
         //=============================================
         vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
-        //    vd = M_.inverse()*(tau + bias_term_2 - bias_term_ );
-        //    vd = M_.inverse()*(tau - bias_term_ + gtau);
-        //    vd = M_.inverse()*(tau + gtau);
         Xdot_new << qd, vd;
-        for (int j = 0; j < Xdot_new.rows(); j++) {
-            if (isnan(Xdot_new(j))) {
-                std::cout<<"New Xdot contains NaN"<<"\n";
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+        // for (int j = 0; j < Xdot_new.rows(); j++) {
+        //     if (isnan(Xdot_new(j))) {
+        //         std::cout<<"New Xdot contains NaN"<<"\n";
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
+        // }
         
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
