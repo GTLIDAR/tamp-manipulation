@@ -253,20 +253,18 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         // Compute Mass matrix, Bias and gravititional terms
         MatrixXd M_(15, 15);
-        // MatrixXd M_iiwa(7, 7);
         VectorXd Cv(15);
-        // VectorXd Cv_iiwa(7);
         VectorXd tau_g_iiwa;
         VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
         // bool nan_tau_g_true = false;
-        for (int j = 0; j < tau_g.rows(); j++) {
-            if (isnan(tau_g(j))) {
-                std::cout<<"tau_g contains NaN"<<"\n";
-                // nan_tau_g_true = true;
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+        // for (int j = 0; j < tau_g.rows(); j++) {
+        //     if (isnan(tau_g(j))) {
+        //         std::cout<<"tau_g contains NaN"<<"\n";
+        //         // nan_tau_g_true = true;
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
+        // }
         // std::cout<<"tau_g: " << endl << tau_g.transpose()<<"\n";
         // DRAKE_DEMAND(nan_tau_g_true == false);
 
@@ -274,20 +272,16 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         plant_->CalcBiasTerm(*context, &Cv);
         
         // bool nan_Cv_true = false;
-        for (int j = 0; j < Cv.rows(); j++) {
-            if (isnan(Cv(j))) {
-                std::cout<<"Cv contains NaN"<<"\n";
-                // nan_Cv_true = true;
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+        // for (int j = 0; j < Cv.rows(); j++) {
+        //     if (isnan(Cv(j))) {
+        //         std::cout<<"Cv contains NaN"<<"\n";
+        //         // nan_Cv_true = true;
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
+        // }
         // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
         // DRAKE_DEMAND(nan_Cv_true == false);
-        
-        // M_iiwa = M_.block<7, 7>(6, 6);
-        // Cv_iiwa = Cv.middleRows<7>(6);
-        // tau_g_iiwa = tau_g.middleRows<7>(6);
 
         // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
         const int num_cps = 2;
@@ -297,13 +291,9 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         MatrixXd Jac(3*num_cps, 15);
         MatrixXd Jac_left(3, 15);
         MatrixXd Jac_right(3, 15);
-        // MatrixXd Jac_down_left(3, 15);
-        // MatrixXd Jac_down_right(3, 15);
 
         Vector3d Acc_Bias_left;
         Vector3d Acc_Bias_right;
-        // Vector3d Acc_Bias_down_left;
-        // Vector3d Acc_Bias_down_right;
         
         contact_point_left << 0, 0, 0; 
         contact_point_right << 0, 0, 0; 
@@ -329,20 +319,10 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
             Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-            // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_left); // the second last argument seems doesn't matter?
-            // Acc_Bias_down_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
-
-            // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_right); // the second last argument seems doesn't matter?
-            // Acc_Bias_down_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-            // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
         }
         Jac.block<3, 15>(0, 0) = Jac_left;
         Jac.block<3, 15>(3, 0) = Jac_right;
-        // Jac.block<3, 15>(6, 0) = Jac_down_left;
-        // Jac.block<3, 15>(9, 0) = Jac_down_right;
+
 
         MatrixXd M_Inv = M_.llt().solve(Matrix<double,15,15>::Identity()); 
         MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 0 * Matrix<double,3*num_cps,3*num_cps>::Identity();
@@ -365,25 +345,19 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         Acc_Bias.middleRows<3>(0) = -Acc_Bias_left - 500*Jac_left*qd_full;
         Acc_Bias.middleRows<3>(3) = -Acc_Bias_right - 500*Jac_right*qd_full;
-        // Acc_Bias.middleRows<3>(6) = -Acc_Bias_down_left - 500*Jac_down_left*qd_full;
-        // Acc_Bias.middleRows<3>(9) = -Acc_Bias_down_right - 500*Jac_down_right*qd_full;
         // bool nan_BiasMJ_true = false;
-        for (int j = 0; j < Bias_MJ.rows(); j++) {
-            if (isnan(Bias_MJ(j))) {
-                std::cout<<"Bias_MJ contains NaN"<<"\n";
-                // nan_BiasMJ_true = true;
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+        // for (int j = 0; j < Bias_MJ.rows(); j++) {
+        //     if (isnan(Bias_MJ(j))) {
+        //         std::cout<<"Bias_MJ contains NaN"<<"\n";
+        //         // nan_BiasMJ_true = true;
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
+        // }
         // std::cout<<"Bias_MJ: " << endl << Bias_MJ.transpose()<<"\n";
         // DRAKE_DEMAND(nan_BiasMJ_true == false);
 
         //=============================================
-        // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
-
-        // MatrixXd M_JInv = M_J.inverse();
-        // VectorXd Acc_total = M_JInv*Bias_MJ;
         VectorXd force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
         VectorXd Acc_total = M_Inv * (Bias_MJ + Jac.transpose() * force);
         VectorXd ang_dd_obj = Acc_total.topRows(3);
@@ -398,13 +372,13 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
         
         // bool nan_Xdot_true = false;
-        for (int j = 0; j < Xdot_new.rows(); j++) {
-            if (isnan(Xdot_new(j))) {
-                std::cout<<"New Xdot contains NaN"<<"\n";
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+        // for (int j = 0; j < Xdot_new.rows(); j++) {
+        //     if (isnan(Xdot_new(j))) {
+        //         std::cout<<"New Xdot contains NaN"<<"\n";
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
+        // }
         // std::cout<<"Xdot: " << endl << Xdot_new<<"\n";
         // DRAKE_DEMAND(nan_Xdot_true == false);
         
@@ -469,45 +443,34 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         // Compute Mass matrix, Bias and gravititional terms
         MatrixXd M_(15, 15);
-        // MatrixXd M_iiwa(7, 7);
         VectorXd Cv(15);
-        // VectorXd Cv_iiwa(7);
         VectorXd tau_g_iiwa;
         VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
 
         plant_->CalcMassMatrix(*context, &M_);
         plant_->CalcBiasTerm(*context, &Cv);
         bool nan_Cv_true = false;
-        for (int j = 0; j < Cv.rows(); j++) {
-            if (isnan(Cv(j))) {
-                std::cout<<"Cv contains NaN"<<"\n";
-                nan_Cv_true = true;
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+        // for (int j = 0; j < Cv.rows(); j++) {
+        //     if (isnan(Cv(j))) {
+        //         std::cout<<"Cv contains NaN"<<"\n";
+        //         nan_Cv_true = true;
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
+        // }
         // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
         DRAKE_DEMAND(nan_Cv_true == false);
-        // M_iiwa = M_.block<7, 7>(6, 6);
-        // Cv_iiwa = Cv.middleRows<7>(6);
-        // tau_g_iiwa = tau_g.middleRows<7>(6);
 
         // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
         const int num_cps = 2;
         Vector3d contact_point_left;
         Vector3d contact_point_right;
-        // Vector3d contact_point_left2;
-        // Vector3d contact_point_right2;
         MatrixXd Jac(3*num_cps, 15);
         MatrixXd Jac_left(3, 15);
         MatrixXd Jac_right(3, 15);
-        // MatrixXd Jac_down_left(3, 15);
-        // MatrixXd Jac_down_right(3, 15);
 
         Vector3d Acc_Bias_left;
         Vector3d Acc_Bias_right;
-        // Vector3d Acc_Bias_down_left;
-        // Vector3d Acc_Bias_down_right;
         
         contact_point_left << 0, 0, 0; 
         contact_point_right << 0, 0, 0; 
@@ -521,27 +484,14 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact2", wsg_model), contact_point_right
         ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-        // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_left); // the second last argument seems doesn't matter?
-        // Acc_Bias_down_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
-
-        // plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_down_right); // the second last argument seems doesn't matter?
-        // Acc_Bias_down_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        // ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
-
         Jac.block<3, 15>(0, 0) = Jac_left;
         Jac.block<3, 15>(3, 0) = Jac_right;
-        // Jac.block<3, 15>(6, 0) = Jac_down_left;
-        // Jac.block<3, 15>(9, 0) = Jac_down_right;
 
         MatrixXd M_J;
         M_J.setZero(15+3*num_cps, 15+3*num_cps);
         M_J.block<15, 15>(0, 0) = M_;
         M_J.block<15, 3*num_cps>(0, 15) = Jac.transpose();
         M_J.block<3*num_cps, 15>(15, 0) = Jac;
-        // M_J += 1e-2 * Matrix<double,15+3*num_cps,15+3*num_cps>::Identity();
         
         VectorXd Bias_MJ(15+3*num_cps);
         Bias_MJ.setZero();
@@ -550,11 +500,8 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         Bias_MJ.middleRows<7>(6) += tau;
         Bias_MJ.middleRows<3>(15) = -Acc_Bias_left - 500*Jac_left*qd_full;
         Bias_MJ.middleRows<3>(18) = -Acc_Bias_right - 500*Jac_right*qd_full;
-        // Bias_MJ.middleRows<3>(21) = -Acc_Bias_down_left - 500*Jac_down_left*qd_full;
-        // Bias_MJ.middleRows<3>(24) = -Acc_Bias_down_right - 500*Jac_down_right*qd_full;
 
         //=============================================
-        // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
         MatrixXd M_JInv = M_J.inverse();
         VectorXd Acc_total = M_JInv*Bias_MJ;
         VectorXd ang_dd_obj = Acc_total.topRows(3);

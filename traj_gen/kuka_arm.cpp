@@ -252,49 +252,38 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_(plant_->num_velocities(), plant_->num_velocities());
         plant_->CalcMassMatrix(*context, &M_);
 
-        for (int i=0; i < M_.rows(); i++) {
-            for (int j = 0; j < M_.cols(); j++) {
-                if (isnan(M_(i, j))) {
-                    if (globalcnt < 5) {
-                        std::cout<<"Mass Matrix contains NaN"<<"\n";
-                        std::cout<<M_<<"\n";
-                        // while (std::getc(stdin)==EOF) {}
-                    }
+        // for (int i=0; i < M_.rows(); i++) {
+        //     for (int j = 0; j < M_.cols(); j++) {
+        //         if (isnan(M_(i, j))) {
+        //             if (globalcnt < 5) {
+        //                 std::cout<<"Mass Matrix contains NaN"<<"\n";
+        //                 std::cout<<M_<<"\n";
+        //                 // while (std::getc(stdin)==EOF) {}
+        //             }
 
-                    break;
-                }
-            }
-        }
+        //             break;
+        //         }
+        //     }
+        // }
 
 
         VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
-        // tau_g.setZero();
         VectorXd Cv(plant_->num_velocities());
         Cv.setZero();
         plant_->CalcBiasTerm(*context, &Cv);
-
-        // if (globalcnt % 10 == 0) {
-        //     std::cout<<"tau_g "<<tau_g<<"\n";
-        //     std::cout<<"Cv "<<Cv<<"\n";
-        //     std::cout<<"q_full\n";
-        //     std::cout<<q_full<<"\n";
-        //     std::cout<<"qd_full"<<"\n";
-        //     std::cout<<qd_full<<"\n";
-        //     std::cout<<"M-1"<<M_.inverse()<<"\n";
-        // }
 
         //=============================================
         // Cholesky decomposition (not much speedup)
         MatrixXd M_Inv = M_.llt().solve(Matrix<double,9,9>::Identity()); 
         vd = (M_Inv*(tau + tau_g - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
-        for (int j = 0; j < Xdot_new.rows(); j++) {
-            if (isnan(Xdot_new(j))) {
-                std::cout<<"New Xdot contains NaN"<<"\n";
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
+        // for (int j = 0; j < Xdot_new.rows(); j++) {
+        //     if (isnan(Xdot_new(j))) {
+        //         std::cout<<"New Xdot contains NaN"<<"\n";
+        //         // std::cout<<Xdot_new.transpose()<<"\n";
+        //         break;
+        //     }
+        // }
         
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
