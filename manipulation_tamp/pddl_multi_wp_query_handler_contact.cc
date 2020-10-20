@@ -375,8 +375,8 @@ lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
     VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
     // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
     
-    ADMM_KKTRunner runner;
-    return runner.RunADMM_KKT(qv_init, qv_goal, time_horizon, time_step, action_name);
+    ADMMRunner runner;
+    return runner.RunADMM(qv_init, qv_goal, time_horizon, time_step, action_name);
 }
 
 lcmt_manipulator_traj GetADMMContactRes(VectorXd q_init, VectorXd q_goal,
@@ -396,8 +396,8 @@ lcmt_manipulator_traj GetADMMContactRes(VectorXd q_init, VectorXd q_goal,
     VectorXd::Map(&qv_goal[q_obj_goal.size()], q_goal.size()) = q_goal;
     std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
     
-    ADMMRunner runner;
-    return runner.RunADMM(qv_init, qv_goal, time_horizon, time_step, action_name);
+    ADMM_KKTRunner runner;
+    return runner.RunADMM_KKT(qv_init, qv_goal, time_horizon, time_step, action_name);
 }
 
 void AppendTrajectory(lcmt_manipulator_traj &dest, lcmt_manipulator_traj &src) {

@@ -31,3 +31,4 @@
 *.pyc
 *.soln
 *sas_plan
+/manipulation_tamp/results/
