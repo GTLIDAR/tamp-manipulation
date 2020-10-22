@@ -17,7 +17,7 @@ from search_tree.multi_wp_motion_plan_runner import MultiWPConveyorBeltManipMoti
 
 from pyperplan.planner import _parse, _ground
 
-TRAJ_OPTION = "ddp"
+TRAJ_OPTION = "refine"
 
 def main():
     # domain_file = drake_path + "/manipulation_tamp/pddl/conveyor_belt/domain_4obj.pddl"

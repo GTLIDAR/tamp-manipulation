@@ -121,3 +121,19 @@ python3 json_traj_runner.py
 
 ./bazel-bin/manipulation_tamp/conveyor_belt_simulation
 ```
+
+## Project and Related Publications
+This work is a part of our ongoing work on task and motion planning for manipulation in dynamic and cluttered environments.
+
+This repo contains the code used for implementation in our work [SyDeBO: Symbolic-Decision-Embedded Bilevel Optimization for Long-Horizon Manipulation in Dynamic Environments](https://arxiv.org/abs/2010.11078)
+
+```
+@misc{zhao2020sydebo,
+      title={SyDeBO: Symbolic-Decision-Embedded Bilevel Optimization for Long-Horizon Manipulation in Dynamic Environments}, 
+      author={Zhigen Zhao and Ziyi Zhou and Michael Park and Ye Zhao},
+      year={2020},
+      eprint={2010.11078},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
+}
+```
