@@ -12,8 +12,8 @@ from utils.traj_utils import dict_to_lcmt_multi_wp_manip_query, lcmt_manipulator
 file_path = os.path.dirname(os.path.abspath(__file__))
 drake_path = file_path+"/../.."
 
-JSON_QUERY_FILENAME = drake_path + "/manipulation_tamp/results/admm_queries20201015T172032.json"
-JSON_DDP_TRAJ_FILENAME = drake_path + "/manipulation_tamp/results/traj20201015T172030.json"
+JSON_QUERY_FILENAME = drake_path + "/manipulation_tamp/results/admm_queries20201015T210030.json"
+JSON_DDP_TRAJ_FILENAME = drake_path + "/manipulation_tamp/results/traj20201015T210029.json"
 
 MIN_TIME_STEP = 0.002
 MAX_TIME_STEP = 0.005
