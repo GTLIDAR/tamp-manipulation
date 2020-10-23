@@ -12,7 +12,7 @@ file_path = os.path.dirname(os.path.abspath(__file__))
 drake_path = file_path+"/.."
 result_path = drake_path+"/manipulation_tamp/results/"
 
-JSON_FILENAME = "traj20201015T210029.json"
+JSON_FILENAME = "admm_traj20201023T000819.json"
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 

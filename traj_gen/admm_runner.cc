@@ -16,6 +16,10 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     unsigned int iterMax = 15;
     unsigned int ADMMiterMax = 5;
 
+    if (time_horizon <= 1.5) {
+      ADMMiterMax = 20;
+    }
+
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
     //   ADMMiterMax = 5;
