@@ -1,14 +1,15 @@
 ## Manipulation Task and Motion Planning
 This repository contains code for manipulation task and motion planning using PDDL and DDP/ADMM.
 
-## Drake
+The code is based on Drake (Please see the [Drake Documentation](https://drake.mit.edu) for moreinformation). Here we include the source code of Drake and our own addition for manipulation task and motion planning in the [manipulation_tamp](https://github.com/GTLIDAR/tamp-manipulation/tree/manipulation-tamp-RAL/manipulation_tamp) and [traj_gen](https://github.com/GTLIDAR/tamp-manipulation/tree/manipulation-tamp-RAL/traj_gen) folder.
 
-The code is based on Drake (Please see the [Drake Documentation](https://drake.mit.edu) for more
-information). Here we include the source code of Drake and our own addition for manipulation task and motion planning in the manipulation_tamp and traj_gen folder.
+The [manipulation_tamp](https://github.com/GTLIDAR/tamp-manipulation/tree/manipulation-tamp-RAL/manipulation_tamp) directory contains implementations of the [high level searching algorithm](https://github.com/GTLIDAR/tamp-manipulation/tree/manipulation-tamp-RAL/manipulation_tamp/planner) as well as the symbolic planning domain definitions in [PDDL](https://github.com/GTLIDAR/tamp-manipulation/tree/manipulation-tamp-RAL/manipulation_tamp/pddl). The planner uses [Pyperplan](https://github.com/aibasel/pyperplan) as a submodule to parse PDDL into Python. The resulting trajectories and action sequences are stored in Json format under manipulation_tamp/results folder. The simulation of object sorting in clutter and conveyor belt sorting scenarios are implemented here using Drake.
 
-The code is run on Ubuntu 18.04 and 20.04 and Python 3.6 or newer.
+The [traj_gen](https://github.com/GTLIDAR/tamp-manipulation/tree/manipulation-tamp-RAL/traj_gen) directory contains the code for trajectory optimization using DDP/ADMM. A version of DDP/ADMM considering object dynamics is implemented under [ilqr_kkt](https://github.com/GTLIDAR/tamp-manipulation/tree/manipulation-tamp-RAL/traj_gen/ilqr_kkt) directory.
 
 ## Setup
+The code is tested on Ubuntu 18.04 and 20.04 and Python 3.6 or newer.
+
 drake setup
 ```
 git clone https://github.com/GTLIDAR/tamp-manipulation.git
