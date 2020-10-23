@@ -19,7 +19,7 @@ sudo ./setup/ubuntu/install_prereqs.sh
 
 pydrake installation
 ```
-cd /path/to/drake
+cd /path/to/tamp_manipulation
 mkdir -p build/install
 bazel run //:install -- ~+/build/install
 ```
@@ -27,12 +27,12 @@ bazel run //:install -- ~+/build/install
 add pydrake to PYTHONPATH<br />
 Ubuntu 20.04
 ```
-echo "export PYTHONPATH=/path/to/drake/build/install/lib/python3.8/site-packages:${PYTHONPATH}" >> ~/.bashrc
+echo "export PYTHONPATH=/path/to/tamp_manipulation/build/install/lib/python3.8/site-packages:${PYTHONPATH}" >> ~/.bashrc
 source ~/.bashrc
 ```
 Ubuntu 18.04
 ```
-echo "export PYTHONPATH=/path/to/drake/build/install/lib/python3.6/site-packages:${PYTHONPATH}" >> ~/.bashrc
+echo "export PYTHONPATH=/path/to/tamp_manipulation/build/install/lib/python3.6/site-packages:${PYTHONPATH}" >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -41,7 +41,7 @@ source ~/.bashrc
 sudo apt install python3 python3-pip
 python3 -m pip install numpy scipy matplotlib networkx
 git submodule update --init --recursive
-cd /path/to/drake/manipulation_tamp/planner/pyperplan
+cd /path/to/tamp_manipulation/manipulation_tamp/planner/pyperplan
 sudo python3 setup.py install
 ```
 
@@ -49,7 +49,7 @@ sudo python3 setup.py install
 ## build this project
 Ubuntu 18.04
 ```
-cd /path/to/drake
+cd /path/to/tamp_manipulation
 bazel build //tools:drake_visualizer
 bazel build //manipulation_tamp/...
 ```
@@ -57,26 +57,26 @@ bazel build //manipulation_tamp/...
 Ubuntu 20.04
 ```
 sudo apt install clang
-cd /path/to/drake
+cd /path/to/tamp_manipulation
 CC=clang CXX=clang++ bazel build //tools:drake_visualizer
 CC=clang CXX=clang++ bazel build //manipulation_tamp/...
 ```
 
 ## run static object sorting planner
 ```
-cd /path/to/drake
+cd /path/to/tamp_manipulation
 ./bazel-bin/manipulation_tamp/pddl_multi_wp_query_handler_contact
 
-cd /path/to/drake/manipulation_tamp/planner
+cd /path/to/tamp_manipulation/manipulation_tamp/planner
 python3 object_sorting_plan.py
 ```
 
 ## run static object sorting planner
 ```
-cd /path/to/drake
+cd /path/to/tamp_manipulation
 ./bazel-bin/manipulation_tamp/pddl_multi_wp_query_handler_contact
 
-cd /path/to/drake/manipulation_tamp/planner
+cd /path/to/tamp_manipulation/manipulation_tamp/planner
 python3 object_sorting_planner.py
 ```
 
@@ -91,7 +91,7 @@ run in this order
 
 ./bazel-bin/manipulation_tamp/kuka_planner_runner
 
-cd /path/to/drake/manipulation_tamp
+cd /path/to/tamp_manipulation/manipulation_tamp
 python3 json_traj_runner.py
 
 ./bazel-bin/manipulation_tamp/object_sorting_simulation
@@ -99,10 +99,10 @@ python3 json_traj_runner.py
 
 ## run static conveyor belt planner
 ```
-cd /path/to/drake
+cd /path/to/tamp_manipulation
 ./bazel-bin/manipulation_tamp/pddl_multi_wp_query_handler_contact
 
-cd /path/to/drake/manipulation_tamp/planner
+cd /path/to/tamp_manipulation/manipulation_tamp/planner
 python3 conveyor_belt_planner.py
 ```
 
@@ -117,7 +117,7 @@ run in this order
 
 ./bazel-bin/manipulation_tamp/kuka_planner_runner
 
-cd /path/to/drake/manipulation_tamp
+cd /path/to/tamp_manipulation/manipulation_tamp
 python3 json_traj_runner.py
 
 ./bazel-bin/manipulation_tamp/conveyor_belt_simulation
