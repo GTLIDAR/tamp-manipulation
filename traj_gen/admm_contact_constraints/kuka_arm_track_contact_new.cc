@@ -1,31 +1,14 @@
-#include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
+#include "drake/traj_gen/admm_contact_constraints/kuka_arm_track_contact_new.h"
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-KukaArm_Contact::KukaArm_Contact(){}
-
-//const char* const kIiwaUrdf =
-//    "drake/manipulation/models/iiwa_description/urdf/"
-//    "iiwa14_no_collision.urdf";
+KukaArm_TRK_Contact::KukaArm_TRK_Contact(){}
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-
-// const char* const kIiwaUrdf =
-//     "drake/manipulation/models/iiwa_description/urdf/"
-//     "iiwa7.urdf";
-
-// Add Schunk and Kuka_connector
-// const char* const kIiwaUrdf = "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-// const char* schunkPath = "drake/manipulation/models/wsg_50_description/urdf/wsg_50_mesh_collision_no_world_joint.urdf";
-// const char* connectorPath = "drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf";
-
-// iiwa_dt = time step
-// iiwa_N = number of knots
-// iiwa_xgoal = final goal in state space (7pos, 7vel)
-KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, string action_name)
+KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, string action_name)
 {
     action_name_ = action_name;
     //#####
@@ -124,12 +107,10 @@ KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstat
         const auto& iiwa_base_frame = plant_->GetFrameByName("iiwa_link_0", iiwa_model);
         RigidTransformd X_WI(Eigen::Vector3d(0, 0, 0));
         plant_->WeldFrames(plant_->world_frame(), iiwa_base_frame, X_WI);
-
     }
 }
 
-KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal,
-    MultibodyPlant<double>* plant, string action_name)
+KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, MultibodyPlant<double>* plant, string action_name)
 {
     action_name_ = action_name;
     //#####
@@ -207,18 +188,11 @@ KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstat
     initial_phase_flag_ = 1;
     q.resize(stateSize/2);
     qd.resize(stateSize/2);
-    // q_thread.resize(NUMBER_OF_THREAD);
-    // qd_thread.resize(NUMBER_OF_THREAD);
-    // for(unsigned int i=0;i<NUMBER_OF_THREAD;i++){
-    //     q_thread[i].resize(stateSize/2);
-    //     qd_thread[i].resize(stateSize/2);
-    // }
 
     finalTimeProfile.time_period1 = 0;
     finalTimeProfile.time_period2 = 0;
     finalTimeProfile.time_period3 = 0;
     finalTimeProfile.time_period4 = 0;
-
 
     if(initial_phase_flag_ == 1){
         plant_ = plant;
@@ -227,7 +201,7 @@ KukaArm_Contact::KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstat
     }
 }
 
-fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau)
+fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau)
 {
 
     finalTimeProfile.counter0_ += 1;
@@ -248,7 +222,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
         VectorXd pos_d_obj = X.middleRows<3>(10);
 
         VectorXd q_iiwa = X.middleRows<7>(13);
-        VectorXd qd_iiwa = X.bottomRows(7);
+        VectorXd qd_iiwa = X.middleRows<7>(20);
 
         Eigen::Matrix<double,9,1> q_iiwa_full;
         Eigen::Matrix<double,9,1> qd_iiwa_full;
@@ -435,7 +409,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
 
         // angular velocity cannot be directly integrated because orientation is not commutive
         VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
-        Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
+        Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa, force;
         
         // bool nan_Xdot_true = false;
         for (int j = 0; j < Xdot_new.rows(); j++) {
@@ -460,261 +434,19 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
 
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        else{
-         // object: 7+6; kuka: 7+7 (the joints for wsg cannot be optimized)
-        VectorXd q_obj = X.topRows(7);
-        Vector4d qua_obj = X.topRows(4); // w, x, y, z
-        VectorXd pos_obj = X.middleRows<3>(4);
-
-        VectorXd qd_obj = X.middleRows<6>(7);
-        Vector3<double> ang_d_obj = X.middleRows<3>(7);
-        VectorXd pos_d_obj = X.middleRows<3>(10);
-
-        VectorXd q_iiwa = X.middleRows<7>(13);
-        VectorXd qd_iiwa = X.bottomRows(7);
-
-        Eigen::Matrix<double,9,1> q_iiwa_full;
-        Eigen::Matrix<double,9,1> qd_iiwa_full;
-        VectorXd qd_full(15);
-        q_iiwa_full.setZero();
-        qd_iiwa_full.setZero();
-        q_iiwa_full.topRows(7)=q_iiwa;
-        q_iiwa_full.bottomRows(2) << -0.025, 0.025;
-        qd_iiwa_full.topRows(7)=qd_iiwa;
-        qd_full.topRows(6) = qd_obj;
-        qd_full.bottomRows(9) = qd_iiwa_full;
-
-        Quaternion<double> qua_obj_eigen(qua_obj(0), qua_obj(1), qua_obj(2), qua_obj(3));
-
-        math::RigidTransform<double> X_WO(qua_obj_eigen, pos_obj);
-
-        auto context_ptr = plant_->CreateDefaultContext();
-        auto context = context_ptr.get();
-        auto object_model = plant_->GetModelInstanceByName("object");
-        auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
-        auto wsg_model = plant_->GetModelInstanceByName("wsg");
-
-        plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link", object_model), X_WO);
-        plant_->SetPositions(context, iiwa_model, q_iiwa);
-        plant_->SetVelocities(context, iiwa_model, qd_iiwa);
-        plant_->SetPositions(context, wsg_model, q_iiwa_full.bottomRows(2));
-        plant_->SetVelocities(context, wsg_model, qd_iiwa_full.bottomRows(2));
-
-        // Compute Mass matrix, Bias and gravititional terms
-        MatrixXd M_(15, 15);
-        // MatrixXd M_iiwa(7, 7);
-        VectorXd Cv(15);
-        // VectorXd Cv_iiwa(7);
-        VectorXd tau_g_iiwa;
-        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
-
-        plant_->CalcMassMatrix(*context, &M_);
-        plant_->CalcBiasTerm(*context, &Cv);
-        bool nan_Cv_true = false;
-        for (int j = 0; j < Cv.rows(); j++) {
-            if (isnan(Cv(j))) {
-                std::cout<<"Cv contains NaN"<<"\n";
-                nan_Cv_true = true;
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                break;
-            }
-        }
-        // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
-        DRAKE_DEMAND(nan_Cv_true == false);
-
-        // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
-        const int num_cps = 2;
-        Vector3d contact_point_left;
-        Vector3d contact_point_right;
-        MatrixXd Jac(3*num_cps, 15);
-        MatrixXd Jac_left(3, 15);
-        MatrixXd Jac_right(3, 15);
-
-        Vector3d Acc_Bias_left;
-        Vector3d Acc_Bias_right;
-        
-        contact_point_left << 0, 0, 0; 
-        contact_point_right << 0, 0, 0; 
-        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact2", wsg_model), contact_point_left
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
-        Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact2", wsg_model), contact_point_left
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
-
-        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact2", wsg_model), contact_point_right
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
-        Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact2", wsg_model), contact_point_right
-        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
-
-        Jac.block<3, 15>(0, 0) = Jac_left;
-        Jac.block<3, 15>(3, 0) = Jac_right;
-
-        MatrixXd M_J;
-        M_J.setZero(15+3*num_cps, 15+3*num_cps);
-        M_J.block<15, 15>(0, 0) = M_;
-        M_J.block<15, 3*num_cps>(0, 15) = Jac.transpose();
-        M_J.block<3*num_cps, 15>(15, 0) = Jac;
-        // M_J += 1e-2 * Matrix<double,15+3*num_cps,15+3*num_cps>::Identity();
-        
-        VectorXd Bias_MJ(15+3*num_cps);
-        Bias_MJ.setZero();
-        Bias_MJ.topRows(15) = - Cv;
-        Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
-        Bias_MJ.middleRows<7>(6) += tau;
-        Bias_MJ.middleRows<3>(15) = -Acc_Bias_left - 500*Jac_left*qd_full;
-        Bias_MJ.middleRows<3>(18) = -Acc_Bias_right - 500*Jac_right*qd_full;
-
-        //=============================================
-        MatrixXd M_JInv = M_J.inverse();
-        VectorXd Acc_total = M_JInv*Bias_MJ;
-        VectorXd ang_dd_obj = Acc_total.topRows(3);
-        VectorXd pos_dd_obj = Acc_total.middleRows<3>(3);
-        VectorXd qdd_iiwa = Acc_total.middleRows<7>(6);
-
-        bool nan_MJInv_true = false;
-        for(int i = 0; i < M_JInv.rows(); i++){
-            for (int j = 0; j < M_JInv.cols(); j++) {
-                if (isnan(M_JInv(i,j))) {
-                    std::cout<<"M_J's inverse contains NaN"<<"\n";
-                    // std::cout<<transpose()<<"\n";
-                    nan_MJInv_true = true;
-                    break;
-                }
-
-            }
-            if(nan_MJInv_true){break;}
-        }
-        DRAKE_DEMAND(nan_MJInv_true == false);
-
-        // angular velocity cannot be directly integrated because orientation is not commutive
-        VectorXd qua_d_obj = CalculateQuaternionDtFromAngularVelocityExpressedInB(qua_obj_eigen, ang_d_obj);
-        Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
-        
-        bool nan_Xdot_true = false;
-        for (int j = 0; j < Xdot_new.rows(); j++) {
-            if (isnan(Xdot_new(j))) {
-                std::cout<<"New Xdot contains NaN"<<"\n";
-                // std::cout<<Xdot_new.transpose()<<"\n";
-                nan_Xdot_true = true;
-                break;
-            }
-        }
-        // std::cout<<"Xdot: " << endl << Xdot_new<<"\n";
-        DRAKE_DEMAND(nan_Xdot_true == false);
-
-        if(finalTimeProfile.counter0_ == 10){
-            gettimeofday(&tend_period,NULL);
-            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)
-            +((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
-        }
-
-        if (globalcnt < 40)
-            globalcnt += 1;
-
-        }
-    }
-    // SHOULD ALWAYS HAVE OBJECT DYNAMICS! THIS IS JUST FOR TESTING THE STATIC CONTACT POINT
-    else{
-        q << X.head(stateSize/2);
-        qd << X.tail(stateSize/2);
-
-        Eigen::Matrix<double,stateSize/2+2,1> q_full;
-        Eigen::Matrix<double,stateSize/2+2,1> qd_full;
-        q_full.setZero();
-        qd_full.setZero();
-        q_full.topRows(stateSize/2)=q;
-        qd_full.topRows(stateSize/2)=qd;
-
-        auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
-
-        auto xyz = Eigen::Vector3d(1, 1, 1);
-
-        math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
-
-        auto context_ptr = plant_->CreateDefaultContext();
-        auto context = context_ptr.get();
-        auto object_model = plant_->GetModelInstanceByName("object");
-        auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
-        // auto wsg_model = plant_->GetModelInstanceByName("wsg");
-
-        plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link_cracker", object_model), X_WO);
-        plant_->SetPositions(context, iiwa_model, q);
-        plant_->SetVelocities(context, iiwa_model, qd);
-
-        // Compute Mass matrix, Bias and gravititional terms
-        MatrixXd M_(15, 15);
-        MatrixXd M_iiwa(7, 7);
-        VectorXd Cv(15);
-        VectorXd Cv_iiwa(7);
-        VectorXd tau_g_iiwa;
-        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
-
-        plant_->CalcMassMatrix(*context, &M_);
-        plant_->CalcBiasTerm(*context, &Cv);
-        M_iiwa = M_.block<7, 7>(6, 6);
-        Cv_iiwa = Cv.middleRows<7>(6);
-        tau_g_iiwa = tau_g.middleRows<7>(6);
-
-        // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
-        Vector3d contact_point;
-        MatrixXd Jac(3, 15);
-        MatrixXd Jac_iiwa(3, 7);
-        Vector3d Acc_Bias;
-
-        contact_point << 0, 0, 0; 
-        plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
-        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame(), &Jac);
-        Acc_Bias = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("iiwa_frame_ee", iiwa_model), contact_point
-        ,plant_->GetFrameByName("base_link_cracker", object_model), plant_->world_frame());
-        Jac_iiwa = Jac.middleCols(6, 7);
-
-        MatrixXd M_J;
-        M_J.setZero(10, 10);
-        M_J.block<7, 7>(0, 0) = M_iiwa;
-        M_J.block<7, 3>(0, 7) = Jac_iiwa.transpose();
-        M_J.block<3, 7>(7, 0) = Jac_iiwa;
-        
-        VectorXd Bias_MJ(10);
-        Bias_MJ.setZero();
-        Bias_MJ.topRows(7) = tau + tau_g_iiwa - Cv_iiwa;
-        Bias_MJ.bottomRows(3) = -Acc_Bias;
-        
-        cout << "Cv_iiwa: " << Cv_iiwa.transpose() << endl;
-        cout << "tau_g_iiwa: " << tau_g_iiwa.transpose() << endl;
-        cout << "tau: " << tau.transpose() << endl;
-        // VectorXd bias_term_ = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp        
-        //=============================================
-        // vd = M_iiwa.inverse()*(tau - Cv_iiwa + Jac_iiwa.transpose() * f_ext);
-        VectorXd Acc_total = M_J.inverse()*Bias_MJ;
-        vd = Acc_total.topRows(7);
-
-        Xdot_new << qd, vd;
-
-        if(finalTimeProfile.counter0_ == 10){
-            gettimeofday(&tend_period,NULL);
-            finalTimeProfile.time_period1 += (static_cast<double>(1000.0*(tend_period.tv_sec-tbegin_period.tv_sec)
-            +((tend_period.tv_usec-tbegin_period.tv_usec)/1000.0)))/1000.0;
-        }
-
-        if (globalcnt < 40)
-            globalcnt += 1;
-
-        // vdot is newly calculated using q, qdot, u
-        // (qdot, vdot) = f((q, qdot), u) ??? Makes sense??
     }
     return Xdot_new;
 }
 
-
-KukaArm_Contact::timeprofile KukaArm_Contact::getFinalTimeProfile()
+KukaArm_TRK_Contact::timeprofile KukaArm_TRK_Contact::getFinalTimeProfile()
 {
     return finalTimeProfile;
 }
 
-void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
-                                CostFunctionKukaArm_Contact*& costFunction){
+void KukaArm_TRK_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
+                                const fullstateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, CostFunctionKukaArm_TRK_Contact*& costFunction){
     // // for a positive-definite quadratic, no control cost (indicated by the iLQG function using nans), is equivalent to u=0
+    // for ADMM, add new penalties for augmented Lagrangian terms
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     unsigned int Nl = xList.size();
 
@@ -731,16 +463,23 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateV
         for(unsigned int k=0;k<Nl;k++){
             if(k == Nl-1){//isNanVec(uList[k])
                 if(debugging_print) TRACE_KUKA_ARM("before the update1\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose()) * costFunction->getQf() * (xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose()) * costFunction->getQf() * (xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);
+                // cout << "CMAT SCALAR 1: " << c_mat_to_scalar << endl;
                 costFunction->getc() += c_mat_to_scalar(0,0);
                 if(debugging_print) TRACE_KUKA_ARM("after the update1\n");
             }else{
                 // if u is not NaN (not final), add state and control cost
                 if(debugging_print) TRACE_KUKA_ARM("before the update2\n");
                 FList[k] = update(nargout_update1, xList[k], uList[k], AA, BB);
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);
+
+                // cout << "CMAT SCALAR 2: " << c_mat_to_scalar << endl;
+
                 if(debugging_print) TRACE_KUKA_ARM("after the update2\n");
-                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k];
+                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k] +
+                0.5*(uList[k].transpose() - uList_bar[k].transpose()) * costFunction->getRho_torque()* (uList[k] - uList_bar[k]);
                 costFunction->getc() += c_mat_to_scalar(0,0);
             }
         }
@@ -750,27 +489,32 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateV
         for(unsigned int k=0;k<Nl;k++) {
             if(k == Nl-1) {//isNanVec(uList[k])
                 // if(debugging_print) TRACE_KUKA_ARM("before the update3\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQf()*(xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQf()*(xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);
                 costFunction->getc() += c_mat_to_scalar(0,0);
+                // cout << "CMAT SCALAR 1: " << c_mat_to_scalar << endl;
                 // if(debugging_print) TRACE_KUKA_ARM("after the update3\n");
             }
             else {
                 // if(debugging_print) TRACE_KUKA_ARM("before the update4\n");
                 FList[k] = update(nargout_update2, xList[k], uList[k], AA, BB);//assume three outputs, code needs to be optimized
                 // if(debugging_print) TRACE_KUKA_ARM("before the update4-1\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal);
+                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal) +
+                0.5*(xList[k].transpose() - xList_bar[k].transpose()) * costFunction->getRho_state() * (xList[k] - xList_bar[k]);;
                 // if(debugging_print) TRACE_KUKA_ARM("after the update4\n");
 
-                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k];
+                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k] +
+                0.5*(uList[k].transpose() - uList_bar[k].transpose()) * costFunction->getRho_torque()* (uList[k] - uList_bar[k]);
                 costFunction->getc() += c_mat_to_scalar(0,0); // TODO: to be checked
                 // if(debugging_print) TRACE_KUKA_ARM("after the update5\n");
-
+                // cout << "CMAT SCALAR 2: " << c_mat_to_scalar << endl;
                 A_temp[k] = AA;
                 B_temp[k] = BB;
             }
         }
 
         fullstateVec_t cx_temp;
+        // cout << cx_temp << endl;
 
         if(debugging_print) TRACE_KUKA_ARM("compute dynamics and cost derivative\n");
 
@@ -779,21 +523,27 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateV
             fuList[k] = B_temp[k];
 
             // cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
+
             cx_temp << xList[k] - xgoal;
 
-            costFunction->getcx()[k] = costFunction->getQ()*cx_temp;
-            costFunction->getcu()[k] = costFunction->getR()*uList[k];
-            costFunction->getcxx()[k] = costFunction->getQ();
+            // if (k==0)
+            //     cout << cx_temp << endl;
+
+            costFunction->getcx()[k] = costFunction->getQ()*cx_temp + costFunction->getRho_state()*(xList[k]-xList_bar[k]);
+
+            costFunction->getcu()[k] = costFunction->getR()*uList[k] + costFunction->getRho_torque()*(uList[k]-uList_bar[k]);
+            costFunction->getcxx()[k] = costFunction->getQ() + costFunction->getRho_state();
             costFunction->getcux()[k].setZero();
-            costFunction->getcuu()[k] = costFunction->getR();
+            costFunction->getcuu()[k] = costFunction->getR() + costFunction->getRho_torque();
         }
         if(debugging_print) TRACE_KUKA_ARM("update the final value of cost derivative \n");
 
-        costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal);
-        costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1];
-        costFunction->getcxx()[Nl-1] = costFunction->getQf();
+        costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal) + costFunction->getRho_state()*(xList[Nl-1]-xList_bar[Nl-1]);
+        costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1] + costFunction->getRho_torque()*(uList[Nl-1]-uList_bar[Nl-1]);
+        costFunction->getcxx()[Nl-1] = costFunction->getQf() + costFunction->getRho_state();
         costFunction->getcux()[Nl-1].setZero();
-        costFunction->getcuu()[Nl-1] = costFunction->getR();
+        costFunction->getcuu()[Nl-1] = costFunction->getR() + costFunction->getRho_torque();
+
 
         if(debugging_print) TRACE_KUKA_ARM("set unused matrices to zero \n");
 
@@ -807,8 +557,8 @@ void KukaArm_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateV
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-void KukaArm_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const fullstateVec_t& xList_curr, const commandVec_t& uList_curr, 
-                                                    const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_Contact*& costFunction){
+void KukaArm_TRK_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const fullstateVec_t& xList_curr, const commandVec_t& uList_curr,
+        const fullstateVec_t& xList_cur_bar, const commandVec_t& uList_cur_bar, const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_TRK_Contact*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     if(debugging_print) std::cout<<"nargout: "<<nargout<<"\n";
     unsigned int Nc = xList_curr.cols(); //xList_curr is 14x1 vector -> col=1
@@ -829,23 +579,26 @@ void KukaArm_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const full
             // cout << "Q: " <<  costFunction->getQ() << endl;
             // cout << "QF: " <<  costFunction->getQf() << endl;
             // if(debugging_print) TRACE_KUKA_ARM("before the update1\n");
-            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose()) * costFunction->getQf() * (xList_curr - xgoal);
+            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose()) * costFunction->getQf() * (xList_curr - xgoal) +
+            0.5*(xList_curr.transpose() - xList_cur_bar.transpose())*costFunction->getRho_state()*(xList_curr - xList_cur_bar);
             costFunction->getc() += c_mat_to_scalar(0,0);
             // if(debugging_print) TRACE_KUKA_ARM("after the update1\n");
         }
         else {
             // if(debugging_print) TRACE_KUKA_ARM("before the update2\n");
             xList_next = update(nargout_update1, xList_curr, uList_curr, AA, BB);
-            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose())*costFunction->getQ()*(xList_curr - xgoal);
+            c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose())*costFunction->getQ()*(xList_curr - xgoal) +
+            0.5*(xList_curr.transpose() - xList_cur_bar.transpose())*costFunction->getRho_state()*(xList_curr - xList_cur_bar);
             // if(debugging_print) TRACE_KUKA_ARM("after the update2\n");
-            c_mat_to_scalar += 0.5*uList_curr.transpose()*costFunction->getR()*uList_curr;
+            c_mat_to_scalar += 0.5*uList_curr.transpose()*costFunction->getR()*uList_curr +
+            0.5*(uList_curr.transpose() - uList_cur_bar.transpose()) * costFunction->getRho_torque()* (uList_curr - uList_cur_bar);
             costFunction->getc() += c_mat_to_scalar(0,0);
         }
     }
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-fullstateVec_t KukaArm_Contact::update(const int& nargout, const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
+fullstateVec_t KukaArm_TRK_Contact::update(const int& nargout, const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
     // 4th-order Runge-Kutta step
     if(debugging_print) TRACE_KUKA_ARM("update: 4th-order Runge-Kutta step\n");
 
@@ -858,17 +611,18 @@ fullstateVec_t KukaArm_Contact::update(const int& nargout, const fullstateVec_t&
     Xdot4 = kuka_arm_dynamics(X + dt*Xdot3, U);
     fullstateVec_t X_new;
     X_new = X + (dt/6)*(Xdot1 + 2*Xdot2 + 2*Xdot3 + Xdot4);
-    // Simple Euler Integration (for debug)
-//    X_new = X + (dt)*Xdot1;
 
-    if ((globalcnt%4 == 0) && (globalcnt<40)) {
-        // cout << "X " << endl << X << endl;
-        // cout << "Xdot1 " << endl << Xdot1 << endl;
-        // cout << "Xdot2 " << endl << Xdot2 << endl;
-        // cout << "Xdot3 " << endl << Xdot3 << endl;
-        // cout << "Xdot4 " << endl << Xdot4 << endl;
-        // cout << "X_NEW: " << endl << X_new << endl;
-    }
+    // Simple Euler Integration (for debug)
+    // X_new = X + (dt)*Xdot1;
+
+    // if ((globalcnt%4 == 0) && (globalcnt<40)) {
+    //     cout << "X " << endl << X << endl;
+    //     cout << "Xdot1 " << endl << Xdot1 << endl;
+    //     cout << "Xdot2 " << endl << Xdot2 << endl;
+    //     cout << "Xdot3 " << endl << Xdot3 << endl;
+    //     cout << "Xdot4 " << endl << Xdot4 << endl;
+    //     cout << "X_NEW: " << endl << X_new << endl;
+    // }
 
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 
@@ -889,7 +643,7 @@ fullstateVec_t KukaArm_Contact::update(const int& nargout, const fullstateVec_t&
         Du.setIdentity();
         Du = delta*Du;
 
-        // State perturbation
+        // State perturbation?
         for(unsigned int i=0;i<n;i++){
             Xp1 = kuka_arm_dynamics(X+Dx.col(i),U);
             Xm1 = kuka_arm_dynamics(X-Dx.col(i),U);
@@ -908,7 +662,7 @@ fullstateVec_t KukaArm_Contact::update(const int& nargout, const fullstateVec_t&
             A4.col(i) = (Xp4 - Xm4)/(2*delta);
         }
 
-        // Control perturbation
+        // Control perturbation?
         for(unsigned int i=0;i<m;i++){
             Xp1 = kuka_arm_dynamics(X,U+Du.col(i));
             Xm1 = kuka_arm_dynamics(X,U-Du.col(i));
@@ -928,8 +682,7 @@ fullstateVec_t KukaArm_Contact::update(const int& nargout, const fullstateVec_t&
         }
 
         A = (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)*(IdentityMat + A2 * dt/3)*(IdentityMat + A1 * dt/6);
-        B = B4 * dt/6 + (IdentityMat + A4 * dt/6) * B3 * dt/3 + (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)* B2 * dt/3 
-            + (IdentityMat + (dt/6)*A4)*(IdentityMat + (dt/3)*A3)*(IdentityMat + (dt/3)*A2)*(dt/6)*B1;
+        B = B4 * dt/6 + (IdentityMat + A4 * dt/6) * B3 * dt/3 + (IdentityMat + A4 * dt/6)*(IdentityMat + A3 * dt/3)* B2 * dt/3 + (IdentityMat + (dt/6)*A4)*(IdentityMat + (dt/3)*A3)*(IdentityMat + (dt/3)*A2)*(dt/6)*B1;
     }
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 
@@ -939,7 +692,7 @@ fullstateVec_t KukaArm_Contact::update(const int& nargout, const fullstateVec_t&
     return X_new;
 }
 
-void KukaArm_Contact::grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
+void KukaArm_TRK_Contact::grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -969,7 +722,7 @@ void KukaArm_Contact::grad(const fullstateVec_t& X, const commandVec_t& U, fulls
 }
 
 // parameters are called by reference. Name doesn't matter
-void KukaArm_Contact::hessian(const fullstateVec_t& X, const commandVec_t& U, fullstateTens_t& fxx_p, fullstateR_fullstateC_commandD_t& fxu_p, fullstateR_commandC_commandD_t& fuu_p){
+void KukaArm_TRK_Contact::hessian(const fullstateVec_t& X, const commandVec_t& U, fullstateTens_t& fxx_p, fullstateR_fullstateC_commandD_t& fxu_p, fullstateR_commandC_commandD_t& fuu_p){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -1013,39 +766,39 @@ void KukaArm_Contact::hessian(const fullstateVec_t& X, const commandVec_t& U, fu
     }
 }
 
-unsigned int KukaArm_Contact::getStateNb()
+unsigned int KukaArm_TRK_Contact::getStateNb()
 {
     return stateNb;
 }
 
-unsigned int KukaArm_Contact::getCommandNb()
+unsigned int KukaArm_TRK_Contact::getCommandNb()
 {
     return commandNb;
 }
 
-commandVec_t& KukaArm_Contact::getLowerCommandBounds()
+commandVec_t& KukaArm_TRK_Contact::getLowerCommandBounds()
 {
     return lowerCommandBounds;
 }
 
-commandVec_t& KukaArm_Contact::getUpperCommandBounds()
+commandVec_t& KukaArm_TRK_Contact::getUpperCommandBounds()
 {
     return upperCommandBounds;
 }
 
-fullstateMatTab_t& KukaArm_Contact::getfxList()
+fullstateMatTab_t& KukaArm_TRK_Contact::getfxList()
 {
     return fxList;
 }
 
-fullstateR_commandC_tab_t& KukaArm_Contact::getfuList()
+fullstateR_commandC_tab_t& KukaArm_TRK_Contact::getfuList()
 {
     return fuList;
 }
 
 
-void KukaArm_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
-                                CostFunctionKukaArm_Contact*& costFunction){
+void KukaArm_TRK_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
+                                CostFunctionKukaArm_TRK_Contact*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     unsigned int Nl = xList.size();
 
@@ -1078,9 +831,7 @@ void KukaArm_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVe
         fullstateVec_t cx_temp;
         if(debugging_print) TRACE_KUKA_ARM("compute cost derivative\n");
         for(unsigned int k=0;k<Nl-1;k++){
-            // cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
-            cx_temp << xList[k] - xgoal;
-
+            cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
             costFunction->getcx()[k] = costFunction->getQ()*cx_temp;
             costFunction->getcu()[k] = costFunction->getR()*uList[k];
             costFunction->getcxx()[k] = costFunction->getQ();

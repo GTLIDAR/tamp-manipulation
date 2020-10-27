@@ -1,15 +1,12 @@
-// #pragma once
+#pragma once
 
-#ifndef KUKAARM_CONTACT_H
-#define KUKAARM_CONTACT_H
+#ifndef KUKAARM_TRACK_CONTACT_NEW_H
+#define KUKAARM_TRACK_CONTACT_NEW_H
 
 #include "drake/traj_gen/config.h"
-#include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
+#include "drake/traj_gen/admm_contact_constraints/cost_function_contact_track_new.h"
 
 #include "drake/common/find_resource.h"
-#include "drake/common/drake_assert.h"
-
-// #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -28,6 +25,9 @@
 #include <string>
 #include <list>
 
+// #include <mutex>
+// std::mutex mtx;
+
 #define pi 3.141592653
 
 #ifndef DEBUG_KUKA_ARM
@@ -43,7 +43,6 @@
 using namespace Eigen;
 using namespace std;
 
-// using drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::math::RigidTransformd;
@@ -52,19 +51,19 @@ using drake::multibody::ModelInstanceIndex;
 using drake::math::RollPitchYaw;
 using drake::math::CalculateQuaternionDtFromAngularVelocityExpressedInB;
 using drake::multibody::JacobianWrtVariable;
-using drake::multibody::SpatialAcceleration;
+
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-class KukaArm_Contact
+class KukaArm_TRK_Contact
 {
 public:
-    KukaArm_Contact();
-    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, string action_name);
-    KukaArm_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, multibody::MultibodyPlant<double>* plant, string action_name);
-    ~KukaArm_Contact(){};
+    KukaArm_TRK_Contact();
+    KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, string action_name);
+    KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, MultibodyPlant<double>* plant, string action_name);
+    ~KukaArm_TRK_Contact(){};
 private:
 protected:
     // attributes
@@ -142,10 +141,9 @@ protected:
     // methods
 public:
     fullstateVec_t kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau);
-
-    void kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
-    void kuka_arm_dyn_cst_min_output(const int& nargout, const fullstateVec_t& xList_curr, const commandVec_t& uList_curr,  const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_Contact*& costFunction);
-    void kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList, CostFunctionKukaArm_Contact*& costFunction);
+    void kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList, const fullstateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, CostFunctionKukaArm_TRK_Contact*& costFunction);
+    void kuka_arm_dyn_cst_min_output(const int& nargout, const fullstateVec_t& xList_curr, const commandVec_t& uList_curr,  const fullstateVec_t& xList_cur_bar, const commandVec_t& uList_cur_bar, const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_TRK_Contact*& costFunction);
+    void kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList, CostFunctionKukaArm_TRK_Contact*& costFunction);
     // void kuka_arm_dyn_cst_v3(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, stateTensTab_t& fxxList, stateTensTab_t& fxuList, stateR_commandC_Tens_t& fuuList, CostFunctionKukaArm*& costFunction);
     fullstateVec_t update(const int& nargout, const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B);
     void grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B);
@@ -168,4 +166,4 @@ public:
 }  // namespace traj_gen
 }  // namespace drake
 
-#endif // KUKAARM_CONTACT_H
+#endif // KUKAARM_H

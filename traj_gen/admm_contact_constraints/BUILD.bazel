@@ -1,0 +1,190 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+
+package(
+    default_visibility = [":__subpackages__"],
+)
+
+COPTS = ["-Wno-unused-parameter",
+ "-Wno-unused-function",
+ ]
+
+
+# drake_cc_library(
+#     name = "cost_function_kuka_arm_contact",
+#     srcs = ["cost_function_kuka_arm_contact.cc",],
+#     hdrs = ["cost_function_kuka_arm_contact.h",],
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "@eigen",
+#         "//traj_gen:config",
+#     ],
+#     copts = COPTS,
+# )
+
+drake_cc_library(
+    name = "cost_function_contact_track_new",
+    srcs = ["cost_function_contact_track_new.cc",],
+    hdrs = ["cost_function_contact_track_new.h",],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@eigen",
+        "//traj_gen:config",
+    ],
+    copts = COPTS,
+)
+
+
+# drake_cc_library(
+#     name = "kuka_arm_contact",
+#     srcs = ["kuka_arm_contact.cpp",],
+#     hdrs = ["kuka_arm_contact.h",
+#             "cost_function_kuka_arm_contact.h",
+#             ],
+#     visibility = ["//visibility:public"],
+#     data = [
+#         "//examples/kuka_iiwa_arm:models",
+#         "//manipulation/models/iiwa_description:models",
+#         "//manipulation/models/wsg_50_description:models",
+#         "//manipulation/models/kuka_connector_description:models",
+#         "//manipulation/models/ycb:models",
+#     ],
+#     deps = [
+#         "@eigen",
+#         "//examples/kuka_iiwa_arm:iiwa_common",
+#         "//examples/kuka_iiwa_arm:iiwa_lcm",
+#         "//multibody/plant",
+#         "//multibody/parsing",
+#         "//math:geometric_transform",
+#         "//common:find_resource",
+#         "//traj_gen:config",
+#     ],
+#     copts = COPTS,
+# )
+
+drake_cc_library(
+    name = "kuka_arm_track_contact_new",
+    srcs = ["kuka_arm_track_contact_new.cc",],
+    hdrs = ["kuka_arm_track_contact_new.h",
+            "cost_function_contact_track_new.h",
+            ],
+    visibility = ["//visibility:public"],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/kuka_connector_description:models",
+        "//manipulation/models/ycb:models",
+    ],
+    deps = [
+        "@eigen",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//math:geometric_transform",
+        "//common:find_resource",
+        "//traj_gen:config",
+    ],
+    copts = COPTS,
+)
+
+# drake_cc_library(
+#     name = "ilqr-kkt_solver",
+#     srcs = ["ilqr-kkt_solver.cpp",],
+#     hdrs = ["ilqr-kkt_solver.h",
+#             "kuka_arm_contact.h",
+#             "cost_function_kuka_arm_contact.h",],
+#     visibility = ["//visibility:public"],
+#     deps = [
+#         "@eigen",
+#         "//common:find_resource",
+#         "//multibody/plant",
+#         "//multibody/parsing",
+#         "//traj_gen:config",
+#     ],
+#     copts = COPTS,
+# )
+
+drake_cc_library(
+    name = "ilqr-kkt_solver_track_new",
+    srcs = ["ilqr-kkt_solver_track_new.cc",],
+    hdrs = ["ilqr-kkt_solver_track_new.h",
+            "kuka_arm_track_contact_new.h",
+            "cost_function_contact_track_new.h",],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@eigen",
+        "//common:find_resource",
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//traj_gen:config",
+    ],
+    copts = COPTS,
+)
+
+
+# drake_cc_library(
+#     name = "ddp_runner_contact",
+#     srcs = ["ddp_runner_contact.cc",],
+#     hdrs = ["ddp_runner_contact.h",],
+#     visibility = ["//visibility:public"],
+#     data = [
+#         "//examples/kuka_iiwa_arm:models",
+#         "//manipulation/models/iiwa_description:models",
+#         "//manipulation/models/wsg_50_description:models",
+#         "//manipulation/models/kuka_connector_description:models",
+#         "//manipulation_tamp:models",
+#     ],
+#     deps = [
+#         "//examples/kuka_iiwa_arm:iiwa_common",
+#         "//examples/kuka_iiwa_arm:iiwa_lcm",
+#         "@lcmtypes_bot2_core",
+#         "@lcmtypes_robotlocomotion",
+#         "@gflags",
+#         "@lcm",
+#         "//lcmtypes:generic_string_msg",
+#         "//traj_gen/ilqr_kkt:cost_function_kuka_arm_contact",
+#         "//traj_gen/ilqr_kkt:ilqr-kkt_solver",
+#         "//traj_gen/ilqr_kkt:kuka_arm_contact",
+#         "//common:find_resource",
+#         "//multibody/plant",
+#         "//multibody/parsing",
+#         "//math:geometric_transform",
+#         "//traj_gen:config",
+#     ],
+# )
+
+drake_cc_library(
+    name = "admm_runner_contact_new",
+    srcs = ["admm_runner_contact_new.cc",],
+    hdrs = ["admm_runner_contact_new.h",],
+    visibility = ["//visibility:public"],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/kuka_connector_description:models",
+        "//manipulation_tamp:models",
+    ],
+    deps = [
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+        "@gflags",
+        "@lcm",
+        "//lcmtypes:generic_string_msg",
+        "//traj_gen/admm_contact_constraints:cost_function_contact_track_new",
+        "//traj_gen/admm_contact_constraints:ilqr-kkt_solver_track_new",
+        "//traj_gen/admm_contact_constraints:kuka_arm_track_contact_new",
+        "//common:find_resource",
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//math:geometric_transform",
+        "//traj_gen:config",
+    ],
+)
