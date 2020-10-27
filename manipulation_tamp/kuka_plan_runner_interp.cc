@@ -4,8 +4,7 @@
 #include "gflags/gflags.h"
 #include "lcm/lcm-cpp.hpp"
 
-#include "drake/common/find_resource.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -14,11 +13,12 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
-using drake::multibody::internal::MultibodyTree;
 
 namespace drake {
 namespace manipulation_tamp {
 namespace manipulation_station {
+
+using trajectories::PiecewisePolynomial;
 
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
@@ -28,7 +28,6 @@ const char* const kLcmSchunkWsgStatusChannel = "SCHUNK_WSG_STATUS";
 const char* const kLcmSchunkWsgCommandChannel = "SCHUNK_WSG_COMMAND";
 
 const int kNumIiwaJoints = 7;
-const int kIiwaTorqueStartIdx = 0; // in case torque vector is expanded in future
 const int trajTimeScale = 1;
 
 class RobotPlanRunner {
@@ -57,6 +56,7 @@ class RobotPlanRunner {
     private:
     lcm::LCM lcm_;
     int plan_number_;
+    std::unique_ptr<PiecewisePolynomial<double>> plan_;
     lcmt_iiwa_status iiwa_status_;
     lcmt_iiwa_command iiwa_command_;
     lcmt_manipulator_traj manip_traj_;
@@ -77,12 +77,6 @@ class RobotPlanRunner {
                           const lcmt_iiwa_status* status) {
         iiwa_status_ = *status;
 
-        // std::cout << "Torque: " << std::endl;
-        // for (int i=0; i<status->num_joints; i++)
-        //     std::cout << status->joint_torque_measured[i] << " ";
-        // std::cout << std::endl;
-
-        // new command is published here for easier clock sync
         if (has_active_plan_) {
             if (plan_number_ != cur_plan_number_) {
                 std::cout<<"Starting new plan.\n";
@@ -93,47 +87,36 @@ class RobotPlanRunner {
 
             cur_traj_time_sec_ = (iiwa_status_.utime - start_utime_)/1e6;
             cur_traj_time_sec_ *= trajTimeScale;
-            if (cur_traj_idx_ % 10 == 0) {
-                std::cout<<"Total length: "<<manip_traj_.times_sec.size()<<"\n";
-                std::cout<<"Cur Idx: "<<cur_traj_idx_<<"\n";
-                std::cout<< "Plan Runner Time: "<<cur_traj_time_sec_<<"\n";
-                std::cout<< "Plan Time: "<<manip_traj_.times_sec[cur_traj_idx_]<<"\n\n";
+
+            if (cur_traj_time_sec_ >= 
+                    manip_traj_.times_sec[manip_traj_.n_time_steps-1]) {
+                std::cout<<"Current plan completed. Waiting for new plan\n";
+
+                has_active_plan_ = false;
+                plan_.reset();
+
+                lcmt_generic_string_msg plan_status;
+                plan_status.msg = "Finished";
+                lcm_.publish(kExecutionStatusChannel, &plan_status);
+                return;
             }
-            // increment cur_traj_idx until appropriate command is found
+
             while (cur_traj_time_sec_ > manip_traj_.times_sec[cur_traj_idx_]) {
                 cur_traj_idx_++;
-                // check if current traj is finished
-                if (cur_traj_idx_ >= manip_traj_.n_time_steps) {
-                    std::cout<<"Current plan completed. Waiting for new plan\n";
-
-                    has_active_plan_ = false;
-
-                    lcmt_generic_string_msg plan_status;
-                    plan_status.msg = "Finished";
-                    lcm_.publish(kExecutionStatusChannel, &plan_status);
-                    return;
-                }
             }
+
+            const auto desired_next = plan_->value(cur_traj_time_sec_);
 
             // if new traj time step reached, publish new command
             iiwa_command_.utime = iiwa_status_.utime;
-            // iiwa_command_.num_torques = manip_traj_.dim_torques;
             iiwa_command_.num_torques = 0;
+            iiwa_command_.num_joints = kNumIiwaJoints;
             iiwa_command_.joint_position.resize(iiwa_command_.num_joints);
             iiwa_command_.joint_torque.resize(iiwa_command_.num_torques);
 
-            // if (manip_traj_.dim_torques) {
-            //     iiwa_command_.joint_position = iiwa_status_.joint_position_measured;
-            //     for (int i=0; i<kNumIiwaJoints; i++) {
-            //         iiwa_command_.joint_torque[i] =
-            //             manip_traj_.torques[cur_traj_idx_][i+kIiwaTorqueStartIdx];
-            //     }
-            // } else {
             for (int i=0; i<kNumIiwaJoints; i++) {
-                iiwa_command_.joint_position[i] =
-                    manip_traj_.states[cur_traj_idx_][i+kIiwaTorqueStartIdx];
+                iiwa_command_.joint_position[i] = desired_next(i);
             }
-            // }
 
             lcm_.publish(kLcmCommandChannel, &iiwa_command_);
 
@@ -142,20 +125,58 @@ class RobotPlanRunner {
             wsg_command_.force = manip_traj_.gripper_force[cur_traj_idx_];
 
             lcm_.publish(kLcmSchunkWsgCommandChannel, &wsg_command_);
+        } else {
+            iiwa_command_.utime = iiwa_status_.utime;
+            iiwa_command_.num_torques = 0;
+            iiwa_command_.num_joints = kNumIiwaJoints;
+            iiwa_command_.joint_position = iiwa_status_.joint_position_commanded;
+            lcm_.publish(kLcmCommandChannel, &iiwa_command_);
 
+            wsg_command_.utime = wsg_status_.utime;
+            wsg_command_.target_position_mm = wsg_status_.actual_position_mm;
+            wsg_command_.force = wsg_status_.actual_force;
+            lcm_.publish(kLcmSchunkWsgCommandChannel, &wsg_command_);
         }
     }
 
     void HandleIiwaTraj(const lcm::ReceiveBuffer*, const std::string&,
-                        const lcmt_manipulator_traj* plan) {
+                        const lcmt_manipulator_traj* traj) {
         std::cout<<"Received new plan.\n";
 
         if (iiwa_status_.utime == -1) {
             std::cout<<"Discarding plan, no status message received yet\n";
             return;
+        } else if (traj->n_time_steps < 2) {
+            std::cout << "Discarding plan, Not enough knot points." << std::endl;
+            return;
         }
 
-        manip_traj_ = *plan;
+        manip_traj_ = *traj;
+
+        std::vector<Eigen::MatrixXd> knots(manip_traj_.n_time_steps,
+                                           Eigen::MatrixXd::Zero(kNumIiwaJoints, 1));
+
+        for (int i = 0; i < manip_traj_.n_time_steps; i++) {
+            for (int j = 0; j < kNumIiwaJoints; j++) {
+                if (i == 0) {
+                    // always start moving from the position which we are 
+                    // currently commanding
+                    DRAKE_DEMAND(iiwa_status_.utime != -1);
+                    knots[0](j, 0) = iiwa_status_.joint_position_commanded[j];
+                } else {
+                    knots[i](j, 0) = manip_traj_.states[i][j];
+                }
+            }
+        }
+
+        // const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumIiwaJoints, 1);
+        // plan_.reset(new PiecewisePolynomial<double>(
+        //     PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+        //         manip_traj_.times_sec, knots, knot_dot, knot_dot)));
+                plan_.reset(new PiecewisePolynomial<double>(
+            PiecewisePolynomial<double>::FirstOrderHold(
+                manip_traj_.times_sec, knots)));
+        std::cout<< "Plan Interpolation Completed"<<"\n";
         has_active_plan_ = true;
         plan_number_++;
     }

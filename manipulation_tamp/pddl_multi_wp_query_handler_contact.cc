@@ -409,7 +409,7 @@ void AppendTrajectory(lcmt_manipulator_traj &dest, lcmt_manipulator_traj &src) {
     std::vector<double> times_sec = src.times_sec;
     if (dest.times_sec.size()) {
         for (size_t i = 0; i < times_sec.size(); i++) {
-            times_sec[i] += dest.times_sec.back();
+            times_sec[i] += dest.times_sec.back() + current_query_.time_step;
         }
     }
 

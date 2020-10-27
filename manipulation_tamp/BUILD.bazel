@@ -121,6 +121,20 @@ drake_cc_binary(
     ]
 )
 
+drake_cc_binary(
+    name = "kuka_plan_runner_interp",
+    srcs = ["kuka_plan_runner_interp.cc",],
+    deps = [
+        "@gflags",
+        "@lcm",
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:iiwa",
+        "//lcmtypes:manipulator_traj",
+        "//lcmtypes:generic_string_msg",
+        "//lcmtypes:schunk",
+    ]
+)
+
 drake_cc_library(
     name = "object_state_estimator",
     srcs = ["object_state_estimator.cc"],
