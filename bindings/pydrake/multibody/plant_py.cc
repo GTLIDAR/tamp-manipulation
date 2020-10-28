@@ -96,6 +96,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("separation_speed", &Class::separation_speed,
             cls_doc.separation_speed.doc)
         .def("point_pair", &Class::point_pair, cls_doc.point_pair.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // ContactResults
@@ -110,6 +111,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_point_pair_contacts.doc)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
             py::arg("i"), cls_doc.point_pair_contact_info.doc);
+    DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }
 
@@ -120,12 +122,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "CoulombFriction", param, cls_doc.doc);
     cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
             py::arg("dynamic_friction"), cls_doc.ctor.doc_2args)
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
             cls_doc.dynamic_friction.doc);
+    DefCopyAndDeepCopy(&cls);
 
     AddValueInstantiation<CoulombFriction<T>>(m);
 
@@ -266,6 +270,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::CalcCenterOfMassPosition),
             py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
         .def(
+            "CalcSpatialMomentumInWorldAboutPoint",
+            [](const Class* self, const Context<T>& context,
+                const Vector3<T>& p_WoP_W) {
+              return self->CalcSpatialMomentumInWorldAboutPoint(
+                  context, p_WoP_W);
+            },
+            py::arg("context"), py::arg("p_WoP_W"),
+            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_2args)
+        .def(
+            "CalcSpatialMomentumInWorldAboutPoint",
+            [](const Class* self, const Context<T>& context,
+                const std::vector<ModelInstanceIndex>& model_instances,
+                const Vector3<T>& p_WoP_W) {
+              return self->CalcSpatialMomentumInWorldAboutPoint(
+                  context, model_instances, p_WoP_W);
+            },
+            py::arg("context"), py::arg("model_instances"), py::arg("p_WoP_W"),
+            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_3args)
+        .def(
             "CalcBiasCenterOfMassTranslationalAcceleration",
             [](const Class* self, const Context<T>& context,
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
@@ -290,6 +313,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
             cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc)
+        .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
+            py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
@@ -699,6 +724,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("coulomb_friction"),
             cls_doc.RegisterCollisionGeometry
                 .doc_5args_body_X_BG_shape_name_coulomb_friction)
+        .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
+            cls_doc.GetFloatingBaseBodies.doc)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_rvp::reference_internal,
@@ -804,6 +831,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
         .def("Finalize", py::overload_cast<>(&Class::Finalize),
             cls_doc.Finalize.doc)
+        .def("set_contact_model", &Class::set_contact_model, py::arg("model"),
+            cls_doc.set_contact_model.doc)
+        .def("get_contact_model", &Class::get_contact_model,
+            cls_doc.get_contact_model.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,
             cls_doc.set_penetration_allowance.doc)
@@ -997,6 +1028,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
         .def_readwrite("p_BoBq_B", &Class::p_BoBq_B, cls_doc.p_BoBq_B.doc)
         .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
+    DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
@@ -1086,19 +1118,36 @@ PYBIND11_MODULE(plant, m) {
       py::keep_alive<3, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
 
-  py::class_<PropellerInfo>(m, "PropellerInfo", doc.PropellerInfo.doc)
-      .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
-               double, double>(),
-          py::arg("body_index"),
-          py::arg("X_BP") = math::RigidTransform<double>::Identity(),
-          py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
-      .def_readwrite("body_index", &PropellerInfo::body_index,
-          doc.PropellerInfo.body_index.doc)
-      .def_readwrite("X_BP", &PropellerInfo::X_BP, doc.PropellerInfo.X_BP.doc)
-      .def_readwrite("thrust_ratio", &PropellerInfo::thrust_ratio,
-          doc.PropellerInfo.thrust_ratio.doc)
-      .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
-          doc.PropellerInfo.moment_ratio.doc);
+  {
+    using Class = PropellerInfo;
+    constexpr auto& cls_doc = doc.PropellerInfo;
+    py::class_<Class> cls(m, "PropellerInfo", cls_doc.doc);
+    cls  // BR
+        .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
+                 double, double>(),
+            py::arg("body_index"),
+            py::arg("X_BP") = math::RigidTransform<double>::Identity(),
+            py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
+        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_readwrite("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
+        .def_readwrite(
+            "thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
+        .def_readwrite(
+            "moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = ContactModel;
+    constexpr auto& cls_doc = doc.ContactModel;
+    py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+        .value("kHydroelasticsOnly", Class::kHydroelasticsOnly,
+            cls_doc.kHydroelasticsOnly.doc)
+        .value("kPointContactOnly", Class::kPointContactOnly,
+            cls_doc.kPointContactOnly.doc)
+        .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
+            cls_doc.kHydroelasticWithFallback.doc);
+  }
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

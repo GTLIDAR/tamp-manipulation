@@ -223,7 +223,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     int geom_index = 0;
     const InternalFrame& world_frame =
         state.frames_.at(InternalFrame::world_frame_id());
-    for (const GeometryId id : world_frame.child_geometries()) {
+    for (const GeometryId& id : world_frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(id);
       const GeometryProperties* props = get_properties(geometry, role);
       if (props != nullptr) {
@@ -281,7 +281,7 @@ void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm, Role role) {
   lcmt_viewer_load_robot message =
       internal::GeometryVisualizationImpl::BuildLoadMessage(
-          *scene_graph.initial_state_, role);
+          scene_graph.model_, role);
   // Send a load message.
   Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }

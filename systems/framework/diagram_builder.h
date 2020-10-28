@@ -122,12 +122,17 @@ class DiagramBuilder {
   bool empty() const { return registered_systems_.empty(); }
 
   /// Returns the list of contained Systems.
+  /// See also GetMutableSystems().
+  std::vector<const System<T>*> GetSystems() const;
+
+  /// Returns the list of contained Systems.
+  /// See also GetSystems().
   std::vector<System<T>*> GetMutableSystems();
 
   /// Declares that input port @p dest is connected to output port @p src.
   /// @note The connection created between @p src and @p dest via a call to
   /// this method can be effectively overridden by any subsequent call to
-  /// Context::FixInputPort(). That is, calling Context::FixInputPort() on an
+  /// InputPort::FixValue(). That is, calling InputPort::FixValue() on an
   /// already connected input port causes the resultant
   /// FixedInputPortValue to override any other value present on that
   /// port.
@@ -137,7 +142,7 @@ class DiagramBuilder {
   /// output port on the @p src system.
   /// @note The connection created between @p src and @p dest via a call to
   /// this method can be effectively overridden by any subsequent call to
-  /// Context::FixInputPort(). That is, calling Context::FixInputPort() on an
+  /// InputPort::FixValue(). That is, calling InputPort::FixValue() on an
   /// already connected input port causes the resultant
   /// FixedInputPortValue to override any other value present on that
   /// port.

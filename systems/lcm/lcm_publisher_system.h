@@ -107,8 +107,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * kPeriodic.
    *
    * @pre publish_period is non-negative.
-   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
-   * @pre publish_period > 0 if and only if trigger_types contains kPeriodic.
+   * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period > 0 if and only if publish_triggers contains kPeriodic.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
@@ -172,8 +172,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * kPerStep.
    *
    * @pre publish_period is non-negative.
-   * @pre publish_period > 0 iff trigger_types contains kPeriodic.
-   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period > 0 iff publish_triggers contains kPeriodic.
+   * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
    */
   LcmPublisherSystem(const std::string& channel,
       std::unique_ptr<SerializerInterface> serializer,
@@ -223,6 +223,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
     return *lcm_;
   }
 
+  /**
+   * Returns the publish_period provided at construction time.
+   */
+  double get_publish_period() const;
+
  private:
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
@@ -245,8 +250,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // object or the owned_lcm_ object above.
   drake::lcm::DrakeLcmInterface* const lcm_;
 
-  // TODO(edrumwri) Remove this when set_publish_period() is removed.
-  bool disable_internal_per_step_publish_events_{false};
+  const double publish_period_;
 };
 
 }  // namespace lcm

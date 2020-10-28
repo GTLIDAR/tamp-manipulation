@@ -8,6 +8,7 @@
 #include <ostream>
 
 #include <Eigen/Core>
+#include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
@@ -21,11 +22,10 @@ namespace symbolic {
  * symbolic expression. A generic polynomial `p` has to satisfy an invariant
  * such that `p.decision_variables() ∩ p.indeterminates() = ∅`. We have
  * CheckInvariant() method to check the invariant.
+ * For polynomials using different basis, you could refer to section 3.1.5 of
+ * Semidefinite Optimization and Convex Algebraic Geometry on the pros/cons of
+ * each basis.
  *
- * Note that arithmetic operations (+,-,*) between a Polynomial and a Variable
- * are not provided. The problem is that Variable class has no intrinsic
- * information if a variable is a decision variable or an indeterminate while we
- * need this information to perform arithmetic operations over Polynomials.
  * We provide two instantiations of this template
  * - BasisElement = MonomialBasisElement
  * - BasisElement = ChebyshevBasisElement
@@ -53,14 +53,17 @@ class GenericPolynomial {
 
   /** Constructs a generic polynomial from a map, basis_element → coefficient.
    * For example
-   * GenericPolynomial<MonomialBasiElement>({{MonomialBasisElement(x, 2), a},
-   * {MonomialBasisElement(x, 3), a+b}}) constructs a polynomial ax²+(a+b)x³.*/
+   * @code{cc}
+   * GenericPolynomial<MonomialBasiElement>(
+   *   {{MonomialBasisElement(x, 2), a}, {MonomialBasisElement(x, 3), a+b}})
+   * @endcode
+   * constructs a polynomial ax²+(a+b)x³.*/
   explicit GenericPolynomial(MapType init);
 
-  /** Constructs a generic polynomial from a single basis element @p m. Note
-   * that all variables in `m` are considered as indeterminates. Namely the
-   * constructed generic polynomial contains the map with a single key `m`, with
-   * the coefficient being 1.
+  /** Constructs a generic polynomial from a single basis element @p m.
+   * @note that all variables in `m` are considered as indeterminates. Namely
+   * the constructed generic polynomial contains the map with a single key `m`,
+   * with the coefficient being 1.
    */
   // Note that this implicit conversion is desirable to have a dot product of
   // two Eigen::Vector<BasisElement>s return a GenericPolynomial<BasisElement>.
@@ -96,6 +99,29 @@ class GenericPolynomial {
   [[nodiscard]] const Variables& decision_variables() const {
     return decision_variables_;
   }
+
+  /** Sets the indeterminates to `new_indeterminates`.
+   *
+   * Changing the indeterminates will change
+   * `basis_element_to_coefficient_map()`, and also potentially the degree of
+   * the polynomial. Here is an example.
+   *
+   * @code
+   * // p is a quadratic polynomial with x being the only indeterminate.
+   * symbolic::GenericPolynomial<MonomialBasisElement> p(a * x * x + b * x + c,
+   * {x});
+   * // p.basis_element_to_coefficient_map() contains {1: c, x: b, x*x:a}.
+   * std::cout << p.TotalDegree(); // prints 2.
+   * // Now set (a, b, c) to the indeterminates. p becomes a linear
+   * // polynomial of a, b, c.
+   * p.SetIndeterminates({a, b, c});
+   * // p.basis_element_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
+   * std::cout << p.TotalDegree(); // prints 1.
+   * @endcode
+   * This function can be expensive, as it potentially reconstructs the
+   * polynomial (using the new indeterminates) from the expression.
+   */
+  void SetIndeterminates(const Variables& new_indeterminates);
 
   /** Returns the map from each basis element to its coefficient. */
   [[nodiscard]] const MapType& basis_element_to_coefficient_map() const {
@@ -151,7 +177,7 @@ class GenericPolynomial {
   [[nodiscard]] double Evaluate(const Environment& env) const;
 
   /** Partially evaluates this generic polynomial using an environment @p env.
-
+   *
    * @throws std::runtime_error if NaN is detected during evaluation.
    */
   [[nodiscard]] GenericPolynomial<BasisElement> EvaluatePartial(
@@ -167,8 +193,8 @@ class GenericPolynomial {
       const Variable& var, double c) const;
 
   /** Adds @p coeff * @p m to this generic polynomial. */
-  GenericPolynomial<BasisElement> AddProduct(const Expression& coeff,
-                                             const BasisElement& m);
+  GenericPolynomial<BasisElement>& AddProduct(const Expression& coeff,
+                                              const BasisElement& m);
 
   /** Removes the terms whose absolute value of the coefficients are smaller
    * than or equal to @p coefficient_tol.
@@ -182,7 +208,27 @@ class GenericPolynomial {
   [[nodiscard]] GenericPolynomial<BasisElement>
   RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
 
-  /** Returns true if this generic polynomial and @p p are structurally equal.
+  GenericPolynomial<BasisElement>& operator+=(
+      const GenericPolynomial<BasisElement>& p);
+  GenericPolynomial<BasisElement>& operator+=(const BasisElement& m);
+  GenericPolynomial<BasisElement>& operator+=(double c);
+  GenericPolynomial<BasisElement>& operator+=(const Variable& v);
+
+  GenericPolynomial<BasisElement>& operator-=(
+      const GenericPolynomial<BasisElement>& p);
+  GenericPolynomial<BasisElement>& operator-=(const BasisElement& m);
+  GenericPolynomial<BasisElement>& operator-=(double c);
+  GenericPolynomial<BasisElement>& operator-=(const Variable& v);
+
+  GenericPolynomial<BasisElement>& operator*=(
+      const GenericPolynomial<BasisElement>& p);
+  GenericPolynomial<BasisElement>& operator*=(const BasisElement& m);
+  GenericPolynomial<BasisElement>& operator*=(double c);
+  GenericPolynomial<BasisElement>& operator*=(const Variable& v);
+
+  GenericPolynomial<BasisElement>& operator/=(double c);
+
+  /** Returns true if this and @p p are structurally equal.
    */
   [[nodiscard]] bool EqualTo(const GenericPolynomial<BasisElement>& p) const;
 
@@ -190,6 +236,36 @@ class GenericPolynomial {
    * the coefficients. */
   [[nodiscard]] bool EqualToAfterExpansion(
       const GenericPolynomial<BasisElement>& p) const;
+
+  /** Returns true if this polynomial and @p p are almost equal (the difference
+   * in the corresponding coefficients are all less than @p tol), after
+   * expanding the coefficients.
+   */
+  bool CoefficientsAlmostEqual(const GenericPolynomial<BasisElement>& p,
+                               double tol) const;
+
+  /** Returns a symbolic formula representing the condition where this
+   * polynomial and @p p are the same.
+   */
+  Formula operator==(const GenericPolynomial<BasisElement>& p) const;
+
+  /** Returns a symbolic formula representing the condition where this
+   * polynomial and @p p are not the same.
+   */
+  Formula operator!=(const GenericPolynomial<BasisElement>& p) const;
+
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher,
+      const GenericPolynomial<BasisElement>& item) noexcept {
+    using drake::hash_append;
+    for (const auto& [basis_element, coeff] :
+         item.basis_element_to_coefficient_map_) {
+      hash_append(hasher, basis_element);
+      hash_append(hasher, coeff);
+    }
+  }
 
  private:
   // Throws std::runtime_error if there is a variable appeared in both of
@@ -200,6 +276,230 @@ class GenericPolynomial {
   Variables indeterminates_;
   Variables decision_variables_;
 };
+
+/** Defines an explicit SFINAE alias for use with return types to dissuade CTAD
+ * from trying to instantiate an invalid GenericElement<> for operator
+ * overloads, (if that's actually the case).
+ * See discussion for more info:
+ * https://github.com/robotlocomotion/drake/pull/14053#pullrequestreview-488744679
+ */
+template <typename BasisElement>
+using GenericPolynomialEnable = std::enable_if_t<
+    std::is_base_of_v<PolynomialBasisElement, BasisElement>,
+    GenericPolynomial<BasisElement>>;
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(const GenericPolynomial<BasisElement>& p) {
+  return -1. * p;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(GenericPolynomial<BasisElement> p1,
+          const GenericPolynomial<BasisElement>& p2) {
+  return p1 += p2;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(GenericPolynomial<BasisElement> p, const BasisElement& m) {
+  return p += m;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(GenericPolynomial<BasisElement> p, double c) {
+  return p += c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(const BasisElement& m, GenericPolynomial<BasisElement> p) {
+  return p += m;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(const BasisElement& m1, const BasisElement& m2) {
+  return GenericPolynomial<BasisElement>(m1) + m2;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(const BasisElement& m, double c) {
+  return GenericPolynomial<BasisElement>(m) + c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(double c, GenericPolynomial<BasisElement> p) {
+  return p += c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(double c, const BasisElement& m) {
+  return GenericPolynomial<BasisElement>(m) + c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(GenericPolynomial<BasisElement> p, const Variable& v) {
+  return p += v;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator+(const Variable& v, GenericPolynomial<BasisElement> p) {
+  return p += v;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(GenericPolynomial<BasisElement> p1,
+          const GenericPolynomial<BasisElement>& p2) {
+  return p1 -= p2;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(GenericPolynomial<BasisElement> p, const BasisElement& m) {
+  return p -= m;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(GenericPolynomial<BasisElement> p, double c) {
+  return p -= c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(const BasisElement& m, GenericPolynomial<BasisElement> p) {
+  return p = -1 * p + m;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(const BasisElement& m1, const BasisElement& m2) {
+  return GenericPolynomial<BasisElement>(m1) - m2;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(const BasisElement& m, double c) {
+  return GenericPolynomial<BasisElement>(m) - c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(double c, GenericPolynomial<BasisElement> p) {
+  return p = -p + c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(double c, const BasisElement& m) {
+  return c - GenericPolynomial<BasisElement>(m);
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(GenericPolynomial<BasisElement> p, const Variable& v) {
+  return p -= v;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator-(const Variable& v, GenericPolynomial<BasisElement> p) {
+  return GenericPolynomial<BasisElement>(v, p.indeterminates()) - p;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(GenericPolynomial<BasisElement> p1,
+          const GenericPolynomial<BasisElement>& p2) {
+  return p1 *= p2;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(GenericPolynomial<BasisElement> p, const BasisElement& m) {
+  return p *= m;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(GenericPolynomial<BasisElement> p, double c) {
+  return p *= c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(const BasisElement& m, GenericPolynomial<BasisElement> p) {
+  return p *= m;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(const BasisElement& m, double c) {
+  return GenericPolynomial<BasisElement>(m) * c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(double c, GenericPolynomial<BasisElement> p) {
+  return p *= c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(double c, const BasisElement& m) {
+  return GenericPolynomial<BasisElement>(m) * c;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(GenericPolynomial<BasisElement> p, const Variable& v) {
+  return p *= v;
+}
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
+operator*(const Variable& v, GenericPolynomial<BasisElement> p) {
+  return p *= v;
+}
+
+/** Returns `p / v`. */
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement> operator/(
+    GenericPolynomial<BasisElement> p, double v) {
+  return p /= v;
+}
+
+/** Returns polynomial @p raised to @p n.
+ * @param p The base polynomial.
+ * @param n The exponent of the power. @pre n>=0.
+ * */
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement> pow(
+    const GenericPolynomial<BasisElement>& p, int n) {
+  if (n < 0) {
+    throw std::runtime_error(
+        fmt::format("pow(): the degree should be non-negative, got {}.", n));
+  } else if (n == 0) {
+    return GenericPolynomial<BasisElement>(BasisElement());
+  } else if (n == 1) {
+    return p;
+  } else if (n % 2 == 0) {
+    const GenericPolynomial<BasisElement> half = pow(p, n / 2);
+    return half * half;
+  } else {
+    const GenericPolynomial<BasisElement> half = pow(p, n / 2);
+    return half * half * p;
+  }
+}
 
 template <typename BasisElement>
 std::ostream& operator<<(std::ostream& os,
@@ -221,6 +521,22 @@ extern template class GenericPolynomial<MonomialBasisElement>;
 extern template class GenericPolynomial<ChebyshevBasisElement>;
 }  // namespace symbolic
 }  // namespace drake
+
+namespace std {
+/* Provides std::hash<drake::symbolic::GenericPolynomial<BasisElement>>. */
+template <typename BasisElement>
+struct hash<drake::symbolic::GenericPolynomial<BasisElement>>
+    : public drake::DefaultHash {};
+#if defined(__GLIBCXX__)
+// Inform GCC that this hash function is not so fast (i.e. for-loop inside).
+// This will enforce caching of hash results. See
+// https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
+// for details.
+template <typename BasisElement>
+struct __is_fast_hash<hash<drake::symbolic::GenericPolynomial<BasisElement>>>
+    : std::false_type {};
+#endif
+}  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {

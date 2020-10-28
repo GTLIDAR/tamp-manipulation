@@ -40,6 +40,7 @@ using solvers::MatrixXDecisionVariable;
 using solvers::MatrixXIndeterminate;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::QuadraticCost;
+using solvers::RotatedLorentzConeConstraint;
 using solvers::SolutionResult;
 using solvers::SolverId;
 using solvers::SolverInterface;
@@ -733,7 +734,62 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
               &MathematicalProgram::AddLorentzConeConstraint),
-          doc.MathematicalProgram.AddLorentzConeConstraint.doc)
+          py::arg("v"),
+          doc.MathematicalProgram.AddLorentzConeConstraint.doc_1args_v)
+      .def(
+          "AddLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const symbolic::Expression& linear_expression,
+              const symbolic::Expression& quadratic_expression, double tol) {
+            return self->AddLorentzConeConstraint(
+                linear_expression, quadratic_expression, tol);
+          },
+          py::arg("linear_expression"), py::arg("quadratic_expression"),
+          py::arg("tol") = 0.,
+          doc.MathematicalProgram.AddLorentzConeConstraint
+              .doc_3args_linear_expression_quadratic_expression_tol)
+      .def(
+          "AddLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const Eigen::MatrixXd>& A,
+              const Eigen::Ref<const Eigen::VectorXd>& b,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddLorentzConeConstraint(A, b, vars);
+          },
+          py::arg("A"), py::arg("b"), py::arg("vars") = 0.,
+          doc.MathematicalProgram.AddLorentzConeConstraint.doc_3args_A_b_vars)
+      .def(
+          "AddRotatedLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const symbolic::Expression& linear_expression1,
+              const symbolic::Expression& linear_expression2,
+              const symbolic::Expression& quadratic_expression, double tol) {
+            return self->AddRotatedLorentzConeConstraint(linear_expression1,
+                linear_expression2, quadratic_expression, tol);
+          },
+          py::arg("linear_expression1"), py::arg("linear_expression2"),
+          py::arg("quadratic_expression"), py::arg("tol") = 0,
+          doc.MathematicalProgram.AddRotatedLorentzConeConstraint
+              .doc_4args_linear_expression1_linear_expression2_quadratic_expression_tol)
+      .def(
+          "AddRotatedLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const VectorX<symbolic::Expression>>& v) {
+            return self->AddRotatedLorentzConeConstraint(v);
+          },
+          py::arg("v"),
+          doc.MathematicalProgram.AddRotatedLorentzConeConstraint.doc_1args_v)
+      .def(
+          "AddRotatedLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const Eigen::MatrixXd>& A,
+              const Eigen::Ref<const Eigen::VectorXd>& b,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddRotatedLorentzConeConstraint(A, b, vars);
+          },
+          py::arg("A"), py::arg("b"), py::arg("vars"),
+          doc.MathematicalProgram.AddRotatedLorentzConeConstraint
+              .doc_3args_A_b_vars)
       .def(
           "AddPositiveSemidefiniteConstraint",
           [](MathematicalProgram* self,
@@ -925,6 +981,22 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.indeterminate.doc)
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
+      .def(
+          "EvalBindingVectorized",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const MatrixX<double>& prog_var_vals) {
+            DRAKE_DEMAND(prog_var_vals.rows() == prog.num_vars());
+            MatrixX<double> Y(
+                binding.evaluator()->num_outputs(), prog_var_vals.cols());
+            for (int i = 0; i < prog_var_vals.cols(); ++i) {
+              Y.col(i) = prog.EvalBinding(binding, prog_var_vals.col(i));
+            }
+            return Y;
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          R"""(A "vectorized" version of EvalBinding.  It evaluates the binding 
+for every column of ``prog_var_vals``. )""")
       .def(
           "EvalBinding",
           [](const MathematicalProgram& prog,
@@ -1159,6 +1231,19 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("upper_bound", &Constraint::upper_bound,
           doc.Constraint.upper_bound.doc)
       .def(
+          "CheckSatisfiedVectorized",
+          [](Constraint& self, const Eigen::Ref<const Eigen::MatrixXd>& x,
+              double tol) {
+            DRAKE_DEMAND(x.rows() == self.num_vars());
+            std::vector<bool> satisfied(x.cols());
+            for (int i = 0; i < x.cols(); ++i) {
+              satisfied[i] = self.CheckSatisfied(x.col(i), tol);
+            }
+            return satisfied;
+          },
+          py::arg("x"), py::arg("tol"),
+          R"""(A "vectorized" version of CheckSatisfied.  It evaluates the constraint for every column of ``x``. )""")
+      .def(
           "CheckSatisfied",
           [](Constraint& self, const Eigen::Ref<const Eigen::VectorXd>& x,
               double tol) { return self.CheckSatisfied(x, tol); },
@@ -1219,7 +1304,15 @@ top-level documentation for :py:mod:`pydrake.math`.
   py::class_<LorentzConeConstraint, Constraint,
       std::shared_ptr<LorentzConeConstraint>>(
       m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc)
-      .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc);
+      .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc)
+      .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc);
+  py::class_<RotatedLorentzConeConstraint, Constraint,
+      std::shared_ptr<RotatedLorentzConeConstraint>>(
+      m, "RotatedLorentzConeConstraint", doc.RotatedLorentzConeConstraint.doc)
+      .def("A", &RotatedLorentzConeConstraint::A,
+          doc.RotatedLorentzConeConstraint.A.doc)
+      .def("b", &RotatedLorentzConeConstraint::b,
+          doc.RotatedLorentzConeConstraint.b.doc);
   py::class_<LinearEqualityConstraint, LinearConstraint,
       std::shared_ptr<LinearEqualityConstraint>>(
       m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
@@ -1252,6 +1345,8 @@ top-level documentation for :py:mod:`pydrake.math`.
   RegisterBinding<Constraint>(&m, "Constraint");
   RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
   RegisterBinding<LorentzConeConstraint>(&m, "LorentzConeConstraint");
+  RegisterBinding<RotatedLorentzConeConstraint>(
+      &m, "RotatedLorentzConeConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, "LinearEqualityConstraint");
   RegisterBinding<BoundingBoxConstraint>(&m, "BoundingBoxConstraint");
   RegisterBinding<PositiveSemidefiniteConstraint>(

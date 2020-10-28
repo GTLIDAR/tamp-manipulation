@@ -24,8 +24,6 @@ namespace {
 // limits, maintainers should not hesitate to change them. If they are exceeded
 // without a good reason, maintainers should revisit their changes to see why
 // heap usage has increased.
-// TODO(rpoyner-tri): replace LimitMalloc usage with a benchmark statistics
-//   implementation that counts malloc use, but doesn't try to enforce caps.
 
 // TODO(sherm1) Remove this if AutoDiffXd heap usage can be made the same
 //   in Release and Debug builds (higher in Debug currently).
@@ -214,13 +212,17 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
   // The first iteration allocates more memory than subsequent runs.
   compute();
 
-  for (auto _ : state) {
+  for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(34922));
+    LimitMalloc guard(LimitReleaseOnly(31426));
 
     compute();
 
     tracker.Update(guard.num_allocations());
+  }
+
+  for (auto _ : state) {
+    compute();
   }
 }
 
@@ -247,13 +249,17 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
   // The first iteration allocates more memory than subsequent runs.
   compute();
 
-  for (auto _ : state) {
+  for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(41523));
+    LimitMalloc guard(LimitReleaseOnly(38027));
 
     compute();
 
     tracker.Update(guard.num_allocations());
+  }
+
+  for (auto _ : state) {
+    compute();
   }
 }
 
@@ -279,13 +285,17 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
   // The first iteration allocates more memory than subsequent runs.
   compute();
 
-  for (auto _ : state) {
+  for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(61233));
+    LimitMalloc guard(LimitReleaseOnly(57693));
 
     compute();
 
     tracker.Update(guard.num_allocations());
+  }
+
+  for (auto _ : state) {
+    compute();
   }
 }
 

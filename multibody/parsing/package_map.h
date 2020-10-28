@@ -34,9 +34,9 @@ class PackageMap {
   const std::string& GetPath(const std::string& package_name) const;
 
   /// Adds an entry into this PackageMap for the given `package.xml` filename.
-  /// Throws if @p package_xml_filename does not exist or its embedded name
-  /// already exists in this map.
-  void AddPackageXml(const std::string& package_xml_filename);
+  /// Throws if @p filename does not exist or its embedded name already exists
+  /// in this map.
+  void AddPackageXml(const std::string& filename);
 
   /// Crawls down the directory tree starting at @p path searching for
   /// directories containing the file `package.xml`. For each of these
@@ -77,8 +77,9 @@ class PackageMap {
   void CrawlForPackages(const std::string& path);
 
   // This method is the same as Add() except it first checks to ensure that
-  // package_name is not already in this PackageMap. If it is not, this
-  // method prints a warning and returns.
+  // package_name is not already in this PackageMap. If it was already present
+  // with a different path, then this method prints a warning and returns
+  // without adding the new path.
   void AddPackageIfNew(const std::string& package_name,
       const std::string& path);
 

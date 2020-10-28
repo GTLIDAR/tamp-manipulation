@@ -31,7 +31,7 @@ SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   // We can't simply copy the mesh field; the copy must contain a pointer to
   // the new mesh. So, we use CloneAndSetMesh() instead.
   pressure_ = s.pressure().CloneAndSetMesh(mesh_.get());
-  bvh_ = make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(s.bvh());
+  bvh_ = make_unique<Bvh<VolumeMesh<double>>>(s.bvh());
 
   return *this;
 }
@@ -234,6 +234,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   // Mesh does not use any properties.
   auto mesh = make_unique<SurfaceMesh<double>>(
       ReadObjToSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
+
+  return RigidGeometry(RigidMesh(move(mesh)));
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex_spec, const ProximityProperties&) {
+  // Convex does not use any properties.
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      ReadObjToSurfaceMesh(convex_spec.filename(), convex_spec.scale()));
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }
