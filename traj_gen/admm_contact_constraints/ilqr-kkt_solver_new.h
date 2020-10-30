@@ -1,11 +1,11 @@
 #pragma once
 
-#ifndef ILQR_KKT_SOLVER_H
-#define ILQR_KKT_SOLVER_H
+#ifndef ILQR_KKT_SOLVER_NEW_H
+#define ILQR_KKT_SOLVER_NEW_H
 
 #include "drake/traj_gen/config.h"
-#include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
-#include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
+#include "drake/traj_gen/admm_contact_constraints/kuka_arm_contact_new.h"
+#include "drake/traj_gen/admm_contact_constraints/cost_function_contact_new.h"
 #include <numeric>
 #include <sys/time.h>
 
@@ -38,13 +38,14 @@ namespace traj_gen {
 namespace kuka_iiwa_arm {
 // namespace {
 
-class ILQR_KKTSolver
+class ILQR_KKTSolver_new
 {
 public:
     struct traj
     {
         fullstateVecTab_t xList;
         commandVecTab_t uList;
+        std::vector<VectorXd> forceList;
         unsigned int iter;
         double finalCost;
         double finalGrad;
@@ -98,14 +99,14 @@ public:
     };
 
 public:
-    ILQR_KKTSolver(KukaArm_Contact& iiwaDynamicModel, CostFunctionKukaArm_Contact& iiwaCostFunction, bool fullDDP=0,bool QPBox=0);
+    ILQR_KKTSolver_new(KukaArm_Contact_new& iiwaDynamicModel, CostFunctionKukaArm_Contact_new& iiwaCostFunction, bool fullDDP=0,bool QPBox=0);
 private:
 protected:
     // attributes //
 public:
 private:
-    KukaArm_Contact* dynamicModel;
-    CostFunctionKukaArm_Contact* costFunction;
+    KukaArm_Contact_new* dynamicModel;
+    CostFunctionKukaArm_Contact_new* costFunction;
     unsigned int stateNb;
     unsigned int commandNb;
     fullstateVec_t xInit; //matrix of <statesize, 1> = essentially a vector

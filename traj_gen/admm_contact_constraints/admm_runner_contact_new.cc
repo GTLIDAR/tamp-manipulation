@@ -3,7 +3,7 @@
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
-lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
+lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
   double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
@@ -153,10 +153,10 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     }
     
     //////////////////////////////////////////////////////////////////
-    KukaArm_TRK_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
+    KukaArm_TRK_Contact_new KukaArmModel(dt, N, xgoal, &plant_, action_name);
 
     // Initialize ILQRSolver
-    ILQRSolver_TRK_Contact::traj lastTraj;
+    ILQRSolver_TRK_Contact_new::traj lastTraj;
     // KukaArm_TRK KukaArmModel(dt, N, xgoal);
     double pos_obj_weight; 
     double pos_iiwa_weight; 
@@ -170,12 +170,12 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     vel_iiwa_weight = 10;
     torque_weight = 1;
 
-    CostFunctionKukaArm_TRK_Contact costKukaArm_init(0, 0, 0, 0, 0, N, action_name); //only for initialization
-    CostFunctionKukaArm_TRK_Contact costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
+    CostFunctionKukaArm_TRK_Contact_new costKukaArm_init(0, 0, 0, 0, 0, N, action_name); //only for initialization
+    CostFunctionKukaArm_TRK_Contact_new costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
                                                      vel_obj_weight, vel_iiwa_weight, 
                                                      torque_weight, N, action_name); //postion/velocity/torque weights
-    ILQRSolver_TRK_Contact testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
-    ILQRSolver_TRK_Contact testSolverKukaArm_init(KukaArmModel,costKukaArm_init,ENABLE_FULLDDP,ENABLE_QPBOX); //only for initialization
+    ILQRSolver_TRK_Contact_new testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
+    ILQRSolver_TRK_Contact_new testSolverKukaArm_init(KukaArmModel,costKukaArm_init,ENABLE_FULLDDP,ENABLE_QPBOX); //only for initialization
 
     // Initialize Trajectory to get xnew with u_0
     testSolverKukaArm_init.firstInitSolver(xinit, xgoal, xbar, ubar, u_0, N, dt, iterMax, tolFun, tolGrad);
@@ -394,7 +394,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     return *ptr;
   }
 
-projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t& xnew,
+projfullStateAndCommandTab_t ADMM_KKTRunner_new::projection(const fullstateVecTab_t& xnew,
   const commandVecTab_t& unew, unsigned int NumberofKnotPt,
   string action_name){
     projfullStateAndCommandTab_t xubar;
@@ -496,9 +496,9 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
     return xubar;
 }
 
-void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
-    lcm_.subscribe(kLcmTimeChannel_ADMM,
-                        &ADMM_KKTRunner::HandleRobotTime, this);
+void ADMM_KKTRunner_new::RunVisualizer(double realtime_rate){
+    lcm_.subscribe(kLcmTimeChannel_ADMM_new,
+                        &ADMM_KKTRunner_new::HandleRobotTime, this);
     lcmt_iiwa_status iiwa_state;
     lcmt_schunk_wsg_status wsg_status;
     lcmt_object_status object_state;
@@ -562,7 +562,7 @@ void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
             iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
         }
 
-        lcm_.publish(kLcmStatusChannel_ADMM, &iiwa_state);
+        lcm_.publish(kLcmStatusChannel_ADMM_new, &iiwa_state);
         
 
         for (int joint = 0; joint < 7; joint++) 
@@ -570,17 +570,17 @@ void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
             object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
         }
 
-        lcm_.publish(kLcmObjectStatusChannel_ADMM, &object_state);
-        lcm_.publish(kLcmSchunkStatusChannel_ADMM, &wsg_status);
+        lcm_.publish(kLcmObjectStatusChannel_ADMM_new, &object_state);
+        lcm_.publish(kLcmSchunkStatusChannel_ADMM_new, &wsg_status);
     }
 }
 
-void ADMM_KKTRunner::HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+void ADMM_KKTRunner_new::HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
                       const lcmt_robot_time* robot_time) {
         robot_time_ = *robot_time;
 }
 
-void ADMM_KKTRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name){
+void ADMM_KKTRunner_new::saveVector(const Eigen::MatrixXd & _vec, const char * _name){
     std::string _file_name = UDP_TRAJ_DIR;
     _file_name += _name;
     _file_name += ".csv";
@@ -596,7 +596,7 @@ void ADMM_KKTRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name
     save_file.close();
 }
 
-void ADMM_KKTRunner::saveValue(double _value, const char * _name){
+void ADMM_KKTRunner_new::saveValue(double _value, const char * _name){
     std::string _file_name = UDP_TRAJ_DIR;
     _file_name += _name;
     _file_name += ".csv";
@@ -608,7 +608,7 @@ void ADMM_KKTRunner::saveValue(double _value, const char * _name){
     save_file.flush();
 }
 
-void ADMM_KKTRunner::clean_file(const char * _file_name, std::string & _ret_file){
+void ADMM_KKTRunner_new::clean_file(const char * _file_name, std::string & _ret_file){
     std::list<std::string>::iterator iter = std::find(admm_kkt_new_gs_filename_string.begin(), admm_kkt_new_gs_filename_string.end(), _file_name);
     if(admm_kkt_new_gs_filename_string.end() == iter){
         admm_kkt_new_gs_filename_string.push_back(_file_name);

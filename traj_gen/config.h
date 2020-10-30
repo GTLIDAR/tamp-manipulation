@@ -17,6 +17,7 @@
 #define DIRECT_INVERSE 0
 #define WHOLE_BODY 1
 #define VISUALIZE 1
+#define NUM_CONTACT_POINTS 2
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD
@@ -30,6 +31,8 @@
 
 #define fullstateSize 27 // object: 7+6; kuka: 7+7 (the joints for wsg cannot be optimized) 
 #define fullstatecommandSize 34 // add the size of torques
+
+#define forceSize 6*NUM_CONTACT_POINTS
 
 // #define TimeHorizon 2
 // #define TimeStep 0.005

@@ -248,6 +248,8 @@ drake_cc_binary(
         "//traj_gen:ddp_runner",
         "//traj_gen/ilqr_kkt:ddp_runner_contact",
         "//traj_gen/ilqr_kkt:admm_runner_contact",
+        "//traj_gen/admm_contact_constraints:ddp_runner_contact_new",
+        "//traj_gen/admm_contact_constraints:admm_runner_contact_new",
         "//traj_gen:config",
         "//lcmtypes:manipulator_traj",
         "//lcmtypes:motion_plan_query",

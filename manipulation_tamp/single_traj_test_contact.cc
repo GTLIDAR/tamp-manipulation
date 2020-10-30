@@ -14,6 +14,8 @@
 #include "drake/traj_gen/ddp_runner.h"
 #include "drake/traj_gen/ilqr_kkt/ddp_runner_contact.h"
 #include "drake/traj_gen/ilqr_kkt/admm_runner_contact.h"
+#include "drake/traj_gen/admm_contact_constraints/ddp_runner_contact_new.h"
+#include "drake/traj_gen/admm_contact_constraints/admm_runner_contact_new.h"
 
 #include "drake/lcmt_manipulator_traj.hpp"
 #include "drake/lcmt_motion_plan_query.hpp"
@@ -46,6 +48,8 @@ using drake::traj_gen::kuka_iiwa_arm::ADMMRunner;
 using drake::traj_gen::kuka_iiwa_arm::DDPRunner;
 using drake::traj_gen::kuka_iiwa_arm::ADMM_KKTRunner;
 using drake::traj_gen::kuka_iiwa_arm::DDP_KKTRunner;
+using drake::traj_gen::kuka_iiwa_arm::ADMM_KKTRunner_new;
+using drake::traj_gen::kuka_iiwa_arm::DDP_KKTRunner_new;
 using drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYaw;
@@ -122,7 +126,7 @@ lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal) {
     std::cout<<"ddp initial pos: " << q_init.transpose() << std::endl;
     std::cout<<"ddp goal pos: " << q_goal.transpose() << std::endl;
 
-    DDP_KKTRunner runner;
+    DDP_KKTRunner_new runner;
     auto return_ptr =  runner.RunDDP_KKT(q_init, q_goal, time_horizon_, time_step_, action_name_);
     runner.RunVisualizer(0.2);
     return return_ptr;
@@ -273,13 +277,13 @@ int do_main() {
         //waypoint (0)
         ConstraintRelaxingIk::IkCartesianWaypoint wp0;
         const Eigen::Vector3d xyz0(
-            // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-            // 0.0,
-            // 0.30
-
             (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-            -0.16,
-            0.09
+            0.0,
+            0.30
+
+            // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+            // -0.16,
+            // 0.09
             
             // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
             // 0.32,
@@ -288,13 +292,13 @@ int do_main() {
             // 0.5800000000000001, -0.1, 0.275
         );
         const math::RollPitchYaw<double> rpy0(
-            // 0,
-            // 1.57079632679,
-            // 1.57079632679
-
             0,
-            0,
+            1.57079632679,
             1.57079632679
+
+            // 0,
+            // 0,
+            // 1.57079632679
 
             // 0,
             // 0,
@@ -319,14 +323,14 @@ int do_main() {
             // 0.75, 0.0, 0.45
         );
         const math::RollPitchYaw<double> rpy1(
-            0.0, 0.0, 0.0
+            // 0.0, 0.0, 0.0
             // 0.0,
             // 1.57079632679,
             // 1.57079632679
 
-            // 0,
-            // 0,
-            // -1.57079632679
+            0,
+            0,
+            -1.57079632679
 
             // 0.707,
             // 0.707

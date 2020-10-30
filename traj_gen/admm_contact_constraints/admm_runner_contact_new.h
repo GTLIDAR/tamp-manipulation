@@ -72,10 +72,10 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-const char* const kLcmStatusChannel_ADMM = "IIWA_STATUS";
-const char* const kLcmObjectStatusChannel_ADMM = "OBJECT_STATUS";
-const char* const kLcmSchunkStatusChannel_ADMM = "WSG_STATUS";
-const char* const kLcmTimeChannel_ADMM = "IIWA_TIME";
+const char* const kLcmStatusChannel_ADMM_new = "IIWA_STATUS";
+const char* const kLcmObjectStatusChannel_ADMM_new = "OBJECT_STATUS";
+const char* const kLcmSchunkStatusChannel_ADMM_new = "WSG_STATUS";
+const char* const kLcmTimeChannel_ADMM_new = "IIWA_TIME";
 
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using examples::kuka_iiwa_arm::kIiwaLcmStatusPeriod;
@@ -84,7 +84,7 @@ using multibody::MultibodyForces;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 
-class ADMM_KKTRunner {
+class ADMM_KKTRunner_new {
   public:
   lcmt_manipulator_traj RunADMM_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
     double time_horizon, double time_step, string action_name);

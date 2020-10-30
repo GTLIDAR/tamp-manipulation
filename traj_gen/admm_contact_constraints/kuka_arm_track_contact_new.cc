@@ -4,11 +4,11 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-KukaArm_TRK_Contact::KukaArm_TRK_Contact(){}
+KukaArm_TRK_Contact_new::KukaArm_TRK_Contact_new(){}
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf";
-KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, string action_name)
+KukaArm_TRK_Contact_new::KukaArm_TRK_Contact_new(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, string action_name)
 {
     action_name_ = action_name;
     //#####
@@ -110,7 +110,7 @@ KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, 
     }
 }
 
-KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, MultibodyPlant<double>* plant, string action_name)
+KukaArm_TRK_Contact_new::KukaArm_TRK_Contact_new(double& iiwa_dt, unsigned int& iiwa_N, fullstateVec_t& iiwa_xgoal, MultibodyPlant<double>* plant, string action_name)
 {
     action_name_ = action_name;
     //#####
@@ -201,7 +201,7 @@ KukaArm_TRK_Contact::KukaArm_TRK_Contact(double& iiwa_dt, unsigned int& iiwa_N, 
     }
 }
 
-fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau)
+fullstateVec_t KukaArm_TRK_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau)
 {
 
     finalTimeProfile.counter0_ += 1;
@@ -438,13 +438,13 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
     return Xdot_new;
 }
 
-KukaArm_TRK_Contact::timeprofile KukaArm_TRK_Contact::getFinalTimeProfile()
+KukaArm_TRK_Contact_new::timeprofile KukaArm_TRK_Contact_new::getFinalTimeProfile()
 {
     return finalTimeProfile;
 }
 
-void KukaArm_TRK_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
-                                const fullstateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, CostFunctionKukaArm_TRK_Contact*& costFunction){
+void KukaArm_TRK_Contact_new::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
+                                const fullstateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, CostFunctionKukaArm_TRK_Contact_new*& costFunction){
     // // for a positive-definite quadratic, no control cost (indicated by the iLQG function using nans), is equivalent to u=0
     // for ADMM, add new penalties for augmented Lagrangian terms
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
@@ -557,8 +557,8 @@ void KukaArm_TRK_Contact::kuka_arm_dyn_cst_ilqr(const int& nargout, const fullst
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-void KukaArm_TRK_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const fullstateVec_t& xList_curr, const commandVec_t& uList_curr,
-        const fullstateVec_t& xList_cur_bar, const commandVec_t& uList_cur_bar, const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_TRK_Contact*& costFunction){
+void KukaArm_TRK_Contact_new::kuka_arm_dyn_cst_min_output(const int& nargout, const fullstateVec_t& xList_curr, const commandVec_t& uList_curr,
+        const fullstateVec_t& xList_cur_bar, const commandVec_t& uList_cur_bar, const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_TRK_Contact_new*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     if(debugging_print) std::cout<<"nargout: "<<nargout<<"\n";
     unsigned int Nc = xList_curr.cols(); //xList_curr is 14x1 vector -> col=1
@@ -598,7 +598,7 @@ void KukaArm_TRK_Contact::kuka_arm_dyn_cst_min_output(const int& nargout, const 
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-fullstateVec_t KukaArm_TRK_Contact::update(const int& nargout, const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
+fullstateVec_t KukaArm_TRK_Contact_new::update(const int& nargout, const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
     // 4th-order Runge-Kutta step
     if(debugging_print) TRACE_KUKA_ARM("update: 4th-order Runge-Kutta step\n");
 
@@ -692,7 +692,7 @@ fullstateVec_t KukaArm_TRK_Contact::update(const int& nargout, const fullstateVe
     return X_new;
 }
 
-void KukaArm_TRK_Contact::grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
+void KukaArm_TRK_Contact_new::grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -722,7 +722,7 @@ void KukaArm_TRK_Contact::grad(const fullstateVec_t& X, const commandVec_t& U, f
 }
 
 // parameters are called by reference. Name doesn't matter
-void KukaArm_TRK_Contact::hessian(const fullstateVec_t& X, const commandVec_t& U, fullstateTens_t& fxx_p, fullstateR_fullstateC_commandD_t& fxu_p, fullstateR_commandC_commandD_t& fuu_p){
+void KukaArm_TRK_Contact_new::hessian(const fullstateVec_t& X, const commandVec_t& U, fullstateTens_t& fxx_p, fullstateR_fullstateC_commandD_t& fxu_p, fullstateR_commandC_commandD_t& fuu_p){
     unsigned int n = X.size();
     unsigned int m = U.size();
 
@@ -766,39 +766,39 @@ void KukaArm_TRK_Contact::hessian(const fullstateVec_t& X, const commandVec_t& U
     }
 }
 
-unsigned int KukaArm_TRK_Contact::getStateNb()
+unsigned int KukaArm_TRK_Contact_new::getStateNb()
 {
     return stateNb;
 }
 
-unsigned int KukaArm_TRK_Contact::getCommandNb()
+unsigned int KukaArm_TRK_Contact_new::getCommandNb()
 {
     return commandNb;
 }
 
-commandVec_t& KukaArm_TRK_Contact::getLowerCommandBounds()
+commandVec_t& KukaArm_TRK_Contact_new::getLowerCommandBounds()
 {
     return lowerCommandBounds;
 }
 
-commandVec_t& KukaArm_TRK_Contact::getUpperCommandBounds()
+commandVec_t& KukaArm_TRK_Contact_new::getUpperCommandBounds()
 {
     return upperCommandBounds;
 }
 
-fullstateMatTab_t& KukaArm_TRK_Contact::getfxList()
+fullstateMatTab_t& KukaArm_TRK_Contact_new::getfxList()
 {
     return fxList;
 }
 
-fullstateR_commandC_tab_t& KukaArm_TRK_Contact::getfuList()
+fullstateR_commandC_tab_t& KukaArm_TRK_Contact_new::getfuList()
 {
     return fuList;
 }
 
 
-void KukaArm_TRK_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
-                                CostFunctionKukaArm_TRK_Contact*& costFunction){
+void KukaArm_TRK_Contact_new::kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
+                                CostFunctionKukaArm_TRK_Contact_new*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     unsigned int Nl = xList.size();
 

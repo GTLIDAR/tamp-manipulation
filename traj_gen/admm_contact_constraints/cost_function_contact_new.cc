@@ -1,10 +1,10 @@
-#include "drake/traj_gen/ilqr_kkt/cost_function_kuka_arm_contact.h"
+#include "drake/traj_gen/admm_contact_constraints/cost_function_contact_new.h"
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N, std::string action_name)
+CostFunctionKukaArm_Contact_new::CostFunctionKukaArm_Contact_new(unsigned int N, std::string action_name)
 {
     
 
@@ -26,10 +26,10 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N, std::st
             vel_obj_f_scale = 0;//10;
         }
         else{
-            pos_obj_scale = 10;
-            vel_obj_scale = 10;
-            pos_obj_f_scale = 100;//0.001;
-            vel_obj_f_scale = 100;//10;
+            pos_obj_scale = 0;
+            vel_obj_scale = 0;
+            pos_obj_f_scale = 0;//0.001;
+            vel_obj_f_scale = 0;//10;
         }
 
         double pos_iiwa_scale = 10;
@@ -75,47 +75,47 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N, std::st
     cuu_new.resize(N+1);
 }
 
-fullstateMat_t& CostFunctionKukaArm_Contact::getQ()
+fullstateMat_t& CostFunctionKukaArm_Contact_new::getQ()
 {
     return Q;
 }
 
-fullstateMat_t& CostFunctionKukaArm_Contact::getQf()
+fullstateMat_t& CostFunctionKukaArm_Contact_new::getQf()
 {
     return Qf;
 }
 
-commandMat_t& CostFunctionKukaArm_Contact::getR()
+commandMat_t& CostFunctionKukaArm_Contact_new::getR()
 {
     return R;
 }
 
-fullstateVecTab_t& CostFunctionKukaArm_Contact::getcx()
+fullstateVecTab_t& CostFunctionKukaArm_Contact_new::getcx()
 {
     return cx_new;
 }
 
-commandVecTab_t& CostFunctionKukaArm_Contact::getcu()
+commandVecTab_t& CostFunctionKukaArm_Contact_new::getcu()
 {
     return cu_new;
 }
 
-fullstateMatTab_t& CostFunctionKukaArm_Contact::getcxx()
+fullstateMatTab_t& CostFunctionKukaArm_Contact_new::getcxx()
 {
     return cxx_new;
 }
 
-commandR_fullstateC_tab_t& CostFunctionKukaArm_Contact::getcux()
+commandR_fullstateC_tab_t& CostFunctionKukaArm_Contact_new::getcux()
 {
     return cux_new;
 }
 
-commandMatTab_t& CostFunctionKukaArm_Contact::getcuu()
+commandMatTab_t& CostFunctionKukaArm_Contact_new::getcuu()
 {
     return cuu_new;
 }
 
-double& CostFunctionKukaArm_Contact::getc()
+double& CostFunctionKukaArm_Contact_new::getc()
 {
     return c_new;
 }

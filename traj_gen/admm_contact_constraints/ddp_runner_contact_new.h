@@ -30,8 +30,8 @@
 #include "drake/lcmt_generic_string_msg.hpp"
 
 #include "drake/traj_gen/config.h"
-#include "drake/traj_gen/ilqr_kkt/ilqr-kkt_solver.h"
-#include "drake/traj_gen/ilqr_kkt/kuka_arm_contact.h"
+#include "drake/traj_gen/admm_contact_constraints/ilqr-kkt_solver_new.h"
+#include "drake/traj_gen/admm_contact_constraints/kuka_arm_contact_new.h"
 
 #include "drake/lcmt_motion_plan_query.hpp"
 
@@ -44,17 +44,17 @@ using lcm::LCM;
 
 /* DDP trajectory generation */
 
-static std::list< const char*> gs_kkt_fileName;
-static std::list< std::string > gs_kkt_fileName_string;
+static std::list< const char*> gs_kkt_new_fileName;
+static std::list< std::string > gs_kkt_new_fileName_string;
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-const char* const kLcmStatusChannel_DDP = "IIWA_STATUS";
-const char* const kLcmObjectStatusChannel_DDP = "OBJECT_STATUS";
-const char* const kLcmSchunkStatusChannel_DDP = "WSG_STATUS";
-const char* const kLcmTimeChannel_DDP = "IIWA_TIME";
+const char* const kLcmStatusChannel_DDP_new = "IIWA_STATUS";
+const char* const kLcmObjectStatusChannel_DDP_new = "OBJECT_STATUS";
+const char* const kLcmSchunkStatusChannel_DDP_new = "WSG_STATUS";
+const char* const kLcmTimeChannel_DDP_new = "IIWA_TIME";
 
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using examples::kuka_iiwa_arm::kIiwaLcmStatusPeriod;
@@ -65,7 +65,7 @@ using multibody::MultibodyForces;
 using multibody::MultibodyForces;
 using multibody::BodyIndex;
 
-class DDP_KKTRunner {
+class DDP_KKTRunner_new {
 public:
 lcmt_manipulator_traj RunDDP_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
     double time_horizon, double time_step, string action_name);

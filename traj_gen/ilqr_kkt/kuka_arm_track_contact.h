@@ -51,6 +51,7 @@ using drake::multibody::ModelInstanceIndex;
 using drake::math::RollPitchYaw;
 using drake::math::CalculateQuaternionDtFromAngularVelocityExpressedInB;
 using drake::multibody::JacobianWrtVariable;
+using drake::multibody::SpatialAcceleration;
 
 
 namespace drake {

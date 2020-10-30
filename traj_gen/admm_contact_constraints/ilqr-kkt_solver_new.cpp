@@ -1,4 +1,4 @@
-#include "drake/traj_gen/ilqr_kkt/ilqr-kkt_solver.h"
+#include "drake/traj_gen/admm_contact_constraints/ilqr-kkt_solver_new.h"
 
 /* Debug */
 #include <iostream>
@@ -12,7 +12,7 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-ILQR_KKTSolver::ILQR_KKTSolver(KukaArm_Contact& iiwaDynamicModel, CostFunctionKukaArm_Contact& iiwaCostFunction, bool fullDDP, bool QPBox)
+ILQR_KKTSolver_new::ILQR_KKTSolver_new(KukaArm_Contact_new& iiwaDynamicModel, CostFunctionKukaArm_Contact_new& iiwaCostFunction, bool fullDDP, bool QPBox)
 {
     //TRACE("initialize dynamic model and cost function\n");
     dynamicModel = &iiwaDynamicModel;
@@ -47,7 +47,7 @@ ILQR_KKTSolver::ILQR_KKTSolver(KukaArm_Contact& iiwaDynamicModel, CostFunctionKu
     //tOptSet Op = INIT_OPTSET;
 }
 
-void ILQR_KKTSolver::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, commandVecTab_t initialTorque, unsigned int& iiwaN,
+void ILQR_KKTSolver_new::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, commandVecTab_t initialTorque, unsigned int& iiwaN,
                        double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad)
 {
     // TODO: double check opt params
@@ -119,7 +119,7 @@ void ILQR_KKTSolver::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& 
     debugging_print = 0;
 }
 
-void ILQR_KKTSolver::solveTrajectory()
+void ILQR_KKTSolver_new::solveTrajectory()
 {
     //==============
     // Checked!!v
@@ -144,7 +144,6 @@ void ILQR_KKTSolver::solveTrajectory()
         //==============
         // TRACE("STEP 1: differentiate dynamics and cost along new trajectory\n");
         if(newDeriv){
-            int nargout = 7;//fx,fu,cx,cu,cxx,cxu,cuu
             for(unsigned int i=0;i<u_NAN.size();i++)
                 u_NAN(i,0) = sqrt(-1.0); // control vector = Nan for last time step
 
@@ -158,7 +157,7 @@ void ILQR_KKTSolver::solveTrajectory()
             gettimeofday(&tbegin_time_deriv,NULL);
             // FList is empty here on the first interation
             // initial x, u, cost is passed in
-            dynamicModel->kuka_arm_dyn_cst_ilqr(nargout, xList, uListFull, FList, costFunction);
+            dynamicModel->kuka_arm_dyn_cst_ilqr(xList, uListFull, FList, costFunction); // get fx,fu,cx,cu,cxx,cxu,cuu
             //dynamicModel->kuka_arm_dyn_cst(nargout, dt, xList, uListFull, xgoal, FList, costFunction->getcx(), costFunction->getcu(), costFunction->getcxx(), costFunction->getcux(), costFunction->getcuu(), costFunction->getc());
             gettimeofday(&tend_time_deriv,NULL);
             Op.time_derivative(iter) = (static_cast<double>(1000*(tend_time_deriv.tv_sec-tbegin_time_deriv.tv_sec)+((tend_time_deriv.tv_usec-tbegin_time_deriv.tv_usec)/1000)))/1000.0;
@@ -310,7 +309,7 @@ void ILQR_KKTSolver::solveTrajectory()
     }
 }
 
-void ILQR_KKTSolver::initializeTraj()
+void ILQR_KKTSolver_new::initializeTraj()
 {
     xList[0] = Op.xInit;
     commandVec_t zeroCommand;
@@ -373,7 +372,7 @@ void ILQR_KKTSolver::initializeTraj()
     if(Op.debug_level > 0) TRACE("\n=========== begin iLQR ===========\n");
 }
 
-void ILQR_KKTSolver::standardizeParameters(tOptSet *o) {
+void ILQR_KKTSolver_new::standardizeParameters(tOptSet *o) {
     o->n_alpha = 11;
     o->tolFun = 1e-4;
     o->tolConstraint = 1e-7; // TODO: to be modified
@@ -396,7 +395,7 @@ void ILQR_KKTSolver::standardizeParameters(tOptSet *o) {
     o->print = 2;
 }
 
-void ILQR_KKTSolver::doBackwardPass()
+void ILQR_KKTSolver_new::doBackwardPass()
 {
     if(Op.regType == 1)
         lambdaEye = Op.lambda*fullstateMat_t::Identity();
@@ -511,10 +510,9 @@ void ILQR_KKTSolver::doBackwardPass()
     Op.g_norm = g_norm_sum/(static_cast<double>(Op.n_hor));
 }
 
-void ILQR_KKTSolver::doForwardPass()
+void ILQR_KKTSolver_new::doForwardPass()
 {
     updatedxList[0] = Op.xInit;
-    int nargout = 2;
 
     fullstateVec_t x_unused;
     x_unused.setZero();
@@ -528,27 +526,27 @@ void ILQR_KKTSolver::doForwardPass()
         for(unsigned int i=0;i<N;i++) {
             updateduList[i] = uList[i];
             // running cost, state, input
-            dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
+            dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
             costList[i] = costFunction->getc();
         }
         // getting final cost, state, input=NaN
         isUNan = 1;
-        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
         costList[N] = costFunction->getc();
     }
     else {
         for(unsigned int i=0;i<N;i++) {
             updateduList[i] = uList[i] + alpha*kList[i] + KList[i]*(updatedxList[i]-xList[i]);
-            dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
+            dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
             costListNew[i] = costFunction->getc();
         }
         isUNan = 1;
-        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
         costListNew[N] = costFunction->getc();
     }
 }
 
-ILQR_KKTSolver::traj ILQR_KKTSolver::getLastSolvedTrajectory()
+ILQR_KKTSolver_new::traj ILQR_KKTSolver_new::getLastSolvedTrajectory()
 {
     lastTraj.xList = xList;
     // for(unsigned int i=0;i<N+1;i++)lastTraj.xList[i] += xgoal;//retrieve original state with xgoal
@@ -563,7 +561,7 @@ ILQR_KKTSolver::traj ILQR_KKTSolver::getLastSolvedTrajectory()
     return lastTraj;
 }
 
-bool ILQR_KKTSolver::isPositiveDefinite(const commandMat_t & Quu_p)
+bool ILQR_KKTSolver_new::isPositiveDefinite(const commandMat_t & Quu_p)
 {
     //Eigen::JacobiSVD<commandMat_t> svd_Quu (Quu, ComputeThinU | ComputeThinV);
     Eigen::VectorXcd singular_values = Quu_p.eigenvalues();

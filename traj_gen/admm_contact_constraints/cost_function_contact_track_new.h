@@ -14,10 +14,10 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-class CostFunctionKukaArm_TRK_Contact
+class CostFunctionKukaArm_TRK_Contact_new
 {
 public:
-    CostFunctionKukaArm_TRK_Contact(double pos_obj_weight, double pos_iiwa_weight, 
+    CostFunctionKukaArm_TRK_Contact_new(double pos_obj_weight, double pos_iiwa_weight, 
                                     double vel_obj_weight, double vel_iiwa_weight,
                                     double torque_weight, unsigned int N, std::string action_name);
 private:

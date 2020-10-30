@@ -38,7 +38,7 @@ namespace traj_gen {
 namespace kuka_iiwa_arm {
 // namespace {
 
-class ILQRSolver_TRK_Contact
+class ILQRSolver_TRK_Contact_new
 {
 public:
     struct traj
@@ -98,7 +98,7 @@ public:
     };
 
 public:
-    ILQRSolver_TRK_Contact(KukaArm_TRK_Contact& iiwaDynamicModel, CostFunctionKukaArm_TRK_Contact& iiwaCostFunction, bool fullDDP=0,bool QPBox=0);
+    ILQRSolver_TRK_Contact_new(KukaArm_TRK_Contact_new& iiwaDynamicModel, CostFunctionKukaArm_TRK_Contact_new& iiwaCostFunction, bool fullDDP=0,bool QPBox=0);
     fullstateVecTab_t updatedxList;
     fullstateVecTab_t xList; // vector/array of stateVec_t = basically knot config over entire time horizon
     commandVecTab_t uList;
@@ -108,8 +108,8 @@ protected:
     // attributes //
 public:
 private:
-    KukaArm_TRK_Contact* dynamicModel;
-    CostFunctionKukaArm_TRK_Contact* costFunction;
+    KukaArm_TRK_Contact_new* dynamicModel;
+    CostFunctionKukaArm_TRK_Contact_new* costFunction;
     unsigned int stateNb;
     unsigned int commandNb;
     fullstateVec_t xInit; //matrix of <statesize, 1> = essentially a vector

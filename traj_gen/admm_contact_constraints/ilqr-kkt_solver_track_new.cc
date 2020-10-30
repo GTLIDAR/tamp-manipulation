@@ -12,7 +12,7 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-ILQRSolver_TRK_Contact::ILQRSolver_TRK_Contact(KukaArm_TRK_Contact& iiwaDynamicModel, CostFunctionKukaArm_TRK_Contact& iiwaCostFunction, bool fullDDP, bool QPBox)
+ILQRSolver_TRK_Contact_new::ILQRSolver_TRK_Contact_new(KukaArm_TRK_Contact_new& iiwaDynamicModel, CostFunctionKukaArm_TRK_Contact_new& iiwaCostFunction, bool fullDDP, bool QPBox)
 {
     //TRACE("initialize dynamic model and cost function\n");
     dynamicModel = &iiwaDynamicModel;
@@ -47,7 +47,7 @@ ILQRSolver_TRK_Contact::ILQRSolver_TRK_Contact(KukaArm_TRK_Contact& iiwaDynamicM
     //tOptSet Op = INIT_OPTSET;
 }
 
-void ILQRSolver_TRK_Contact::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, fullstateVecTab_t& x_bar, commandVecTab_t& u_bar, 
+void ILQRSolver_TRK_Contact_new::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, fullstateVecTab_t& x_bar, commandVecTab_t& u_bar, 
         commandVecTab_t initialTorque, unsigned int& iiwaN, double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad)
 {
     // TODO: double check opt params
@@ -123,7 +123,7 @@ void ILQRSolver_TRK_Contact::firstInitSolver(fullstateVec_t& iiwaxInit, fullstat
     debugging_print = 0;
 }
 
-void ILQRSolver_TRK_Contact::solveTrajectory()
+void ILQRSolver_TRK_Contact_new::solveTrajectory()
 {
     //==============
     // Checked!!v
@@ -314,7 +314,7 @@ void ILQRSolver_TRK_Contact::solveTrajectory()
     }
 }
 
-void ILQRSolver_TRK_Contact::initializeTraj()
+void ILQRSolver_TRK_Contact_new::initializeTraj()
 {
     xList[0] = Op.xInit;
     // commandVec_t initCommand;
@@ -371,7 +371,7 @@ void ILQRSolver_TRK_Contact::initializeTraj()
     Op.last_head = Op.print_head;
 }
 
-void ILQRSolver_TRK_Contact::standardizeParameters(tOptSet *o) {
+void ILQRSolver_TRK_Contact_new::standardizeParameters(tOptSet *o) {
     o->n_alpha = 11;
     o->tolFun = 1e-4;
     o->tolConstraint = 1e-7; // TODO: to be modified
@@ -394,7 +394,7 @@ void ILQRSolver_TRK_Contact::standardizeParameters(tOptSet *o) {
     o->print = 2;
 }
 
-void ILQRSolver_TRK_Contact::doBackwardPass()
+void ILQRSolver_TRK_Contact_new::doBackwardPass()
 {    
     if(Op.regType == 1)
         lambdaEye = Op.lambda*fullstateMat_t::Identity();
@@ -509,7 +509,7 @@ void ILQRSolver_TRK_Contact::doBackwardPass()
     Op.g_norm = g_norm_sum/(static_cast<double>(Op.n_hor));
 }
 
-void ILQRSolver_TRK_Contact::doForwardPass()
+void ILQRSolver_TRK_Contact_new::doForwardPass()
 {
     updatedxList[0] = Op.xInit;
     int nargout = 2;
@@ -547,7 +547,7 @@ void ILQRSolver_TRK_Contact::doForwardPass()
     }
 }
 
-ILQRSolver_TRK_Contact::traj ILQRSolver_TRK_Contact::getLastSolvedTrajectory()
+ILQRSolver_TRK_Contact_new::traj ILQRSolver_TRK_Contact_new::getLastSolvedTrajectory()
 {
     lastTraj.xList = xList;
     // for(unsigned int i=0;i<N+1;i++)lastTraj.xList[i] += xgoal;//retrieve original state with xgoal
@@ -562,7 +562,7 @@ ILQRSolver_TRK_Contact::traj ILQRSolver_TRK_Contact::getLastSolvedTrajectory()
     return lastTraj;
 }
 
-bool ILQRSolver_TRK_Contact::isPositiveDefinite(const commandMat_t & Quu_p)
+bool ILQRSolver_TRK_Contact_new::isPositiveDefinite(const commandMat_t & Quu_p)
 {
     //Eigen::JacobiSVD<commandMat_t> svd_Quu (Quu, ComputeThinU | ComputeThinV);
     Eigen::VectorXcd singular_values = Quu_p.eigenvalues();

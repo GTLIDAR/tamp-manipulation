@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef COSTFUNCTIONKUKAARM_CONTACT_H
-#define COSTFUNCTIONKUKAARM_CONTACT_H
+#ifndef COSTFUNCTIONKUKAARM_CONTACT_NEW_H
+#define COSTFUNCTIONKUKAARM_CONTACT_NEW_H
 
 #include "drake/traj_gen/config.h"
 #include <iostream>
@@ -14,10 +14,10 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-class CostFunctionKukaArm_Contact
+class CostFunctionKukaArm_Contact_new
 {
 public:
-    CostFunctionKukaArm_Contact(unsigned int N, std::string action_name);
+    CostFunctionKukaArm_Contact_new(unsigned int N, std::string action_name);
 private:
 protected:
 	fullstateMat_t Q;

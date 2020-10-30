@@ -1,10 +1,10 @@
-#include "drake/traj_gen/ilqr_kkt/ddp_runner_contact.h"
+#include "drake/traj_gen/admm_contact_constraints/ddp_runner_contact_new.h"
 
 namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateVec_t xgoal, 
+lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullstateVec_t xgoal, 
   double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
@@ -16,7 +16,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
     unsigned int iterMax = 15; //100;
 
-    ILQR_KKTSolver::traj lastTraj;
+    ILQR_KKTSolver_new::traj lastTraj;
     //=============================================
     // Build wholebody and pass over to kukaArm
     std::string kIiwaUrdf = 
@@ -86,9 +86,9 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
         // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
     }
     //======================================
-    KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
-    CostFunctionKukaArm_Contact costKukaArm(N, action_name);
-    ILQR_KKTSolver testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
+    KukaArm_Contact_new KukaArmModel(dt, N, xgoal, &plant_, action_name);
+    CostFunctionKukaArm_Contact_new costKukaArm(N, action_name);
+    ILQR_KKTSolver_new testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
     // run one or multiple times and then average
@@ -211,9 +211,9 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     return *ptr;
 }
 
-void DDP_KKTRunner::RunVisualizer(double realtime_rate){
-    lcm_.subscribe(kLcmTimeChannel_DDP,
-                        &DDP_KKTRunner::HandleRobotTime, this);
+void DDP_KKTRunner_new::RunVisualizer(double realtime_rate){
+    lcm_.subscribe(kLcmTimeChannel_DDP_new,
+                        &DDP_KKTRunner_new::HandleRobotTime, this);
     lcmt_iiwa_status iiwa_state;
     lcmt_schunk_wsg_status wsg_status;
     lcmt_object_status object_state;
@@ -277,7 +277,7 @@ void DDP_KKTRunner::RunVisualizer(double realtime_rate){
             iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
         }
 
-        lcm_.publish(kLcmStatusChannel_DDP, &iiwa_state);
+        lcm_.publish(kLcmStatusChannel_DDP_new, &iiwa_state);
         
 
         for (int joint = 0; joint < 7; joint++) 
@@ -285,21 +285,21 @@ void DDP_KKTRunner::RunVisualizer(double realtime_rate){
             object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
         }
 
-        lcm_.publish(kLcmObjectStatusChannel_DDP, &object_state);
-        lcm_.publish(kLcmSchunkStatusChannel_DDP, &wsg_status);
+        lcm_.publish(kLcmObjectStatusChannel_DDP_new, &object_state);
+        lcm_.publish(kLcmSchunkStatusChannel_DDP_new, &wsg_status);
     }
 }
 
-void DDP_KKTRunner::HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+void DDP_KKTRunner_new::HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
                       const lcmt_robot_time* robot_time) {
         robot_time_ = *robot_time;
 }
 
-void DDP_KKTRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name) {
+void DDP_KKTRunner_new::saveVector(const Eigen::MatrixXd & _vec, const char * _name) {
     std::string _file_name = UDP_TRAJ_DIR;
     _file_name += _name;
     _file_name += ".csv";
-    DDP_KKTRunner::clean_file(_name, _file_name);
+    DDP_KKTRunner_new::clean_file(_name, _file_name);
 
     std::ofstream save_file;
     save_file.open(_file_name, std::fstream::app);
@@ -311,11 +311,11 @@ void DDP_KKTRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name)
     save_file.close();
 }
 
-void DDP_KKTRunner::saveValue(double _value, const char * _name){
+void DDP_KKTRunner_new::saveValue(double _value, const char * _name){
     std::string _file_name = UDP_TRAJ_DIR;
     _file_name += _name;
     _file_name += ".csv";
-    DDP_KKTRunner::clean_file(_name, _file_name);
+    DDP_KKTRunner_new::clean_file(_name, _file_name);
 
     std::ofstream save_file;
     save_file.open(_file_name, std::fstream::app);
@@ -323,10 +323,10 @@ void DDP_KKTRunner::saveValue(double _value, const char * _name){
     save_file.flush();
 }
 
-void DDP_KKTRunner::clean_file(const char * _file_name, std::string & _ret_file){
-    std::list<std::string>::iterator iter = std::find(gs_kkt_fileName_string.begin(), gs_kkt_fileName_string.end(), _file_name);
-    if(gs_kkt_fileName_string.end() == iter){
-        gs_kkt_fileName_string.push_back(_file_name);
+void DDP_KKTRunner_new::clean_file(const char * _file_name, std::string & _ret_file){
+    std::list<std::string>::iterator iter = std::find(gs_kkt_new_fileName_string.begin(), gs_kkt_new_fileName_string.end(), _file_name);
+    if(gs_kkt_new_fileName_string.end() == iter){
+        gs_kkt_new_fileName_string.push_back(_file_name);
         remove(_ret_file.c_str());
     }
 }
