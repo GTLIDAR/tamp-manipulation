@@ -37,6 +37,9 @@ CostFunctionKukaArm_Contact_new::CostFunctionKukaArm_Contact_new(unsigned int N,
         double pos_iiwa_f_scale = 100;//0.001;
         double vel_iiwa_f_scale = 100;//10;
 
+        double torsional_scale = 0;
+        double trans_scale = 1e-2;
+
         QDiagElementVec << pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100,
                             vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10,
                             pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100, pos_iiwa_scale*100,
@@ -46,6 +49,8 @@ CostFunctionKukaArm_Contact_new::CostFunctionKukaArm_Contact_new(unsigned int N,
                             pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0, pos_iiwa_f_scale*1000.0,
                             vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0, vel_iiwa_f_scale*100.0;
         RDiagElementVec << torqoe_scale*0.005, torqoe_scale*0.005, torqoe_scale*0.007, torqoe_scale*0.007, torqoe_scale*0.02, torqoe_scale*0.02, torqoe_scale*0.05;
+        FDiagElementVec << torsional_scale, torsional_scale, torsional_scale, trans_scale, trans_scale, trans_scale, 
+                           torsional_scale, torsional_scale, torsional_scale, trans_scale, trans_scale, trans_scale; 
     }
     else{
         double pos_scale = 10;
@@ -64,15 +69,17 @@ CostFunctionKukaArm_Contact_new::CostFunctionKukaArm_Contact_new(unsigned int N,
     Q = QDiagElementVec.asDiagonal();
     Qf = QfDiagElementVec.asDiagonal();
     R = RDiagElementVec.asDiagonal();
-
+    F = FDiagElementVec.asDiagonal();
     // TimeHorizon = total time
     // TimeStep = time between two timesteps
     // N = number of knot
     cx_new.resize(N+1);
     cu_new.resize(N+1);
+    cf_new.resize(N+1);
     cxx_new.resize(N+1);
     cux_new.resize(N+1);
     cuu_new.resize(N+1);
+    cff_new.resize(N+1);
 }
 
 fullstateMat_t& CostFunctionKukaArm_Contact_new::getQ()
@@ -90,6 +97,11 @@ commandMat_t& CostFunctionKukaArm_Contact_new::getR()
     return R;
 }
 
+forceMat_t& CostFunctionKukaArm_Contact_new::getF()
+{
+    return F;
+}
+
 fullstateVecTab_t& CostFunctionKukaArm_Contact_new::getcx()
 {
     return cx_new;
@@ -98,6 +110,11 @@ fullstateVecTab_t& CostFunctionKukaArm_Contact_new::getcx()
 commandVecTab_t& CostFunctionKukaArm_Contact_new::getcu()
 {
     return cu_new;
+}
+
+forceVecTab_t& CostFunctionKukaArm_Contact_new::getcf()
+{
+    return cf_new;
 }
 
 fullstateMatTab_t& CostFunctionKukaArm_Contact_new::getcxx()
@@ -113,6 +130,11 @@ commandR_fullstateC_tab_t& CostFunctionKukaArm_Contact_new::getcux()
 commandMatTab_t& CostFunctionKukaArm_Contact_new::getcuu()
 {
     return cuu_new;
+}
+
+forceMatTab_t& CostFunctionKukaArm_Contact_new::getcff()
+{
+    return cff_new;
 }
 
 double& CostFunctionKukaArm_Contact_new::getc()

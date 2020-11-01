@@ -128,7 +128,7 @@ lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal) {
 
     DDP_KKTRunner_new runner;
     auto return_ptr =  runner.RunDDP_KKT(q_init, q_goal, time_horizon_, time_step_, action_name_);
-    runner.RunVisualizer(0.2);
+    runner.RunVisualizer(0.05);
     return return_ptr;
 }
 
@@ -205,7 +205,7 @@ int do_main() {
     fullstateVec_t xinit,xgoal;
     double time_horizon = 2.0;
     double time_step = 0.005;
-    double realtime_rate = 0.2;
+    double realtime_rate = 0.05;
     std::string kIiwaUrdf = 
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
     std::string action = "move";
@@ -324,13 +324,13 @@ int do_main() {
         );
         const math::RollPitchYaw<double> rpy1(
             // 0.0, 0.0, 0.0
-            // 0.0,
-            // 1.57079632679,
-            // 1.57079632679
+            0.0,
+            1.57079632679,
+            1.57079632679
 
-            0,
-            0,
-            -1.57079632679
+            // 0,
+            // 0,
+            // -1.57079632679
 
             // 0.707,
             // 0.707

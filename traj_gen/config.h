@@ -68,6 +68,12 @@ typedef Eigen::Matrix<double,1,commandSize> commandVecTrans_t;                  
 typedef Eigen::Matrix<double,commandSize,commandSize> commandMat_t;                 // commandSize x commandSize
 typedef Eigen::Matrix<double,commandSize,commandSize> commandTens_t[commandSize];   // stateSize x commandSize x commandSize
 
+// typedef for forceSize types
+typedef Eigen::Matrix<double,forceSize,1> forceVec_t;                       // forceSize x 1
+typedef Eigen::Matrix<double,1,forceSize> forceVecTrans_t;                  // 1 x forceSize
+typedef Eigen::Matrix<double,forceSize,forceSize> forceMat_t;               // forceSize x forceSize
+typedef Eigen::Matrix<double,forceSize,forceSize> forceTens_t[forceSize];   // forceSize x forceSize x forceSize
+
 // typedef for mixed stateSize and commandSize types
 typedef Eigen::Matrix<double,stateSize,commandSize> stateR_commandC_t;                          // stateSize x commandSize
 typedef Eigen::Matrix<double,stateSize,commandSize> stateR_commandC_stateD_t[stateSize];        // stateSize x commandSize x stateSize
@@ -92,6 +98,17 @@ typedef Eigen::Matrix<double,commandSize,commandSize> commandR_commandC_fullstat
 typedef Eigen::Matrix<double,fullstateSize+commandSize,1> fullstateAug_t;                               // fullstateSize + commandSize x 1
 typedef Eigen::Matrix<double,fullstateSize+commandSize,1> projfullStateAndCommand_t;                    // 34 x 1
 
+// typedef for mixed force related matrices
+typedef Eigen::Matrix<double,forceSize,commandSize> forceR_commandC_t;                          // forceSize x commandSize gu
+typedef Eigen::Matrix<double,forceSize,fullstateSize> forceR_fullstateC_t;                          // forceSize x fullstateSize gx
+typedef Eigen::Matrix<double,forceSize,fullstateSize> forceR_fullstateC_fullstateD_t[fullstateSize];                          // forceSize x fullstateSize x fullstateSize gxx
+typedef Eigen::Matrix<double,forceSize,commandSize> forceR_commandC_fullstateD_t[fullstateSize];                          // forceSize x commandSize x fullstateSize gux
+typedef Eigen::Matrix<double,forceSize,fullstateSize> forceR_fullstateC_commandD_t[commandSize];                          // forceSize x fullstateSize x commandSize gxu
+typedef Eigen::Matrix<double,forceSize,commandSize> forceR_commandC_commandD_t[commandSize];                          // forceSize x commandSize x commandSize guu
+
+
+
+
 // typedef for half commandSize and stateSize types
 typedef Eigen::Matrix<double,stateSize/2,1> stateVec_half_t;                                    // stateSize/2 x 1
 typedef Eigen::Matrix<double,stateSize/2,stateSize/2> stateMat_half_t;                          // stateSize/2 x stateSize/2
@@ -113,6 +130,12 @@ typedef std::vector<fullstateMat_t> fullstateMatTab_t;
 typedef std::vector<fullstateR_commandC_t> fullstateR_commandC_tab_t;
 typedef std::vector<commandR_fullstateC_t> commandR_fullstateC_tab_t;
 typedef std::vector<projfullStateAndCommand_t> projfullStateAndCommandTab_t;
+
+// typedef for force related matrices (over the horizon)
+typedef std::vector<forceVec_t> forceVecTab_t;
+typedef std::vector<forceMat_t> forceMatTab_t;
+typedef std::vector<forceR_fullstateC_t> forceR_fullstateC_tab_t;
+typedef std::vector<forceR_commandC_t> forceR_commandC_tab_t;
 
 //typedef std::vector<stateTens_t> stateTensTab_t;
 typedef std::vector<std::vector<stateMat_t> > stateTensTab_t;

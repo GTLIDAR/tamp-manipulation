@@ -230,7 +230,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         q_iiwa_full.setZero();
         qd_iiwa_full.setZero();
         q_iiwa_full.topRows(7)=q_iiwa;
-        q_iiwa_full.bottomRows(2) << -0.025, 0.025;
+        q_iiwa_full.bottomRows(2) << -25, 25;
         qd_iiwa_full.topRows(7)=qd_iiwa;
         qd_full.topRows(6) = qd_obj;
         qd_full.bottomRows(9) = qd_iiwa_full;
@@ -455,7 +455,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         q_iiwa_full.setZero();
         qd_iiwa_full.setZero();
         q_iiwa_full.topRows(7)=q_iiwa;
-        q_iiwa_full.bottomRows(2) << -0.025, 0.025;
+        q_iiwa_full.bottomRows(2) << -25, 25;
         qd_iiwa_full.topRows(7)=qd_iiwa;
         qd_full.topRows(6) = qd_obj;
         qd_full.bottomRows(9) = qd_iiwa_full;

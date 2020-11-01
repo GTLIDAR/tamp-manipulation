@@ -45,7 +45,7 @@ public:
     {
         fullstateVecTab_t xList;
         commandVecTab_t uList;
-        std::vector<VectorXd> forceList;
+        forceVecTab_t forceList;
         unsigned int iter;
         double finalCost;
         double finalGrad;
@@ -119,10 +119,12 @@ private:
     fullstateVecTab_t xList; // vector/array of stateVec_t = basically knot config over entire time horizon
     commandVecTab_t uList;
     commandVecTab_t uListFull;
+    forceVecTab_t forceList;
+    forceVecTab_t forceListFull;
     commandVec_t u_NAN; //matrix of <commandsize, 1> = essentially a vector
     fullstateVecTab_t updatedxList;
     commandVecTab_t updateduList;
-    fullstateVecTab_t FList;
+    forceVecTab_t updatedforceList;
     costVecTab_t costList;
     costVecTab_t costListNew;
     struct traj lastTraj;

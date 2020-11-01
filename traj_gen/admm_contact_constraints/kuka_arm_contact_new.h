@@ -86,6 +86,12 @@ protected:
     fullstateTensTab_t fxuList;
     fullstateR_commandC_Tens_t fuuList;
 
+    forceR_fullstateC_t gx; 
+    forceR_commandC_t gu;   
+
+    forceR_fullstateC_tab_t gxList;
+    forceR_commandC_tab_t guList;
+
 public:
     struct timeprofile
     {
@@ -110,9 +116,6 @@ public:
     fullstateVec_t xgoal;
 private:
     
-    stateMat_half_t H, C; // inertial, corillois dynamics
-    stateVec_half_t G; // gravity? what is this?
-    stateR_half_commandC_t Bu; //input mapping
     stateVec_half_t velocity;
     stateVec_half_t accel;
     fullstateVec_t Xdot_new;
@@ -128,8 +131,12 @@ private:
     bool debugging_print;
     fullstateMat_t AA;
     fullstateR_commandC_t BB;
+    forceR_fullstateC_t CC;
+    forceR_commandC_t DD;
     fullstateMatTab_t A_temp;
     fullstateR_commandC_tab_t B_temp;
+    forceR_fullstateC_tab_t C_temp;
+    forceR_commandC_tab_t D_temp;
     
     MultibodyPlant<double>* plant_{};
 
@@ -141,13 +148,13 @@ private:
 protected:
     // methods
 public:
-    fullstateVec_t kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau);
+    fullstateVec_t kuka_arm_dynamics(const fullstateVec_t& X, const commandVec_t& tau, forceVec_t& force);
 
-    void kuka_arm_dyn_cst_ilqr(const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList, CostFunctionKukaArm_Contact_new*& costFunction);
-    void kuka_arm_dyn_cst_min_output(const fullstateVec_t& xList_curr, const commandVec_t& uList_curr,  const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_Contact_new*& costFunction);
-    fullstateVec_t update(const fullstateVec_t& X, const commandVec_t& U);
-    void grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B);
-    void hessian(const fullstateVec_t& X, const commandVec_t& U, fullstateTens_t& fxx_p, fullstateR_fullstateC_commandD_t& fxu_p, fullstateR_commandC_commandD_t& fuu_p);    
+    void kuka_arm_dyn_cst_ilqr(const fullstateVecTab_t& xList, const commandVecTab_t& uList, const forceVecTab_t& forceList, CostFunctionKukaArm_Contact_new*& costFunction);
+    void kuka_arm_dyn_cst_min_output(const fullstateVec_t& xList_curr, const commandVec_t& uList_curr, forceVec_t& forceList_curr, const bool& isUNan, fullstateVec_t& xList_next, CostFunctionKukaArm_Contact_new*& costFunction);
+    fullstateVec_t update(const fullstateVec_t& X, const commandVec_t& U, forceVec_t& force);
+    void grad(const fullstateVec_t& X, const commandVec_t& U, fullstateMat_t& A, fullstateR_commandC_t& B, forceR_fullstateC_t& C, forceR_commandC_t& D);
+    // void hessian(const fullstateVec_t& X, const commandVec_t& U, fullstateTens_t& fxx_p, fullstateR_fullstateC_commandD_t& fxu_p, fullstateR_commandC_commandD_t& fuu_p);    
     struct timeprofile getFinalTimeProfile();
 
     unsigned int getStateNb();
@@ -156,6 +163,8 @@ public:
     commandVec_t& getUpperCommandBounds();
     fullstateMatTab_t& getfxList();
     fullstateR_commandC_tab_t& getfuList();
+    forceR_fullstateC_tab_t& getgxList();
+    forceR_commandC_tab_t& getguList();
 private:
 protected:
         // accessors //
