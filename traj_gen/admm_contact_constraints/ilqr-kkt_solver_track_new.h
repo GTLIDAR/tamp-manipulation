@@ -45,6 +45,7 @@ public:
     {
         fullstateVecTab_t xList;
         commandVecTab_t uList;
+        forceVecTab_t forceList;
         unsigned int iter;
         double finalCost;
         double finalGrad;
@@ -102,6 +103,7 @@ public:
     fullstateVecTab_t updatedxList;
     fullstateVecTab_t xList; // vector/array of stateVec_t = basically knot config over entire time horizon
     commandVecTab_t uList;
+    forceVecTab_t forceList;
     costVecTab_t costList;
 private:
 protected:
@@ -123,14 +125,17 @@ private:
 
     fullstateVecTab_t xList_bar; 
     commandVecTab_t uList_bar;
+    forceVecTab_t forceList_bar;
     commandVecTab_t initCommand;
 
     commandVecTab_t uListFull;
     commandVecTab_t uList_bar_Full;
+    forceVecTab_t forceListFull;
+    forceVecTab_t forceList_bar_Full;
     commandVec_t u_NAN; //matrix of <commandsize, 1> = essentially a vector
     // stateVecTab_t updatedxList;
     commandVecTab_t updateduList;
-    fullstateVecTab_t FList;
+    forceVecTab_t updatedforceList;
    
     costVecTab_t costListNew;
     struct traj lastTraj;
@@ -180,7 +185,7 @@ private:
 protected:
     // methods
 public:
-    void firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxDes, fullstateVecTab_t& x_bar, commandVecTab_t& u_bar, 
+    void firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxDes, fullstateVecTab_t& x_bar, commandVecTab_t& u_bar, forceVecTab_t force_bar,
                     commandVecTab_t initialTorque, unsigned int& iiwaN, double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad);
     void solveTrajectory();
     void initializeTraj();

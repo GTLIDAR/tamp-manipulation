@@ -21,7 +21,7 @@
 #include "drake/lcmt_motion_plan_query.hpp"
 #include "drake/traj_gen/config.h"
 
-DEFINE_bool(use_admm, false, "whether to use admm or ddp");
+DEFINE_bool(use_admm, true, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -156,7 +156,7 @@ lcmt_manipulator_traj GetADMM_KKTRes(VectorXd q_init, VectorXd q_goal) {
     std::cout<<"admm initial pos: " << q_init.transpose() << std::endl;
     std::cout<<"admm goal pos: " << q_goal.transpose() << std::endl;
 
-    ADMM_KKTRunner runner;
+    ADMM_KKTRunner_new runner;
     auto return_ptr = runner.RunADMM_KKT(q_init, q_goal, time_horizon_, time_step_, action_name_);
     runner.RunVisualizer(0.2);
     return return_ptr;

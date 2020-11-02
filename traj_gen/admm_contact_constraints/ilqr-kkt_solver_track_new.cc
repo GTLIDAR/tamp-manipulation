@@ -47,7 +47,7 @@ ILQRSolver_TRK_Contact_new::ILQRSolver_TRK_Contact_new(KukaArm_TRK_Contact_new& 
     //tOptSet Op = INIT_OPTSET;
 }
 
-void ILQRSolver_TRK_Contact_new::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, fullstateVecTab_t& x_bar, commandVecTab_t& u_bar, 
+void ILQRSolver_TRK_Contact_new::firstInitSolver(fullstateVec_t& iiwaxInit, fullstateVec_t& iiwaxgoal, fullstateVecTab_t& x_bar, commandVecTab_t& u_bar, forceVecTab_t force_bar,
         commandVecTab_t initialTorque, unsigned int& iiwaN, double& iiwadt, unsigned int& iiwamax_iter, double& iiwatolFun, double& iiwatolGrad)
 {
     // TODO: double check opt params
@@ -55,6 +55,7 @@ void ILQRSolver_TRK_Contact_new::firstInitSolver(fullstateVec_t& iiwaxInit, full
     xgoal = iiwaxgoal;
     xList_bar = x_bar;
     uList_bar = u_bar;
+    forceList_bar = force_bar;
     initCommand = initialTorque;
     N = iiwaN;
     dt = iiwadt;
@@ -78,13 +79,16 @@ void ILQRSolver_TRK_Contact_new::firstInitSolver(fullstateVec_t& iiwaxInit, full
     uList.resize(N);
     uListFull.resize(N+1);
     uList_bar_Full.resize(N+1);
+    forceList.resize(N);
+    forceListFull.resize(N+1);
+    forceList_bar_Full.resize(N+1);
     updatedxList.resize(N+1);
     updateduList.resize(N);
+    updatedforceList.resize(N);
     costList.resize(N+1);
     costListNew.resize(N+1);
     kList.resize(N);
     KList.resize(N);
-    FList.resize(N+1);
     Vx.resize(N+1);
     Vxx.resize(N+1);
     
@@ -92,23 +96,26 @@ void ILQRSolver_TRK_Contact_new::firstInitSolver(fullstateVec_t& iiwaxInit, full
         xList[i].setZero();
         uList[i].setZero();
         uListFull[i].setZero();
+        forceList[i].setZero();
+        forceListFull[i].setZero();
         updatedxList[i].setZero();
         updateduList[i].setZero();
+        updatedforceList[i].setZero();
         costList[i] = 0;
         costListNew[i] = 0;
         kList[i].setZero();
-        KList[i].setZero();
-        FList[i].setZero();    
+        KList[i].setZero();   
         Vx[i].setZero();
         Vxx[i].setZero();
     }
     xList[N].setZero();
     uListFull[N].setZero();
     uList_bar_Full[N].setZero();
+    forceListFull[N].setZero();
+    forceList_bar_Full[N].setZero();
     updatedxList[N].setZero();
     costList[N] = 0;
     costListNew[N] = 0;
-    FList[N].setZero();
     Vx[N].setZero();
     Vxx[N].setZero();
     
@@ -149,22 +156,25 @@ void ILQRSolver_TRK_Contact_new::solveTrajectory()
         //==============
         // TRACE("STEP 1: differentiate dynamics and cost along new trajectory\n");
         if(newDeriv){
-            int nargout = 7;//fx,fu,cx,cu,cxx,cxu,cuu
             for(unsigned int i=0;i<u_NAN.size();i++)
                 u_NAN(i,0) = sqrt(-1.0); // control vector = Nan for last time step
             
             for(unsigned int i=0;i<uList.size();i++) {
                 uListFull[i] = uList[i];
                 uList_bar_Full[i] = uList_bar[i];
+                forceListFull[i] = forceList[i];
+                forceList_bar_Full[i] = forceList_bar[i];
                 // cout << "UlistFULL " << i << endl;
                 // cout << uListFull[i] << endl;
             }
             uListFull[uList.size()] = u_NAN;
             uList_bar_Full[uList.size()] = u_NAN;
+            forceListFull[uList.size()].setZero();
+            forceList_bar_Full[uList.size()].setZero();
             gettimeofday(&tbegin_time_deriv,NULL);
             // FList is empty here on the first interation
             // initial x, u, cost is passed in
-            dynamicModel->kuka_arm_dyn_cst_ilqr(nargout, xList, uListFull, FList, xList_bar, uList_bar_Full, costFunction);
+            dynamicModel->kuka_arm_dyn_cst_ilqr(xList, uListFull, forceListFull, xList_bar, uList_bar_Full, forceList_bar_Full, costFunction);
             //dynamicModel->kuka_arm_dyn_cst(nargout, dt, xList, uListFull, xgoal, FList, costFunction->getcx(), costFunction->getcu(), costFunction->getcxx(), costFunction->getcux(), costFunction->getcuu(), costFunction->getc());
             gettimeofday(&tend_time_deriv,NULL);
             Op.time_derivative(iter) = (static_cast<double>(1000*(tend_time_deriv.tv_sec-tbegin_time_deriv.tv_sec)+((tend_time_deriv.tv_usec-tbegin_time_deriv.tv_usec)/1000)))/1000.0;
@@ -261,6 +271,7 @@ void ILQRSolver_TRK_Contact_new::solveTrajectory()
             // accept changes
             xList = updatedxList;
             uList = updateduList;
+            forceList = updatedforceList;
             costList = costListNew;
             newDeriv = 1;
 
@@ -359,6 +370,7 @@ void ILQRSolver_TRK_Contact_new::initializeTraj()
     
     initFwdPassDone = 1;
     xList = updatedxList;
+    forceList = updatedforceList;
     
     //constants, timers, counters
     newDeriv = 1; //flgChange
@@ -410,11 +422,11 @@ void ILQRSolver_TRK_Contact_new::doBackwardPass()
 
     for(int i=static_cast<int>(N-1);i>=0;i--)
     {
-        Qx = costFunction->getcx()[i] + dynamicModel->getfxList()[i].transpose()*Vx[i+1];
-        Qu = costFunction->getcu()[i] + dynamicModel->getfuList()[i].transpose()*Vx[i+1];
-        Qxx = costFunction->getcxx()[i] + dynamicModel->getfxList()[i].transpose()*(Vxx[i+1])*dynamicModel->getfxList()[i];
-        Quu = costFunction->getcuu()[i] + dynamicModel->getfuList()[i].transpose()*(Vxx[i+1])*dynamicModel->getfuList()[i];
-        Qux = costFunction->getcux()[i] + dynamicModel->getfuList()[i].transpose()*(Vxx[i+1])*dynamicModel->getfxList()[i];
+        Qx = costFunction->getcx()[i] + dynamicModel->getfxList()[i].transpose()*Vx[i+1]+ dynamicModel->getgxList()[i].transpose()*costFunction->getcf()[i];
+        Qu = costFunction->getcu()[i] + dynamicModel->getfuList()[i].transpose()*Vx[i+1] + dynamicModel->getguList()[i].transpose()*costFunction->getcf()[i];
+        Qxx = costFunction->getcxx()[i] + dynamicModel->getfxList()[i].transpose()*(Vxx[i+1])*dynamicModel->getfxList()[i] + dynamicModel->getgxList()[i].transpose()*costFunction->getcff()[i]*dynamicModel->getgxList()[i];
+        Quu = costFunction->getcuu()[i] + dynamicModel->getfuList()[i].transpose()*(Vxx[i+1])*dynamicModel->getfuList()[i] + dynamicModel->getguList()[i].transpose()*costFunction->getcff()[i]*dynamicModel->getguList()[i];
+        Qux = costFunction->getcux()[i] + dynamicModel->getfuList()[i].transpose()*(Vxx[i+1])*dynamicModel->getfxList()[i] + dynamicModel->getguList()[i].transpose()*costFunction->getcff()[i]*dynamicModel->getgxList()[i];
 
         if(Op.regType == 1)
             QuuF = Quu + Op.lambda*commandMat_t::Identity();
@@ -512,13 +524,14 @@ void ILQRSolver_TRK_Contact_new::doBackwardPass()
 void ILQRSolver_TRK_Contact_new::doForwardPass()
 {
     updatedxList[0] = Op.xInit;
-    int nargout = 2;
 
     fullstateVec_t x_unused;
     x_unused.setZero();
     commandVec_t u_NAN_loc;
     u_NAN_loc << sqrt(-1.0); // sqrt(-1)=NaN. After this line, u_nan has nan for [0] and garbage for rest
     // u_NAN_loc << 1;
+    forceVec_t force_unused;
+    force_unused.setZero();
     isUNan = 0;
 
     //[TODO: to be optimized]
@@ -527,22 +540,22 @@ void ILQRSolver_TRK_Contact_new::doForwardPass()
         for(unsigned int i=0;i<N;i++) {
             updateduList[i] = uList[i];
             // running cost, state, input
-            dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], xList_bar[i], uList_bar[i], isUNan, updatedxList[i+1], costFunction);
+            dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[i], updateduList[i], updatedforceList[i], xList_bar[i], uList_bar[i], forceList_bar[i], isUNan, updatedxList[i+1], costFunction);
             costList[i] = costFunction->getc();
         }
         // getting final cost, state, input=NaN
         isUNan = 1;
-        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, xList_bar[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[N], u_NAN_loc, force_unused, xList_bar[N], u_NAN_loc, force_unused, isUNan, x_unused, costFunction);
         costList[N] = costFunction->getc();
     }
     else {
         for(unsigned int i=0;i<N;i++) {
             updateduList[i] = uList[i] + alpha*kList[i] + KList[i]*(updatedxList[i]-xList[i]);
-            dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], xList_bar[i], uList_bar[i], isUNan, updatedxList[i+1], costFunction);
+            dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[i], updateduList[i], updatedforceList[i], xList_bar[i], uList_bar[i], forceList_bar[i], isUNan, updatedxList[i+1], costFunction);
             costListNew[i] = costFunction->getc();
         }
         isUNan = 1;
-        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, xList_bar[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        dynamicModel->kuka_arm_dyn_cst_min_output(updatedxList[N], u_NAN_loc, force_unused, xList_bar[N], u_NAN_loc, force_unused, isUNan, x_unused, costFunction);
         costListNew[N] = costFunction->getc();
     }
 }
@@ -552,6 +565,7 @@ ILQRSolver_TRK_Contact_new::traj ILQRSolver_TRK_Contact_new::getLastSolvedTrajec
     lastTraj.xList = xList;
     // for(unsigned int i=0;i<N+1;i++)lastTraj.xList[i] += xgoal;//retrieve original state with xgoal
     lastTraj.uList = uList;
+    lastTraj.forceList = forceList;
     lastTraj.iter = iter;
     lastTraj.finalCost = accumulate(costList.begin(), costList.end(), 0.0);
     lastTraj.finalGrad = Op.g_norm;

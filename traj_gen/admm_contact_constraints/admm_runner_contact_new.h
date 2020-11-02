@@ -92,7 +92,8 @@ class ADMM_KKTRunner_new {
   projfullStateAndCommandTab_t projection(const fullstateVecTab_t& xnew,
     const commandVecTab_t& unew, unsigned int NumberofKnotPt,
     string action_name);
-
+  forceVecTab_t projection_force(const forceVecTab_t& forcenew, unsigned int NumberofKnotPt, string action_name);
+  
   void RunVisualizer(double realtime_rate);
 
   void saveVector(const Eigen::MatrixXd & _vec, const char * _name);

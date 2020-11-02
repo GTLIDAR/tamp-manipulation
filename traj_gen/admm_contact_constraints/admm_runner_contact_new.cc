@@ -27,19 +27,25 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     // Primal
     fullstateVecTab_t xnew;
     commandVecTab_t unew;
+    forceVecTab_t forcenew;
     fullstateVecTab_t xbar;
     commandVecTab_t ubar;
+    forceVecTab_t forcebar;
     fullstateVecTab_t xbar_old;
     commandVecTab_t ubar_old;
+    forceVecTab_t forcebar_old;
 
     // Dual
     fullstateVecTab_t x_lambda;
     commandVecTab_t u_lambda;
+    forceVecTab_t force_lambda;
 
     fullstateVecTab_t x_temp;
     commandVecTab_t u_temp;
+    forceVecTab_t force_temp;
     fullstateVecTab_t x_temp2;
     commandVecTab_t u_temp2;
+    forceVecTab_t force_temp2;
     projfullStateAndCommandTab_t xubar;
     vector<double> res_x;
     vector<double> res_x_pos_obj;
@@ -47,8 +53,10 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     vector<double> res_x_vel_obj;
     vector<double> res_x_vel_iiwa;
     vector<double> res_u;
+    vector<double> res_f;
     vector<double> res_xlambda;
     vector<double> res_ulambda;
+    vector<double> res_flambda;
     vector<double> final_cost;
     res_x.resize(ADMMiterMax);
     res_x_pos_obj.resize(ADMMiterMax);
@@ -56,30 +64,39 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     res_x_pos_iiwa.resize(ADMMiterMax);
     res_x_vel_iiwa.resize(ADMMiterMax);
     res_u.resize(ADMMiterMax);
+    res_f.resize(ADMMiterMax);
     res_xlambda.resize(ADMMiterMax);
     res_ulambda.resize(ADMMiterMax);
+    res_flambda.resize(ADMMiterMax);
     final_cost.resize(ADMMiterMax+1);
     xbar.resize(N + 1);
     ubar.resize(N);
+    forcebar.resize(N);
     xbar_old.resize(N + 1);
     ubar_old.resize(N);
+    forcebar_old.resize(N);
     xubar.resize(N + 1);
     u_0.resize(N);
     x_lambda.resize(N + 1);
     u_lambda.resize(N);
+    force_lambda.resize(N);
     x_temp.resize(N+1);
     u_temp.resize(N);
+    force_temp.resize(N);
     x_temp2.resize(N+1);
     u_temp2.resize(N);
+    force_temp2.resize(N);
 
     for(unsigned int k=0;k<N;k++){
       xbar[k].setZero();
       ubar[k].setZero();
       x_temp[k].setZero();
       u_temp[k].setZero();
+      force_temp[k].setZero();
       x_temp2[k].setZero();
       u_temp2[k].setZero();
-      u_0[k] << 0,0,0.2,0,0.2,0,0;
+      force_temp2[k].setZero();
+      u_0[k] << 0,0,0,0,0,0,0;
     }
     xbar[N].setZero();
     x_temp[N].setZero();
@@ -146,9 +163,9 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
 
     u_0.resize(N);
     for(unsigned i=0;i<N;i++){
-      u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
+      // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
         // cout << "u_0: " << u_0[i].transpose() << endl;
-        // u_0[i].setZero();
+        u_0[i].setZero();
         // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
     }
     
@@ -163,32 +180,38 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     double vel_obj_weight;
     double vel_iiwa_weight;
     double torque_weight;
-
+    double torsional_force_weight;
+    double trans_force_weight; 
     pos_obj_weight = 0;
-    pos_iiwa_weight = 10; 
+    pos_iiwa_weight = 0; 
     vel_obj_weight = 0;
-    vel_iiwa_weight = 10;
-    torque_weight = 1;
+    vel_iiwa_weight = 0;
+    torque_weight = 0;
+    torsional_force_weight = 0;
+    trans_force_weight = 0; 
 
-    CostFunctionKukaArm_TRK_Contact_new costKukaArm_init(0, 0, 0, 0, 0, N, action_name); //only for initialization
+    CostFunctionKukaArm_TRK_Contact_new costKukaArm_init(0, 0, 0, 0, 0, 0, 0, N, action_name); //only for initialization
     CostFunctionKukaArm_TRK_Contact_new costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
                                                      vel_obj_weight, vel_iiwa_weight, 
-                                                     torque_weight, N, action_name); //postion/velocity/torque weights
+                                                     torque_weight, torsional_force_weight, trans_force_weight,
+                                                     N, action_name); //postion/velocity/torque weights
     ILQRSolver_TRK_Contact_new testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
     ILQRSolver_TRK_Contact_new testSolverKukaArm_init(KukaArmModel,costKukaArm_init,ENABLE_FULLDDP,ENABLE_QPBOX); //only for initialization
 
     // Initialize Trajectory to get xnew with u_0
-    testSolverKukaArm_init.firstInitSolver(xinit, xgoal, xbar, ubar, u_0, N, dt, iterMax, tolFun, tolGrad);
+    testSolverKukaArm_init.firstInitSolver(xinit, xgoal, xbar, ubar, forcebar, u_0, N, dt, iterMax, tolFun, tolGrad);
     testSolverKukaArm_init.initializeTraj();
 
     lastTraj = testSolverKukaArm_init.getLastSolvedTrajectory();
     xnew = lastTraj.xList;
     unew = lastTraj.uList;
+    forcenew = lastTraj.forceList;
     final_cost[0] = lastTraj.finalCost;
 
     for(unsigned int k=0;k<N;k++){
       x_lambda[k] = xnew[k] - xbar[k];
       u_lambda[k] = unew[k] - ubar[k];
+      force_lambda[k] = forcenew[k] - forcebar[k];
     }
     x_lambda[N] = xnew[N] - xbar[N];
 
@@ -201,27 +224,32 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
       for(unsigned int k=0;k<N;k++){
         x_temp[k] = xbar[k] - x_lambda[k];
         u_temp[k] = ubar[k] - u_lambda[k];
+        force_temp[k] = forcebar[k] - force_lambda[k];
       }
       x_temp[N] = xbar[N] - x_lambda[N];
 
       // cout << "checkpoint 0" << endl;
       cout << "\n=========== ADMM iteration " << i+1 << " ===========\n";
       // iLQR solver block
-      testSolverKukaArm.firstInitSolver(xinit, xgoal, x_temp, u_temp, unew, N, dt, iterMax, tolFun, tolGrad);
+      testSolverKukaArm.firstInitSolver(xinit, xgoal, x_temp, u_temp, force_temp, unew, N, dt, iterMax, tolFun, tolGrad);
       testSolverKukaArm.solveTrajectory();
       lastTraj = testSolverKukaArm.getLastSolvedTrajectory();
       xnew = lastTraj.xList;
       unew = lastTraj.uList;
+      forcenew = lastTraj.forceList;
 
       //////////////////////////// Projection block to feasible sets (state and control contraints)
       xbar_old = xbar;
       ubar_old = ubar;
+      forcebar_old = forcebar;
       for(unsigned int k=0;k<N;k++){
         x_temp2[k] = xnew[k] + x_lambda[k];
         u_temp2[k] = unew[k] + u_lambda[k];
+        force_temp2[k] = forcenew[k] + force_lambda[k];
       }
       x_temp2[N] = xnew[N] + x_lambda[N];
       xubar = projection(x_temp2, u_temp2, N, action_name);
+      forcebar = projection_force(force_temp2, N, action_name);
 
       /////////////////////////// Dual variables update
       for(unsigned int j=0;j<N;j++){
@@ -230,6 +258,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
         // cout << "u_bar[" << j << "]:" << ubar[j].transpose() << endl;
         x_lambda[j] += xnew[j] - xbar[j];
         u_lambda[j] += unew[j] - ubar[j];
+        force_lambda[j] += forcenew[j] - forcebar[j];
         // cout << "u_lambda[" << j << "]:" << u_lambda[j].transpose() << endl;
 
         // Save residuals for all iterations
@@ -239,9 +268,11 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
         res_x_pos_iiwa[i] += (xnew[j].middleRows<kNumJoints>(13) - xbar[j].middleRows<kNumJoints>(13)).norm();
         res_x_vel_iiwa[i] += (xnew[j].tail(kNumJoints) - xbar[j].tail(kNumJoints)).norm();
         res_u[i] += (unew[j] - ubar[j]).norm();
+        res_f[i] += (forcenew[j] - forcebar[j]).norm();
 
         res_xlambda[i] += 0*(xbar[j] - xbar_old[j]).norm(); //not used now
         res_ulambda[i] += 0*(ubar[j] - ubar_old[j]).norm(); // not used now
+        res_flambda[i] += 0*(forcebar[j] - forcebar_old[j]).norm(); // not used now
       }
       xbar[N] = xubar[N].head(fullstateSize);
       x_lambda[N] += xnew[N] - xbar[N];
@@ -254,7 +285,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
       res_xlambda[i] += 0*(xbar[N] - xbar_old[N]).norm(); // not used now
 
       // get the cost without augmented Lagrangian terms
-      testSolverKukaArm_init.firstInitSolver(xinit, xgoal, xbar, ubar, unew, N, dt, iterMax, tolFun, tolGrad);
+      testSolverKukaArm_init.firstInitSolver(xinit, xgoal, xbar, ubar, forcebar, unew, N, dt, iterMax, tolFun, tolGrad);
       testSolverKukaArm_init.initializeTraj();
       lastTraj = testSolverKukaArm_init.getLastSolvedTrajectory();
       final_cost[i+1] = lastTraj.finalCost;
@@ -266,7 +297,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     }
     gettimeofday(&tend,NULL);
 
-    testSolverKukaArm.firstInitSolver(xinit, xgoal, xbar, ubar, unew, N, dt, iterMax, tolFun, tolGrad);
+    testSolverKukaArm.firstInitSolver(xinit, xgoal, xbar, ubar, forcebar, unew, N, dt, iterMax, tolFun, tolGrad);
     testSolverKukaArm.initializeTraj();
     xnew = testSolverKukaArm.updatedxList;
 
@@ -335,6 +366,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
       saveValue(res_x_pos_iiwa[i], "residual_x_pos_push_demo");
       saveValue(res_x_vel_iiwa[i], "residual_x_vel_push_demo");
       saveValue(res_u[i], "residual_u_push_demo");
+      saveValue(res_f[i], "residual_f_push_demo");
     }
     cout << "-------- ADMM Trajectory Generation Finished! --------" << endl;
 
@@ -359,6 +391,12 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     for(unsigned int i=0;i<ADMMiterMax;i++)
     {
       cout << "res_u[" << i << "]:" << res_u[i] << endl;
+    }
+    cout << endl;
+
+    for(unsigned int i=0;i<ADMMiterMax;i++)
+    {
+      cout << "res_f[" << i << "]:" << res_f[i] << endl;
     }
     cout << endl;
 
@@ -494,6 +532,64 @@ projfullStateAndCommandTab_t ADMM_KKTRunner_new::projection(const fullstateVecTa
     }
     }
     return xubar;
+}
+
+forceVecTab_t ADMM_KKTRunner_new::projection_force(const forceVecTab_t& forcenew, unsigned int NumberofKnotPt, string action_name){
+    forceVecTab_t forcebar;
+    forcebar.resize(NumberofKnotPt);
+    DRAKE_DEMAND(forcebar.size() == forcenew.size()); // sanity check
+
+    double fric_coef;
+
+    if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
+      fric_coef = 1.0; 
+    } else {
+      fric_coef = 1.0;
+    }
+
+    for(unsigned int i=0;i<NumberofKnotPt;i++){
+    for(unsigned int j=0;j<forceSize;j++){
+        if(j == 5 || j == 11){//unilateral constraint for force in z direction
+        if(forcenew[i](j,0) < 0){
+            forcebar[i](j,0) = 0;
+        }
+        else{
+            forcebar[i](j,0) = forcenew[i](j,0);
+        }
+        }
+
+        else if(j == 3 || j == 4){// friction cone constraint with certain friction_coef for cp1
+
+        if(forcenew[i](j,0) > forcenew[i](5,0)*fric_coef){
+            forcebar[i](j,0) = forcenew[i](5,0)*fric_coef;
+        }
+        else if(forcenew[i](j,0) < -forcenew[i](5,0)*fric_coef){
+            forcebar[i](j,0) = -forcenew[i](5,0)*fric_coef;
+        }
+        else{
+            forcebar[i](j,0) = forcenew[i](j,0);
+        }
+        }
+
+        else if(j == 9 || j == 10){// friction cone constraint with certain friction_coef for cp2
+
+        if(forcenew[i](j,0) > forcenew[i](11,0)*fric_coef){
+            forcebar[i](j,0) = forcenew[i](11,0)*fric_coef;
+        }
+        else if(forcenew[i](j,0) < -forcenew[i](11,0)*fric_coef){
+            forcebar[i](j,0) = -forcenew[i](11,0)*fric_coef;
+        }
+        else{
+            forcebar[i](j,0) = forcenew[i](j,0);
+        }
+        }
+
+        else{
+          forcebar[i](j,0) = forcenew[i](j,0);
+        }
+    }
+    }
+    return forcebar;
 }
 
 void ADMM_KKTRunner_new::RunVisualizer(double realtime_rate){

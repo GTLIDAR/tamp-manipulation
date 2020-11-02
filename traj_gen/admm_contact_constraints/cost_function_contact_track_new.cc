@@ -5,8 +5,9 @@ namespace traj_gen {
 namespace kuka_iiwa_arm {
 	
 CostFunctionKukaArm_TRK_Contact_new::CostFunctionKukaArm_TRK_Contact_new(double pos_obj_weight, double pos_iiwa_weight, 
-                                                                 double vel_obj_weight, double vel_iiwa_weight,
-                                                                 double torque_weight, unsigned int N, std::string action_name)
+                                                double vel_obj_weight, double vel_iiwa_weight,
+                                                double torque_weight, double torsional_force_weight, double trans_force_weight, 
+                                                unsigned int N, std::string action_name)
 {   
     if(INCLUDE_OBJECT){ 
         // The dimension is 27 in this case
@@ -40,6 +41,8 @@ CostFunctionKukaArm_TRK_Contact_new::CostFunctionKukaArm_TRK_Contact_new(double 
         rho_pos_iiwa_weight = pos_iiwa_weight;
         rho_vel_iiwa_weight = vel_iiwa_weight;
         rho_torque_weight = torque_weight;
+        rho_torsional_force = torsional_force_weight;
+        rho_trans_force = trans_force_weight;
 
         QDiagElementVec << pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100,
                             vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10,
@@ -56,6 +59,8 @@ CostFunctionKukaArm_TRK_Contact_new::CostFunctionKukaArm_TRK_Contact_new(double 
                             rho_pos_iiwa_weight, rho_pos_iiwa_weight, rho_pos_iiwa_weight, rho_pos_iiwa_weight, rho_pos_iiwa_weight, rho_pos_iiwa_weight, rho_pos_iiwa_weight,
                             2.5*rho_vel_iiwa_weight, 2.5*rho_vel_iiwa_weight, 1.8*rho_vel_iiwa_weight, 1.25*rho_vel_iiwa_weight, 1.15*rho_vel_iiwa_weight, rho_vel_iiwa_weight, rho_vel_iiwa_weight;
         Rho_torque_DiagElementVec << rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight;
+        Rho_force_DiagElementVec << rho_torsional_force, rho_torsional_force, rho_torsional_force, rho_trans_force, rho_trans_force, rho_trans_force,
+                                    rho_torsional_force, rho_torsional_force, rho_torsional_force, rho_trans_force, rho_trans_force, rho_trans_force;
     }
     // else{
     //     double pos_scale = 10;
@@ -82,6 +87,7 @@ CostFunctionKukaArm_TRK_Contact_new::CostFunctionKukaArm_TRK_Contact_new(double 
     R = RDiagElementVec.asDiagonal();
     Rho_state = Rho_state_DiagElementVec.asDiagonal();
     Rho_torque = Rho_torque_DiagElementVec.asDiagonal();
+    Rho_force = Rho_force_DiagElementVec.asDiagonal();
 
     // TimeHorizon = total time 
     // TimeStep = time between two timesteps
@@ -89,9 +95,11 @@ CostFunctionKukaArm_TRK_Contact_new::CostFunctionKukaArm_TRK_Contact_new(double 
     // N = TimeHorizon/TimeStep;
     cx_new.resize(N+1);
     cu_new.resize(N+1);
+    cf_new.resize(N+1);
     cxx_new.resize(N+1);
     cux_new.resize(N+1);
     cuu_new.resize(N+1);
+    cff_new.resize(N+1);
 }
 
 fullstateMat_t& CostFunctionKukaArm_TRK_Contact_new::getQ()
@@ -107,6 +115,11 @@ fullstateMat_t& CostFunctionKukaArm_TRK_Contact_new::getRho_state()
 commandMat_t& CostFunctionKukaArm_TRK_Contact_new::getRho_torque()
 {
     return Rho_torque;
+}
+
+forceMat_t& CostFunctionKukaArm_TRK_Contact_new::getRho_force()
+{
+    return Rho_force;
 }
 
 fullstateMat_t& CostFunctionKukaArm_TRK_Contact_new::getQf()
@@ -129,6 +142,11 @@ commandVecTab_t& CostFunctionKukaArm_TRK_Contact_new::getcu()
     return cu_new;
 }
 
+forceVecTab_t& CostFunctionKukaArm_TRK_Contact_new::getcf()
+{
+    return cf_new;
+}
+
 fullstateMatTab_t& CostFunctionKukaArm_TRK_Contact_new::getcxx()
 {
     return cxx_new;
@@ -142,6 +160,11 @@ commandR_fullstateC_tab_t& CostFunctionKukaArm_TRK_Contact_new::getcux()
 commandMatTab_t& CostFunctionKukaArm_TRK_Contact_new::getcuu()
 {
     return cuu_new;
+}
+
+forceMatTab_t& CostFunctionKukaArm_TRK_Contact_new::getcff()
+{
+    return cff_new;
 }
 
 double& CostFunctionKukaArm_TRK_Contact_new::getc()
