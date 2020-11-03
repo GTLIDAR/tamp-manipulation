@@ -523,7 +523,7 @@ void KukaArm_TRK_Contact_new::kuka_arm_dyn_cst_ilqr(const fullstateVecTab_t& xLi
         costFunction->getcx()[k] = costFunction->getQ()*cx_temp + costFunction->getRho_state()*(xList[k]-xList_bar[k]);
 
         costFunction->getcu()[k] = costFunction->getR()*uList[k] + costFunction->getRho_torque()*(uList[k]-uList_bar[k]);
-        costFunction->getcf()[k] = costFunction->getRho_force()*forceList[k];
+        costFunction->getcf()[k] = costFunction->getRho_force()*(forceList[k]-forceList_bar[k]);
         costFunction->getcxx()[k] = costFunction->getQ() + costFunction->getRho_state();
         costFunction->getcux()[k].setZero();
         costFunction->getcuu()[k] = costFunction->getR() + costFunction->getRho_torque();
@@ -533,7 +533,7 @@ void KukaArm_TRK_Contact_new::kuka_arm_dyn_cst_ilqr(const fullstateVecTab_t& xLi
 
     costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal) + costFunction->getRho_state()*(xList[Nl-1]-xList_bar[Nl-1]);
     costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1] + costFunction->getRho_torque()*(uList[Nl-1]-uList_bar[Nl-1]); // the final timestep not be used in iLQR 
-    costFunction->getcf()[Nl-1] = costFunction->getRho_force()*forceList[Nl-1]; // the final timestep not be used in iLQR
+    costFunction->getcf()[Nl-1] = costFunction->getRho_force()*(forceList[Nl-1]-forceList_bar[Nl-1]); // the final timestep not be used in iLQR
     costFunction->getcxx()[Nl-1] = costFunction->getQf() + costFunction->getRho_state();
     costFunction->getcux()[Nl-1].setZero(); // the final timestep not be used in iLQR 
     costFunction->getcuu()[Nl-1] = costFunction->getR() + costFunction->getRho_torque(); // the final timestep not be used in iLQR 

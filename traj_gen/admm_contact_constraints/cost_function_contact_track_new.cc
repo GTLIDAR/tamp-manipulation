@@ -15,7 +15,7 @@ CostFunctionKukaArm_TRK_Contact_new::CostFunctionKukaArm_TRK_Contact_new(double 
         double vel_obj_scale;
         double pos_obj_f_scale;
         double vel_obj_f_scale;
-        double torqoe_scale = 30;//100;
+        double torqoe_scale = 1;//100;
         
         if (action_name.compare("push")==0){
             pos_obj_scale = 0;

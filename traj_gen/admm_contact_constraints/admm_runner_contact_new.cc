@@ -8,6 +8,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     struct timeval tbegin,tend;
     double texec = 0.0;
     commandVecTab_t u_0;
+    commandVecTab_t u_test;
     time_step_ = time_step;
     double dt = time_step;
     N = int(time_horizon/time_step);
@@ -77,6 +78,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     forcebar_old.resize(N);
     xubar.resize(N + 1);
     u_0.resize(N);
+    u_test.resize(N);
     x_lambda.resize(N + 1);
     u_lambda.resize(N);
     force_lambda.resize(N);
@@ -98,6 +100,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
       u_temp2[k].setZero();
       force_temp2[k].setZero();
       u_0[k] << 0,0,0,0,0,0,0;
+      u_test[k] << 0,10,0,10,0,0,10;
     }
     xbar[N].setZero();
     x_temp[N].setZero();
@@ -188,8 +191,8 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     vel_obj_weight = 0;
     vel_iiwa_weight = 0;
     torque_weight = 0;
-    torsional_force_weight = 0;
-    trans_force_weight = 1e-2; 
+    torsional_force_weight = 1e3;
+    trans_force_weight = 1e3; 
 
     CostFunctionKukaArm_TRK_Contact_new costKukaArm_init(0, 0, 0, 0, 0, 0, 0, N, action_name); //only for initialization
     CostFunctionKukaArm_TRK_Contact_new costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
