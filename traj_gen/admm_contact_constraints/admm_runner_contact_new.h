@@ -89,7 +89,7 @@ class ADMM_KKTRunner_new {
   lcmt_manipulator_traj RunADMM_KKT(fullstateVec_t xinit, fullstateVec_t xgoal,
     double time_horizon, double time_step, string action_name);
 
-  projfullStateAndCommandTab_t projection(const fullstateVecTab_t& xnew,
+  projfullStateAndCommandTab_t projection_xu(const fullstateVecTab_t& xnew,
     const commandVecTab_t& unew, unsigned int NumberofKnotPt,
     string action_name);
   forceVecTab_t projection_force(const forceVecTab_t& forcenew, unsigned int NumberofKnotPt, string action_name);

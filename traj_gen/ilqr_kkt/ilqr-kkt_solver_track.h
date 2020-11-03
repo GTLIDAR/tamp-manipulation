@@ -99,7 +99,6 @@ public:
 
 public:
     ILQRSolver_TRK_Contact(KukaArm_TRK_Contact& iiwaDynamicModel, CostFunctionKukaArm_TRK_Contact& iiwaCostFunction, bool fullDDP=0,bool QPBox=0);
-    fullstateVecTab_t updatedxList;
     fullstateVecTab_t xList; // vector/array of stateVec_t = basically knot config over entire time horizon
     commandVecTab_t uList;
     costVecTab_t costList;
@@ -128,7 +127,7 @@ private:
     commandVecTab_t uListFull;
     commandVecTab_t uList_bar_Full;
     commandVec_t u_NAN; //matrix of <commandsize, 1> = essentially a vector
-    // stateVecTab_t updatedxList;
+    fullstateVecTab_t updatedxList;
     commandVecTab_t updateduList;
     fullstateVecTab_t FList;
    

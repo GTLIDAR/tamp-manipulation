@@ -38,7 +38,7 @@ CostFunctionKukaArm_Contact_new::CostFunctionKukaArm_Contact_new(unsigned int N,
         double vel_iiwa_f_scale = 100;//10;
 
         double torsional_scale = 0;
-        double trans_scale = 1e-2;
+        double trans_scale = 0;
 
         QDiagElementVec << pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100,
                             vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10,

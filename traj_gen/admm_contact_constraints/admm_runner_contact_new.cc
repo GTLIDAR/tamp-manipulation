@@ -14,8 +14,8 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
-    unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 5;
+    unsigned int iterMax = 3;
+    unsigned int ADMMiterMax = 1;
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -90,6 +90,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     for(unsigned int k=0;k<N;k++){
       xbar[k].setZero();
       ubar[k].setZero();
+      forcebar[k].setZero();
       x_temp[k].setZero();
       u_temp[k].setZero();
       force_temp[k].setZero();
@@ -188,7 +189,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     vel_iiwa_weight = 0;
     torque_weight = 0;
     torsional_force_weight = 0;
-    trans_force_weight = 0; 
+    trans_force_weight = 1e-2; 
 
     CostFunctionKukaArm_TRK_Contact_new costKukaArm_init(0, 0, 0, 0, 0, 0, 0, N, action_name); //only for initialization
     CostFunctionKukaArm_TRK_Contact_new costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
@@ -248,7 +249,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
         force_temp2[k] = forcenew[k] + force_lambda[k];
       }
       x_temp2[N] = xnew[N] + x_lambda[N];
-      xubar = projection(x_temp2, u_temp2, N, action_name);
+      xubar = projection_xu(x_temp2, u_temp2, N, action_name);
       forcebar = projection_force(force_temp2, N, action_name);
 
       /////////////////////////// Dual variables update
@@ -295,11 +296,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
         break;
       }
     }
-    gettimeofday(&tend,NULL);
-
-    testSolverKukaArm.firstInitSolver(xinit, xgoal, xbar, ubar, forcebar, unew, N, dt, iterMax, tolFun, tolGrad);
-    testSolverKukaArm.initializeTraj();
-    xnew = testSolverKukaArm.updatedxList;
+    gettimeofday(&tend,NULL);   
 
     #if useUDPSolver
       finalTimeProfile = KukaArmModel.getFinalTimeProfile();
@@ -352,7 +349,9 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     for(unsigned int i=0;i<N;i++){
       saveVector(joint_state_traj[i], "joint_trajectory_ADMM_contact_demo");
       saveVector(torque_traj[i], "joint_torque_command_ADMM_contact_demo");
+      saveVector(forcenew[i], "force_ADMM_contact_demo");
       saveVector(xubar[i], "xubar_ADMM_contact_demo");
+      saveVector(forcebar[i], "forcebar_ADMM_contact_demo");
     }
     saveVector(xnew[N], "joint_trajectory_ADMM_contact_demo");
     saveVector(xubar[N], "xubar_ADMM_contact_demo");
@@ -432,7 +431,7 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     return *ptr;
   }
 
-projfullStateAndCommandTab_t ADMM_KKTRunner_new::projection(const fullstateVecTab_t& xnew,
+projfullStateAndCommandTab_t ADMM_KKTRunner_new::projection_xu(const fullstateVecTab_t& xnew,
   const commandVecTab_t& unew, unsigned int NumberofKnotPt,
   string action_name){
     projfullStateAndCommandTab_t xubar;
@@ -549,16 +548,16 @@ forceVecTab_t ADMM_KKTRunner_new::projection_force(const forceVecTab_t& forcenew
 
     for(unsigned int i=0;i<NumberofKnotPt;i++){
     for(unsigned int j=0;j<forceSize;j++){
-        if(j == 5 || j == 11){//unilateral constraint for force in z direction
-        if(forcenew[i](j,0) < 0){
-            forcebar[i](j,0) = 0;
-        }
-        else{
-            forcebar[i](j,0) = forcenew[i](j,0);
-        }
-        }
+        // if(j == 5 || j == 11){//unilateral constraint for force in z direction
+        // if(forcenew[i](j,0) < 0){
+        //     forcebar[i](j,0) = 0;
+        // }
+        // else{
+        //     forcebar[i](j,0) = forcenew[i](j,0);
+        // }
+        // }
 
-        else if(j == 3 || j == 4){// friction cone constraint with certain friction_coef for cp1
+        if(j == 3 || j == 4){// friction cone constraint with certain friction_coef for cp1
 
         if(forcenew[i](j,0) > forcenew[i](5,0)*fric_coef){
             forcebar[i](j,0) = forcenew[i](5,0)*fric_coef;

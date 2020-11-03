@@ -266,10 +266,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     }
     gettimeofday(&tend,NULL);
 
-    testSolverKukaArm.firstInitSolver(xinit, xgoal, xbar, ubar, unew, N, dt, iterMax, tolFun, tolGrad);
-    testSolverKukaArm.initializeTraj();
-    xnew = testSolverKukaArm.updatedxList;
-
     #if useUDPSolver
       finalTimeProfile = KukaArmModel.getFinalTimeProfile();
     #endif

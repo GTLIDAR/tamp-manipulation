@@ -168,13 +168,14 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
 
     // saving data file
     for(unsigned int i=0;i<N;i++){
-      saveVector(joint_state_traj[i], "joint_trajectory");
-      saveVector(torque_traj[i], "joint_torque_command");
+      saveVector(joint_state_traj[i], "joint_trajectory_DDP");
+      saveVector(torque_traj[i], "joint_torque_command_DDP");
+      saveVector(lastTraj.forceList[i], "force_trajectory_DDP");
     }
-    saveVector(lastTraj.xList[N], "joint_trajectory");
+    saveVector(lastTraj.xList[N], "joint_trajectory_DDP");
 
     for(unsigned int i=0;i<=N*InterpolationScale;i++){
-      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated");
+      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_DDP");
     }
 
     cout << "-------- DDP Trajectory Generation Finished! --------" << endl;
