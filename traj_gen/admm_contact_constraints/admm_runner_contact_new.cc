@@ -14,8 +14,8 @@ lcmt_manipulator_traj ADMM_KKTRunner_new::RunADMM_KKT(fullstateVec_t xinit, full
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
-    unsigned int iterMax = 3;
-    unsigned int ADMMiterMax = 1;
+    unsigned int iterMax = 10;
+    unsigned int ADMMiterMax = 5;
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -537,6 +537,7 @@ forceVecTab_t ADMM_KKTRunner_new::projection_force(const forceVecTab_t& forcenew
     forceVecTab_t forcebar;
     forcebar.resize(NumberofKnotPt);
     DRAKE_DEMAND(forcebar.size() == forcenew.size()); // sanity check
+    forcebar = forcenew;
 
     double fric_coef;
 
@@ -547,44 +548,43 @@ forceVecTab_t ADMM_KKTRunner_new::projection_force(const forceVecTab_t& forcenew
     }
 
     for(unsigned int i=0;i<NumberofKnotPt;i++){
+        //unilateral constraint in prependicular direction for cp1
+        if(forcebar[i](3,0) < 0){
+            forcebar[i](3,0) = 0;
+        }
+
+        //unilateral constraint in prependicular direction for cp2
+        if(forcebar[i](9,0) < 0){
+            forcebar[i](9,0) = 0;
+        }
+    }
+
+    for(unsigned int i=0;i<NumberofKnotPt;i++){
     for(unsigned int j=0;j<forceSize;j++){
-        // if(j == 5 || j == 11){//unilateral constraint for force in z direction
-        // if(forcenew[i](j,0) < 0){
-        //     forcebar[i](j,0) = 0;
-        // }
-        // else{
-        //     forcebar[i](j,0) = forcenew[i](j,0);
-        // }
-        // }
+        if(j == 4 || j == 5){// friction cone constraint with certain friction_coef for cp1
 
-        if(j == 3 || j == 4){// friction cone constraint with certain friction_coef for cp1
-
-        if(forcenew[i](j,0) > forcenew[i](5,0)*fric_coef){
-            forcebar[i](j,0) = forcenew[i](5,0)*fric_coef;
+        if(forcebar[i](j,0) > forcebar[i](3,0)*fric_coef){
+            forcebar[i](j,0) = forcebar[i](3,0)*fric_coef;
         }
-        else if(forcenew[i](j,0) < -forcenew[i](5,0)*fric_coef){
-            forcebar[i](j,0) = -forcenew[i](5,0)*fric_coef;
+        else if(forcebar[i](j,0) < -forcebar[i](3,0)*fric_coef){
+            forcebar[i](j,0) = -forcebar[i](3,0)*fric_coef;
         }
         else{
-            forcebar[i](j,0) = forcenew[i](j,0);
+            forcebar[i](j,0) = forcebar[i](j,0);
         }
         }
 
-        else if(j == 9 || j == 10){// friction cone constraint with certain friction_coef for cp2
+        else if(j == 10 || j == 11){// friction cone constraint with certain friction_coef for cp2
 
-        if(forcenew[i](j,0) > forcenew[i](11,0)*fric_coef){
-            forcebar[i](j,0) = forcenew[i](11,0)*fric_coef;
+        if(forcebar[i](j,0) > forcebar[i](9,0)*fric_coef){
+            forcebar[i](j,0) = forcebar[i](9,0)*fric_coef;
         }
-        else if(forcenew[i](j,0) < -forcenew[i](11,0)*fric_coef){
-            forcebar[i](j,0) = -forcenew[i](11,0)*fric_coef;
+        else if(forcebar[i](j,0) < -forcebar[i](9,0)*fric_coef){
+            forcebar[i](j,0) = -forcebar[i](9,0)*fric_coef;
         }
         else{
-            forcebar[i](j,0) = forcenew[i](j,0);
+            forcebar[i](j,0) = forcebar[i](j,0);
         }
-        }
-
-        else{
-          forcebar[i](j,0) = forcenew[i](j,0);
         }
     }
     }
