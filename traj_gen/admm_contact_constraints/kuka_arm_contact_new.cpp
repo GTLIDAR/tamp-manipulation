@@ -363,27 +363,28 @@ fullstateVec_t KukaArm_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         if (action_name_.compare("push")==0){
             plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("left_finger", wsg_model), &Jac_left);
             Acc_Bias_left = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("left_finger", wsg_model));
 
             plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("right_finger", wsg_model), &Jac_right);
             Acc_Bias_right = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("right_finger", wsg_model));
         }
         else{
             plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("left_finger", wsg_model), &Jac_left);
             Acc_Bias_left = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("left_finger", wsg_model));
 
             plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("right_finger", wsg_model), &Jac_right);
             Acc_Bias_right = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-            ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+            ,plant_->GetFrameByName("base_link", object_model), plant_->GetFrameByName("right_finger", wsg_model));
 
         }
+
         Jac.block<6, 15>(0, 0) = Jac_left;
         Jac.block<6, 15>(6, 0) = Jac_right;
 
