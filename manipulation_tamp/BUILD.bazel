@@ -144,7 +144,7 @@ drake_cc_library(
         "//multibody/plant",
         "//lcmtypes:combined_object_state",
         "//math:geometric_transform",
-        "//multibody/math:spatial_velocity"
+        "//multibody/math:spatial_algebra"
     ]
 )
 

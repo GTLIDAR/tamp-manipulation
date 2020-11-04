@@ -169,11 +169,7 @@ class RobotPlanRunner {
             }
         }
 
-        // const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumIiwaJoints, 1);
-        // plan_.reset(new PiecewisePolynomial<double>(
-        //     PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
-        //         manip_traj_.times_sec, knots, knot_dot, knot_dot)));
-                plan_.reset(new PiecewisePolynomial<double>(
+        plan_.reset(new PiecewisePolynomial<double>(
             PiecewisePolynomial<double>::FirstOrderHold(
                 manip_traj_.times_sec, knots)));
         std::cout<< "Plan Interpolation Completed"<<"\n";

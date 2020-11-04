@@ -419,23 +419,6 @@ int do_main(int argc, char* argv[]) {
     // setup simulator
     systems::Simulator<double> simulator(*diagram);
 
-    // auto& context = simulator.get_mutable_context();
-    // auto& state = context.get_mutable_state();
-
-    // auto& plant = station->get_multibody_plant();
-
-    // VectorX<double> q0_iiwa(7);
-    // q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
-    // std::cout<<"IIWA Position was: "<<plant.GetPositions(context, station->GetIiwaModel())<<"\n";
-
-
-    // plant.SetPositions(
-    //     context,
-    //     &state,
-    //     station->GetIiwaModel(),
-    //     q0_iiwa
-    // );
-
     simulator.set_publish_every_time_step(false);
     simulator.set_target_realtime_rate(sim_setup["target_realtime_rate"].asDouble());
     simulator.Initialize();
@@ -445,28 +428,31 @@ int do_main(int argc, char* argv[]) {
     msg.msg = "start";
     lcm_.publish("START_PLAN", &msg);
 
-    // simulator.AdvanceTo(5);
+    simulator.AdvanceTo(5);
 
-    // multibody::ModelInstanceIndex move_id = station->GetObjectModel(7);
-    // auto& plant = station->get_multibody_plant();
-    // auto& context = simulator.get_mutable_context();
-    // auto cur_pos = plant.GetPositions(context, move_id);
-    // Eigen::VectorXd new_pos;
-    // new_pos.resize(plant.num_positions(move_id));
-    // new_pos[0] = 1.2;
-    // for (int i = 1; i < plant.num_positions(move_id); i++) {
-    //     new_pos[i] = cur_pos[i];
-    // }
+    std::cout<<"5 seconds reached!\n";
 
-    // plant.SetPositions(
-    //     &context,
-    //     move_id,
-    //     new_pos
-    // );
+    multibody::ModelInstanceIndex move_id = station->GetObjectModel(0);
+    auto& plant = station->get_multibody_plant();
+    auto& context = simulator.get_mutable_context();
+    auto cur_pos = plant.GetPositions(context, move_id);
+    Eigen::VectorXd new_pos;
+    new_pos.resize(plant.num_positions(move_id));
+    new_pos[0] = 5;
+    for (int i = 1; i < plant.num_positions(move_id); i++) {
+        new_pos[i] = cur_pos[i];
+    }
 
-    // struct Systems::Simulator::InitializeParams ip = {false};
+    plant.SetPositions(
+        &context,
+        move_id,
+        new_pos
+    );
 
-    // simulator.Initialize(ip);
+    std::cout<<"Restarting Simulation!\n";
+    systems::InitializeParams params;
+    params.suppress_initialization_events = true;
+    simulator.Initialize(params);
     simulator.AdvanceTo(std::numeric_limits<double>::infinity());
 
     return 0;
