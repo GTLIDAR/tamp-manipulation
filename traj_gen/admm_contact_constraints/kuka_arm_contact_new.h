@@ -16,6 +16,8 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/quaternion.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 #include <cstdio>
 #include <Eigen/Dense>

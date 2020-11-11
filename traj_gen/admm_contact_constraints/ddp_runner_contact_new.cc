@@ -92,7 +92,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
     // run one or multiple times and then average
-    unsigned int Num_run = 1;
+    unsigned int Num_run = 0;
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
     if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -264,7 +264,6 @@ void DDP_KKTRunner_new::RunVisualizer(double realtime_rate){
         wsg_status.utime = robot_time_.utime;
         // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
         step_ = int(((robot_time_.utime) / 1000)*(0.001*realtime_rate/(time_step_/InterpolationScale)));
-        std::cout << step_ << std::endl;
         
         if(step_ >= N*InterpolationScale)
         {

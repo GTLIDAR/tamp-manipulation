@@ -188,3 +188,15 @@ drake_cc_library(
         "//traj_gen:config",
     ],
 )
+
+drake_cc_binary(
+    name = "qp_test",
+    srcs = ["qp_test.cc",],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@eigen",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+    copts = COPTS,
+)

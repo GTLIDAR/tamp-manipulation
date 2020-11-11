@@ -21,7 +21,7 @@
 #include "drake/lcmt_motion_plan_query.hpp"
 #include "drake/traj_gen/config.h"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -277,13 +277,13 @@ int do_main() {
         //waypoint (0)
         ConstraintRelaxingIk::IkCartesianWaypoint wp0;
         const Eigen::Vector3d xyz0(
-            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-            0.0,
-            0.30
-
             // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-            // -0.16,
-            // 0.09
+            // 0.0,
+            // 0.30
+
+            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+            -0.16,
+            0.09
             
             // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
             // 0.32,
@@ -292,13 +292,13 @@ int do_main() {
             // 0.5800000000000001, -0.1, 0.275
         );
         const math::RollPitchYaw<double> rpy0(
-            0,
-            1.57079632679,
-            1.57079632679
-
             // 0,
-            // 0,
+            // 1.57079632679,
             // 1.57079632679
+
+            0,
+            0,
+            1.57079632679
 
             // 0,
             // 0,
