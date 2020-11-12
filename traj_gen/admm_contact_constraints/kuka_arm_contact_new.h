@@ -55,6 +55,10 @@ using drake::math::RollPitchYaw;
 using drake::math::CalculateQuaternionDtFromAngularVelocityExpressedInB;
 using drake::multibody::JacobianWrtVariable;
 using drake::multibody::SpatialAcceleration;
+using drake::solvers::MathematicalProgram;
+using drake::solvers::VectorXDecisionVariable;
+using drake::solvers::Binding;
+using drake::solvers::QuadraticCost;
 
 namespace drake {
 namespace traj_gen {
@@ -147,6 +151,9 @@ private:
     std::vector<Eigen::VectorXd> q_thread, qd_thread;
 
     string action_name_;
+    MathematicalProgram prog;
+    VectorXDecisionVariable lambda_qp;
+    
 protected:
     // methods
 public:

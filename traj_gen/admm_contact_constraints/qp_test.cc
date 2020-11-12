@@ -17,10 +17,10 @@ using namespace Eigen;
 using namespace drake;
 
 int main(){
-    auto prog = solvers::MathematicalProgram();
+    solvers::MathematicalProgram prog = solvers::MathematicalProgram();
 
     // Instantiate the decision variables
-    auto x = prog.NewContinuousVariables(2, "x");
+    solvers::VectorXDecisionVariable x = prog.NewContinuousVariables(2, "x");
 
     // Define the cost
     MatrixXd Q(2,2);

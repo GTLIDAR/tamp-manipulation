@@ -83,7 +83,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     //   u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
         // cout << "u_0: " << u_0[i].transpose() << endl;
         u_0[i].setZero();
-        // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
+        // u_0[i] << 0, 0, 0, 0, 2, 2, 2;
     }
     //======================================
     KukaArm_Contact_new KukaArmModel(dt, N, xgoal, &plant_, action_name);
@@ -92,7 +92,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
     // run one or multiple times and then average
-    unsigned int Num_run = 0;
+    unsigned int Num_run = 1;
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
     if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
