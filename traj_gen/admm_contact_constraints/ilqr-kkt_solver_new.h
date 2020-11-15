@@ -51,6 +51,7 @@ public:
         double finalGrad;
         double finalLambda;
         Eigen::VectorXd time_forward, time_backward, time_derivative; //computation time?
+        unsigned int FK_count;
     };
 
     struct tOptSet {

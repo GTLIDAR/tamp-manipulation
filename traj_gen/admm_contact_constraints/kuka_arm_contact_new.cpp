@@ -107,6 +107,7 @@ KukaArm_Contact_new::KukaArm_Contact_new(double& iiwa_dt, unsigned int& iiwa_N, 
     qd.resize(stateSize/2);
 
     lambda_qp = prog.NewContinuousVariables(forceSize, "lambda");
+    FK_count = 0;
 
     // q_thread.resize(NUMBER_OF_THREAD);
     // qd_thread.resize(NUMBER_OF_THREAD);
@@ -216,6 +217,7 @@ KukaArm_Contact_new::KukaArm_Contact_new(double& iiwa_dt, unsigned int& iiwa_N, 
     qd.resize(stateSize/2);
 
     lambda_qp = prog.NewContinuousVariables(forceSize, "lambda");
+    FK_count = 0;
 
     // q_thread.resize(NUMBER_OF_THREAD);
     // qd_thread.resize(NUMBER_OF_THREAD);
@@ -400,7 +402,7 @@ fullstateVec_t KukaArm_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, c
         // MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,3*num_cps,3*num_cps>::Identity());
 
         MatrixXd M_Inv = M_.llt().solve(Matrix<double,15,15>::Identity()); 
-        MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose(); //+ 1e-5 * Matrix<double,6*num_cps,6*num_cps>::Identity();
+        MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 1e-5 * Matrix<double,6*num_cps,6*num_cps>::Identity();
         // MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,6*num_cps,6*num_cps>::Identity());
 
         VectorXd Bias_MJ(15);
@@ -438,15 +440,16 @@ fullstateVec_t KukaArm_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, c
         auto cost_qp = prog.AddQuadraticCost(JM_InvJT,  -Acc_Bias + Jac * M_Inv*Bias_MJ, lambda_qp);
         auto unilateral_1 = prog.AddLinearConstraint(lambda_qp[3] >= 0.0);
         auto unilateral_2 = prog.AddLinearConstraint(lambda_qp[9] >= 0.0);
-        auto cone_1 = prog.AddLinearConstraint(-lambda_qp[3] <= lambda_qp[4] && lambda_qp[4]  <= lambda_qp[3]);
-        auto cone_2 = prog.AddLinearConstraint(-lambda_qp[3] <= lambda_qp[5] && lambda_qp[5]  <= lambda_qp[3]);
-        auto cone_3 = prog.AddLinearConstraint(-lambda_qp[9] <= lambda_qp[10] && lambda_qp[10]  <= lambda_qp[9]);
-        auto cone_4 = prog.AddLinearConstraint(-lambda_qp[9] <= lambda_qp[11] && lambda_qp[11]  <= lambda_qp[9]);
+        // auto cone_1 = prog.AddLinearConstraint(-lambda_qp[3] <= lambda_qp[4] && lambda_qp[4]  <= lambda_qp[3]);
+        // auto cone_2 = prog.AddLinearConstraint(-lambda_qp[3] <= lambda_qp[5] && lambda_qp[5]  <= lambda_qp[3]);
+        // auto cone_3 = prog.AddLinearConstraint(-lambda_qp[9] <= lambda_qp[10] && lambda_qp[10]  <= lambda_qp[9]);
+        // auto cone_4 = prog.AddLinearConstraint(-lambda_qp[9] <= lambda_qp[11] && lambda_qp[11]  <= lambda_qp[9]);
 
         // cost_qp.evaluator()->UpdateCoefficients(JM_InvJT, -Acc_Bias + Jac * M_Inv*Bias_MJ);
-        auto result = solvers::Solve(prog);
+        auto result = solver.Solve(prog);
         force = result.GetSolution();
-        DRAKE_DEMAND(result.is_success());
+        // DRAKE_DEMAND(result.is_success());
+        // cout << "computation time is: " << result.get_solver_details<GurobiSolver>().optimizer_time;
         // force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
         // cout << force.transpose() << endl;
         VectorXd Acc_total = M_Inv * (Bias_MJ + Jac.transpose() * force);
@@ -483,6 +486,9 @@ fullstateVec_t KukaArm_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, c
             globalcnt += 1;
 
         }
+
+        // count how many times FK is run
+        FK_count += 1;
 
     }
     return Xdot_new;
@@ -630,7 +636,7 @@ fullstateVec_t KukaArm_Contact_new::update(const fullstateVec_t& X, const comman
     fullstateVec_t X_new;
     X_new = X + (dt/6)*(Xdot1 + 2*Xdot2 + 2*Xdot3 + Xdot4);
     // Simple Euler Integration (for debug)
-//    X_new = X + (dt)*Xdot1;
+    // X_new = X + (dt)*Xdot1;
 
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 

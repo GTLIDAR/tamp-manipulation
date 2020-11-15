@@ -18,6 +18,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/gurobi_solver.h"
 
 #include <cstdio>
 #include <Eigen/Dense>
@@ -59,6 +60,7 @@ using drake::solvers::MathematicalProgram;
 using drake::solvers::VectorXDecisionVariable;
 using drake::solvers::Binding;
 using drake::solvers::QuadraticCost;
+using drake::solvers::GurobiSolver;
 
 namespace drake {
 namespace traj_gen {
@@ -104,6 +106,7 @@ public:
         double time_period1, time_period2, time_period3, time_period4;
         unsigned int counter0_, counter1_, counter2_;
     };
+    unsigned int FK_count;
 
 private:
     double dt;
@@ -153,6 +156,7 @@ private:
     string action_name_;
     MathematicalProgram prog;
     VectorXDecisionVariable lambda_qp;
+    GurobiSolver solver;
     
 protected:
     // methods

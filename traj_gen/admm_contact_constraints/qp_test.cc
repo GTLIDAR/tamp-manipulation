@@ -11,6 +11,8 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/scs_solver.h"
 
 using namespace std;
 using namespace Eigen;
@@ -35,14 +37,21 @@ int main(){
     double c = 1.0;
     auto cost = prog.AddQuadraticCost(Q, b, c, x);
     prog.AddConstraint(x[0] <= 0.4);
+    solvers::GurobiSolver solver;
+    // auto license = solver.AcquireLicense();
+    cout << "Gurobi available? " << solver.is_enabled() << endl;
+//     solvers::ScsSolver solver;
+//     prog.SetSolverOption(solver.id(), "Method", 2);
 
-    auto result = solvers::Solve(prog, Vector2d::Zero());
+    auto result = solver.Solve(prog);
+//     auto result = solvers::Solve(prog, Vector2d::Zero());
     cout << "Is optimization successful?" << result.is_success() << endl;
     cout << "Optimal x: " << result.GetSolution().transpose() << endl;
-
-    cost.evaluator()->UpdateCoefficients(new_Q, b, c);
-    result = solvers::Solve(prog, Vector2d::Zero());
-    cout << "Is optimization successful?" << result.is_success() << endl;
-    cout << "Optimal x: " << result.GetSolution().transpose() << endl;
+    cout << "solver is: " << result.get_solver_id().name() << endl;
+    cout << "computation time is: " << result.get_solver_details<solvers::GurobiSolver>().optimizer_time;
+//     cost.evaluator()->UpdateCoefficients(new_Q, b, c);
+//     result = solvers::Solve(prog, Vector2d::Zero());
+//     cout << "Is optimization successful?" << result.is_success() << endl;
+//     cout << "Optimal x: " << result.GetSolution().transpose() << endl;
     return 0;
 }

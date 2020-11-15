@@ -201,6 +201,8 @@ drake_cc_binary(
         "@eigen",
         "//solvers:mathematical_program",
         "//solvers:solve",
+        "//solvers:gurobi_solver",
+        "//solvers:scs_solver",
     ],
     copts = COPTS,
 )

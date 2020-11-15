@@ -14,7 +14,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 15; //100;
+    unsigned int iterMax = 1; //100;
 
     ILQR_KKTSolver_new::traj lastTraj;
     //=============================================
@@ -146,7 +146,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
 
     cout << "lastTraj.xList[0]:" << lastTraj.xList[0].transpose() << endl;
     cout << "lastTraj.uList[0]:" << lastTraj.uList[0].transpose() << endl;
-
+    cout << "lastTraj.FK_count: " << lastTraj.FK_count << endl;
     
     // for(unsigned int i=N-50;i<=N;i++){
     //   cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
