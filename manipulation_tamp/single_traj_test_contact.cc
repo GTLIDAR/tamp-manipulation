@@ -203,7 +203,7 @@ int do_main() {
     // query.desired_ee[5] = 4.26875e-12;
     
     fullstateVec_t xinit,xgoal;
-    double time_horizon = 1.0;
+    double time_horizon = 0.05;
     double time_step = 0.005;
     double realtime_rate = 0.05;
     std::string kIiwaUrdf = 
@@ -317,8 +317,8 @@ int do_main() {
         ConstraintRelaxingIk::IkCartesianWaypoint wp1;
         const Eigen::Vector3d xyz1(
             (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-            0.3,
-            0.5
+            0.0,
+            0.35
             // 0.03, -0.47, 0.25
             // 0.75, 0.0, 0.45
         );

@@ -108,6 +108,7 @@ KukaArm_Contact_new::KukaArm_Contact_new(double& iiwa_dt, unsigned int& iiwa_N, 
 
     lambda_qp = prog.NewContinuousVariables(forceSize, "lambda");
     FK_count = 0;
+    time_qp = 0;
 
     // q_thread.resize(NUMBER_OF_THREAD);
     // qd_thread.resize(NUMBER_OF_THREAD);
@@ -403,7 +404,7 @@ fullstateVec_t KukaArm_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         MatrixXd M_Inv = M_.llt().solve(Matrix<double,15,15>::Identity()); 
         MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 1e-5 * Matrix<double,6*num_cps,6*num_cps>::Identity();
-        // MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,6*num_cps,6*num_cps>::Identity());
+        MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,6*num_cps,6*num_cps>::Identity());
 
         VectorXd Bias_MJ(15);
         // VectorXd Acc_Bias(3*num_cps);
@@ -438,18 +439,25 @@ fullstateVec_t KukaArm_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, c
         // Solve constrained QP to derive contact force
         // auto cost_qp = prog.AddQuadraticCost(Matrix<double,forceSize,forceSize>::Identity(), VectorXd::Ones((forceSize)), lambda_qp);
         auto cost_qp = prog.AddQuadraticCost(JM_InvJT,  -Acc_Bias + Jac * M_Inv*Bias_MJ, lambda_qp);
+        // prog.SetSolverOption(solver.id(), "TimeLimit", 0.001);
         auto unilateral_1 = prog.AddLinearConstraint(lambda_qp[3] >= 0.0);
         auto unilateral_2 = prog.AddLinearConstraint(lambda_qp[9] >= 0.0);
-        // auto cone_1 = prog.AddLinearConstraint(-lambda_qp[3] <= lambda_qp[4] && lambda_qp[4]  <= lambda_qp[3]);
-        // auto cone_2 = prog.AddLinearConstraint(-lambda_qp[3] <= lambda_qp[5] && lambda_qp[5]  <= lambda_qp[3]);
-        // auto cone_3 = prog.AddLinearConstraint(-lambda_qp[9] <= lambda_qp[10] && lambda_qp[10]  <= lambda_qp[9]);
-        // auto cone_4 = prog.AddLinearConstraint(-lambda_qp[9] <= lambda_qp[11] && lambda_qp[11]  <= lambda_qp[9]);
+        
+        // four-sided friction pyramid
+        double miu = 2.0;
+        auto cone_1 = prog.AddLinearConstraint(-miu*lambda_qp[3] <= lambda_qp[4] && lambda_qp[4]  <= miu*lambda_qp[3]);
+        auto cone_2 = prog.AddLinearConstraint(-miu*lambda_qp[3] <= lambda_qp[5] && lambda_qp[5]  <= miu*lambda_qp[3]);
+        auto cone_3 = prog.AddLinearConstraint(-miu*lambda_qp[9] <= lambda_qp[10] && lambda_qp[10]  <= miu*lambda_qp[9]);
+        auto cone_4 = prog.AddLinearConstraint(-miu*lambda_qp[9] <= lambda_qp[11] && lambda_qp[11]  <= miu*lambda_qp[9]);
 
-        // cost_qp.evaluator()->UpdateCoefficients(JM_InvJT, -Acc_Bias + Jac * M_Inv*Bias_MJ);
+        // VectorXd force_ws;
+        // force_ws = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
         auto result = solver.Solve(prog);
         force = result.GetSolution();
         // DRAKE_DEMAND(result.is_success());
+        // cout << "solver is: " << result.get_solver_id().name() << endl;
         // cout << "computation time is: " << result.get_solver_details<GurobiSolver>().optimizer_time;
+        time_qp += result.get_solver_details<GurobiSolver>().optimizer_time;
         // force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
         // cout << force.transpose() << endl;
         VectorXd Acc_total = M_Inv * (Bias_MJ + Jac.transpose() * force);

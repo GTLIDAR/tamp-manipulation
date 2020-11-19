@@ -568,6 +568,7 @@ ILQR_KKTSolver_new::traj ILQR_KKTSolver_new::getLastSolvedTrajectory()
     lastTraj.time_backward = Op.time_backward;
     lastTraj.time_derivative = Op.time_derivative;
     lastTraj.FK_count = dynamicModel->FK_count;
+    lastTraj.time_qp = dynamicModel->time_qp;
     return lastTraj;
 }
 

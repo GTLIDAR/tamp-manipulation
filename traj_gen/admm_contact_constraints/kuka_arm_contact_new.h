@@ -107,6 +107,7 @@ public:
         unsigned int counter0_, counter1_, counter2_;
     };
     unsigned int FK_count;
+    double time_qp;
 
 private:
     double dt;

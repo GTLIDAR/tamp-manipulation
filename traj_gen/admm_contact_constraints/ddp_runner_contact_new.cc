@@ -14,7 +14,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 1; //100;
+    unsigned int iterMax = 15; //100;
 
     ILQR_KKTSolver_new::traj lastTraj;
     //=============================================
@@ -82,8 +82,8 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     for(unsigned i=0;i<N;i++){
     //   u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
         // cout << "u_0: " << u_0[i].transpose() << endl;
-        u_0[i].setZero();
-        // u_0[i] << 0, 0, 0, 0, 2, 2, 2;
+        // u_0[i].setZero();
+        u_0[i] << 1, 1, 1, 1, 1, 1, 1;
     }
     //======================================
     KukaArm_Contact_new KukaArmModel(dt, N, xgoal, &plant_, action_name);
@@ -127,7 +127,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     }
 
     texec=(static_cast<double>(1000*(tend.tv_sec-tbegin.tv_sec)+((tend.tv_usec-tbegin.tv_usec)/1000)))/1000.;
-    texec /= Num_run;
+    // texec /= Num_run;
 
     cout << endl;
     cout << "Number of iterations: " << lastTraj.iter + 1 << endl;
@@ -147,6 +147,8 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     cout << "lastTraj.xList[0]:" << lastTraj.xList[0].transpose() << endl;
     cout << "lastTraj.uList[0]:" << lastTraj.uList[0].transpose() << endl;
     cout << "lastTraj.FK_count: " << lastTraj.FK_count << endl;
+    cout << "lastTraj.time_qp: " << lastTraj.time_qp << endl;
+    cout << "average QP computation time per run (second): " << lastTraj.time_qp / lastTraj.FK_count << endl;
     
     // for(unsigned int i=N-50;i<=N;i++){
     //   cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
