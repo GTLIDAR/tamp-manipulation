@@ -306,11 +306,12 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         MatrixXd M_;
         plant_->CalcMassMatrix(*context, &M_);
 
-        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
+        // VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
         VectorXd Cv(plant_->num_velocities());
         plant_->CalcBiasTerm(*context, &Cv);
         //=============================================
-        vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
+        // vd = (M_.inverse()*(tau + tau_g - Cv)).head(stateSize/2);
+        vd = (M_.inverse()*(tau - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
 
         if(finalTimeProfile.counter0_ == 10){

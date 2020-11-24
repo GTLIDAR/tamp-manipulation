@@ -10,7 +10,8 @@ CostFunctionKukaArm_TRK::CostFunctionKukaArm_TRK(double pos_weight, double vel_w
     vel_scale = 10;
     pos_f_scale = 1000;
     vel_f_scale = 10;
-    torque_scale = 1;//100;
+    torque_scale = 10;//100;
+    torque_d_scale = 10;
     rho_pos_weight = pos_weight;
     rho_vel_weight = vel_weight;
     rho_torque_weight = torque_weight;
@@ -29,10 +30,12 @@ CostFunctionKukaArm_TRK::CostFunctionKukaArm_TRK(double pos_weight, double vel_w
                         // rho_vel_weight, rho_vel_weight, rho_vel_weight, rho_vel_weight, rho_vel_weight, rho_vel_weight, rho_vel_weight;
                         2.5*rho_vel_weight, 2.5*rho_vel_weight, 1.8*rho_vel_weight, 1.25*rho_vel_weight, 1.15*rho_vel_weight, rho_vel_weight, rho_vel_weight; //2.5, 2.5, 1.8, 1.25, 1.15, 1.0, 1.0
     Rho_torque_DiagElementVec << rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight, rho_torque_weight;
+    RdDiagElementVec << torque_d_scale*0.005, torque_d_scale*0.005, torque_d_scale*0.007, torque_d_scale*0.007, torque_d_scale*0.02, torque_d_scale*0.02, torque_d_scale*0.05;
 
     Q = QDiagElementVec.asDiagonal();
     Qf = QfDiagElementVec.asDiagonal();
     R = RDiagElementVec.asDiagonal();
+    Rd = RdDiagElementVec.asDiagonal();
     Rho_state = Rho_state_DiagElementVec.asDiagonal();
     Rho_torque = Rho_torque_DiagElementVec.asDiagonal();
 
@@ -71,6 +74,12 @@ commandMat_t& CostFunctionKukaArm_TRK::getR()
 {
     return R;
 }
+
+commandMat_t& CostFunctionKukaArm_TRK::getRd()
+{
+    return Rd;
+}
+
 
 stateVecTab_t& CostFunctionKukaArm_TRK::getcx()
 {

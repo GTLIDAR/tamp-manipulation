@@ -10,8 +10,8 @@ CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
     vel_scale = 10;
     pos_f_scale = 1000;//0.001;
     vel_f_scale = 10;//10;
-    torque_scale = 1;//100;
-    torque_d_scale = 0;
+    torque_scale = 10;//100;
+    torque_d_scale = 10;
 
     // initial, final costs (pos ,vel)
     // torque cost

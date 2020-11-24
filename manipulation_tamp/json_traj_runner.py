@@ -12,7 +12,8 @@ file_path = os.path.dirname(os.path.abspath(__file__))
 drake_path = file_path+"/.."
 result_path = drake_path+"/manipulation_tamp/results/"
 
-JSON_FILENAME = "fixed_admm_traj20201023T000819.json"
+# JSON_FILENAME = result_path + "fixed_admm_traj20201023T000819.json"
+JSON_FILENAME = "/home/zhigen/code/drake/traj_gen/trajectory_data/fixvec_0-1-2-3-4-5-6-7-8-9-10-11-12-13.json"
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 
@@ -74,7 +75,7 @@ class JsonManipulatorTrajRunner:
         self.run_plan()
 
 def main():
-    runner = JsonManipulatorTrajRunner(result_path+JSON_FILENAME)
+    runner = JsonManipulatorTrajRunner(JSON_FILENAME)
     runner.run_plan_lcm_wrapper()
 
 if __name__=="__main__":

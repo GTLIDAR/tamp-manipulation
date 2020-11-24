@@ -428,33 +428,33 @@ int do_main(int argc, char* argv[]) {
     msg.msg = "start";
     lcm_.publish("START_PLAN", &msg);
 
-    simulator.AdvanceTo(5);
+    // simulator.AdvanceTo(5);
 
-    std::cout<<"5 seconds reached!\n";
+    // std::cout<<"5 seconds reached!\n";
 
-    multibody::ModelInstanceIndex move_id = station->GetObjectModel(0);
-    auto& plant = station->get_multibody_plant();
-    auto& context = simulator.get_mutable_context();
-    auto& state = context.get_mutable_state();
-    auto cur_pos = plant.GetPositions(context, move_id);
-    Eigen::VectorXd new_pos;
-    new_pos.resize(plant.num_positions(move_id));
-    new_pos[0] = 5;
-    for (int i = 1; i < plant.num_positions(move_id); i++) {
-        new_pos[i] = cur_pos[i];
-    }
+    // multibody::ModelInstanceIndex move_id = station->GetObjectModel(0);
+    // auto& plant = station->get_multibody_plant();
+    // auto& context = simulator.get_mutable_context();
+    // auto& state = context.get_mutable_state();
+    // auto cur_pos = plant.GetPositions(context, move_id);
+    // Eigen::VectorXd new_pos;
+    // new_pos.resize(plant.num_positions(move_id));
+    // new_pos[0] = 5;
+    // for (int i = 1; i < plant.num_positions(move_id); i++) {
+    //     new_pos[i] = cur_pos[i];
+    // }
 
-    plant.SetPositions(
-        context,
-        &state,
-        move_id,
-        new_pos
-    );
+    // plant.SetPositions(
+    //     context,
+    //     &state,
+    //     move_id,
+    //     new_pos
+    // );
 
-    std::cout<<"Restarting Simulation!\n";
-    systems::InitializeParams params;
-    params.suppress_initialization_events = false;
-    simulator.Initialize(params);
+    // std::cout<<"Restarting Simulation!\n";
+    // systems::InitializeParams params;
+    // params.suppress_initialization_events = false;
+    // simulator.Initialize(params);
     simulator.AdvanceTo(std::numeric_limits<double>::infinity());
 
     return 0;
