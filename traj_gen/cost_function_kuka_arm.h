@@ -23,15 +23,19 @@ protected:
 	stateMat_t Q;
 	stateMat_t Qf;
 	commandMat_t R;
+	commandMat_t Rd;
 
 	stateVec_t QDiagElementVec;
 	stateVec_t QfDiagElementVec;
 	commandVec_t RDiagElementVec;
+	commandVec_t RdDiagElementVec;
+
 	double pos_scale;
     double vel_scale;
     double pos_f_scale;
     double vel_f_scale;
-    double torqoe_scale;
+    double torque_scale;
+	double torque_d_scale;
     
 	stateVecTab_t cx_new;
 	commandVecTab_t cu_new; 
@@ -44,6 +48,7 @@ public:
 	stateMat_t& getQ();
 	stateMat_t& getQf();
 	commandMat_t& getR();
+	commandMat_t& getRd();
 	stateVecTab_t& getcx();
 	commandVecTab_t& getcu();
 	stateMatTab_t& getcxx();

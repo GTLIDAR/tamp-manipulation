@@ -516,6 +516,8 @@ void ILQRSolver::doForwardPass()
 
     stateVec_t x_unused;
     x_unused.setZero();
+    commandVec_t u_init;
+    u_init.setZero();
     commandVec_t u_NAN_loc;
     u_NAN_loc << sqrt(-1.0); // sqrt(-1)=NaN. After this line, u_nan has nan for [0] and garbage for rest
     isUNan = 0;
@@ -526,22 +528,33 @@ void ILQRSolver::doForwardPass()
         for(unsigned int i=0;i<N;i++) {
             updateduList[i] = uList[i];
             // running cost, state, input
-            dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
-            costList[i] = costFunction->getc();
+            // dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
+            if (i > 0) {
+                dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], updateduList[i-1], costFunction);
+            } else {
+                dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], u_init, costFunction);
+            }
         }
         // getting final cost, state, input=NaN
         isUNan = 1;
-        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        // dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, updateduList[N-1], costFunction);
         costList[N] = costFunction->getc();
     }
     else {
         for(unsigned int i=0;i<N;i++) {
             updateduList[i] = uList[i] + alpha*kList[i] + KList[i]*(updatedxList[i]-xList[i]);
-            dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
+            // dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], costFunction);
+            if (i > 0) {
+                dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], updateduList[i-1], costFunction);
+            } else {
+                dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[i], updateduList[i], isUNan, updatedxList[i+1], u_init, costFunction);
+            }
             costListNew[i] = costFunction->getc();
         }
         isUNan = 1;
-        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        // dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, costFunction);
+        dynamicModel->kuka_arm_dyn_cst_min_output(nargout, updatedxList[N], u_NAN_loc, isUNan, x_unused, updateduList[N-1], costFunction);
         costListNew[N] = costFunction->getc();
     }
 }

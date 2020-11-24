@@ -267,7 +267,7 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         // }
 
 
-        VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
+        // VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context); // Gravity Comp
         VectorXd Cv(plant_->num_velocities());
         Cv.setZero();
         plant_->CalcBiasTerm(*context, &Cv);
@@ -275,7 +275,8 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         //=============================================
         // Cholesky decomposition (not much speedup)
         MatrixXd M_Inv = M_.llt().solve(Matrix<double,9,9>::Identity()); 
-        vd = (M_Inv*(tau + tau_g - Cv)).head(stateSize/2);
+        // vd = (M_Inv*(tau + tau_g - Cv)).head(stateSize/2);
+        vd = (M_Inv*(tau - Cv)).head(stateSize/2);
         Xdot_new << qd, vd;
         // for (int j = 0; j < Xdot_new.rows(); j++) {
         //     if (isnan(Xdot_new(j))) {
@@ -391,6 +392,8 @@ void KukaArm::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xLi
         }
 
         stateVec_t cx_temp;
+        commandVec_t u_init;
+        u_init.setZero();
 
         if(debugging_print) TRACE_KUKA_ARM("compute dynamics and cost derivative\n");
 
@@ -402,15 +405,26 @@ void KukaArm::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xLi
             cx_temp << xList[k] - xgoal;
 
             costFunction->getcx()[k] = costFunction->getQ()*cx_temp;
-            costFunction->getcu()[k] = costFunction->getR()*uList[k];
             costFunction->getcxx()[k] = costFunction->getQ();
             costFunction->getcux()[k].setZero();
-            costFunction->getcuu()[k] = costFunction->getR();
+            
+            if (k==0) {
+                costFunction->getcu()[k] = 
+                    (costFunction->getR()+costFunction->getRd())*uList[k]
+                    - costFunction->getRd()*u_init;
+            } else {
+                costFunction->getcu()[k] = 
+                    (costFunction->getR()+costFunction->getRd())*uList[k]
+                    - costFunction->getRd()*uList[k-1];  
+            }
+            
+            costFunction->getcuu()[k] = costFunction->getR()+costFunction->getRd();
+            // costFunction->getcu()[k] = costFunction->getR()*uList[k];
+            // costFunction->getcuu()[k] = costFunction->getR();
         }
         if(debugging_print) TRACE_KUKA_ARM("update the final value of cost derivative \n");
 
         costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal);
-        costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1];
         costFunction->getcxx()[Nl-1] = costFunction->getQf();
         costFunction->getcux()[Nl-1].setZero();
         costFunction->getcuu()[Nl-1] = costFunction->getR();
@@ -427,7 +441,10 @@ void KukaArm::kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xLi
     if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
 }
 
-void KukaArm::kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr, const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm*& costFunction){
+void KukaArm::kuka_arm_dyn_cst_min_output(const int& nargout, 
+    const stateVec_t& xList_curr, const commandVec_t& uList_curr, 
+    const bool& isUNan, stateVec_t& xList_next, commandVec_t uList_prev,
+    CostFunctionKukaArm*& costFunction){
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
     if(debugging_print) std::cout<<"nargout: "<<nargout<<"\n";
     unsigned int Nc = xList_curr.cols(); //xList_curr is 14x1 vector -> col=1
@@ -458,6 +475,10 @@ void KukaArm::kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& 
             c_mat_to_scalar = 0.5*(xList_curr.transpose() - xgoal.transpose())*costFunction->getQ()*(xList_curr - xgoal);
             // if(debugging_print) TRACE_KUKA_ARM("after the update2\n");
             c_mat_to_scalar += 0.5*uList_curr.transpose()*costFunction->getR()*uList_curr;
+            
+            // add torque deviation cost
+            c_mat_to_scalar += 0.5*(uList_curr.transpose()-uList_prev.transpose())*costFunction->getRd()*(uList_curr-uList_prev);
+
             costFunction->getc() += c_mat_to_scalar(0,0);
         }
     }

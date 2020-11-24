@@ -126,7 +126,9 @@ public:
     stateVec_t kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau);
 
     void kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm*& costFunction);
-    void kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr,  const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm*& costFunction);
+    void kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, 
+    const commandVec_t& uList_curr,  const bool& isUNan, stateVec_t& xList_next, 
+    commandVec_t uList_prev, CostFunctionKukaArm*& costFunction);
     void kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm*& costFunction);
     // void kuka_arm_dyn_cst_v3(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, stateTensTab_t& fxxList, stateTensTab_t& fxuList, stateR_commandC_Tens_t& fuuList, CostFunctionKukaArm*& costFunction);
     stateVec_t update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B);
