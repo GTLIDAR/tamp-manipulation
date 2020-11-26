@@ -412,7 +412,8 @@ fullstateVec_t KukaArm_Contact_new::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         Bias_MJ.setZero();
         Bias_MJ = - Cv;
-        Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
+        // Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
+        Bias_MJ += tau_g;
         
         if (action_name_.compare("push")==0){        
             VectorXd dry_friction(6);
@@ -632,19 +633,19 @@ fullstateVec_t KukaArm_Contact_new::update(const fullstateVec_t& X, const comman
     gettimeofday(&tbegin_period4,NULL);
 
     // never used
-    forceVec_t force1;
-    forceVec_t force2;
-    forceVec_t force3;
+    // forceVec_t force1;
+    // forceVec_t force2;
+    // forceVec_t force3;
 
     // output of kuka arm dynamics is xdot = f(x,u)
     Xdot1 = kuka_arm_dynamics(X, U, force);
-    Xdot2 = kuka_arm_dynamics(X + 0.5*dt*Xdot1, U, force1);
-    Xdot3 = kuka_arm_dynamics(X + 0.5*dt*Xdot2, U, force2);
-    Xdot4 = kuka_arm_dynamics(X + dt*Xdot3, U, force3);
+    // Xdot2 = kuka_arm_dynamics(X + 0.5*dt*Xdot1, U, force1);
+    // Xdot3 = kuka_arm_dynamics(X + 0.5*dt*Xdot2, U, force2);
+    // Xdot4 = kuka_arm_dynamics(X + dt*Xdot3, U, force3);
     fullstateVec_t X_new;
-    X_new = X + (dt/6)*(Xdot1 + 2*Xdot2 + 2*Xdot3 + Xdot4);
+    // X_new = X + (dt/6)*(Xdot1 + 2*Xdot2 + 2*Xdot3 + Xdot4);
     // Simple Euler Integration (for debug)
-    // X_new = X + (dt)*Xdot1;
+    X_new = X + (dt)*Xdot1;
 
     if(debugging_print) TRACE_KUKA_ARM("update: X_new\n");
 

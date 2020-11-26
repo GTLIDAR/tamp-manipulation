@@ -399,7 +399,8 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
 
         Bias_MJ.setZero();
         Bias_MJ = - Cv;
-        Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
+        // Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
+        Bias_MJ += tau_g;
         
         if (action_name_.compare("push")==0){        
             VectorXd dry_friction(6);

@@ -62,7 +62,6 @@ using multibody::ModelInstanceIndex;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using multibody::MultibodyForces;
-using multibody::MultibodyForces;
 using multibody::BodyIndex;
 
 class DDP_KKTRunner {

@@ -14,7 +14,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 15; //100;
+    unsigned int iterMax = 100; //100;
 
     ILQR_KKTSolver::traj lastTraj;
     //=============================================

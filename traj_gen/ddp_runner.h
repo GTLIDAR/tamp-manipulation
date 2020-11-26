@@ -16,6 +16,8 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_robot_time.hpp"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -32,6 +34,7 @@
 
 using namespace std;
 using namespace Eigen;
+using lcm::LCM;
 
 #define useILQRSolver 1
 #define useUDPSolver 0
@@ -45,6 +48,10 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
+const char* const kLcmStatusChannel_DDP = "IIWA_STATUS";
+const char* const kLcmSchunkStatusChannel_DDP = "WSG_STATUS";
+const char* const kLcmTimeChannel_DDP = "IIWA_TIME";
+
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using multibody::ModelInstanceIndex;
 using math::RigidTransformd;
@@ -55,12 +62,21 @@ class DDPRunner {
 public:
 lcmt_manipulator_traj RunDDP(stateVec_t xinit, stateVec_t xgoal,
     double time_horizon, double time_step);
+void RunVisualizer(double realtime_rate);
 void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
 void saveValue(double _value, const char * _name);
 void clean_file(const char * _file_name, std::string & _ret_file);
 
+void HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+                      const lcmt_robot_time* robot_time);
 
-//UDP parameters
+//parameters
+LCM lcm_;
+lcmt_robot_time robot_time_;
+bool plan_finished_;
+unsigned int step_;
+double time_step_;
+unsigned int N;
 stateVecTab_t joint_state_traj;
 commandVecTab_t torque_traj;
 stateVecTab_t joint_state_traj_interp;

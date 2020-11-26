@@ -14,7 +14,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 15; //100;
+    unsigned int iterMax = 10; //100;
 
     ILQR_KKTSolver_new::traj lastTraj;
     //=============================================
@@ -82,8 +82,8 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     for(unsigned i=0;i<N;i++){
     //   u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
         // cout << "u_0: " << u_0[i].transpose() << endl;
-        // u_0[i].setZero();
-        u_0[i] << 1, 1, 1, 1, 1, 1, 1;
+        u_0[i].setZero();
+        // u_0[i] << 1, 1, 1, 1, 1, 1, 1;
     }
     //======================================
     KukaArm_Contact_new KukaArmModel(dt, N, xgoal, &plant_, action_name);
@@ -92,7 +92,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
     // run one or multiple times and then average
-    unsigned int Num_run = 1;
+    unsigned int Num_run = 0;
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
     if(Num_run == 0) {testSolverKukaArm.initializeTraj();}

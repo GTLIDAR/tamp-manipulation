@@ -135,6 +135,7 @@ drake_cc_library(
         "//examples/kuka_iiwa_arm:iiwa_lcm",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
+        "@lcm",
         "//lcmtypes:generic_string_msg",
         "//traj_gen:cost_function_kuka_arm",
         "//traj_gen:ilqrsolver",
@@ -164,7 +165,7 @@ drake_cc_library(
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
         "//lcmtypes:generic_string_msg",
-
+        "@lcm",
         "//traj_gen:cost_function_kuka_arm_track",
         "//traj_gen:ilqrsolver_track",
         "//traj_gen:kuka_arm_track",

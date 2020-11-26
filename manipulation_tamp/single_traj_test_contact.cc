@@ -126,7 +126,7 @@ lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal) {
     std::cout<<"ddp initial pos: " << q_init.transpose() << std::endl;
     std::cout<<"ddp goal pos: " << q_goal.transpose() << std::endl;
 
-    DDP_KKTRunner_new runner;
+    DDP_KKTRunner runner;
     auto return_ptr =  runner.RunDDP_KKT(q_init, q_goal, time_horizon_, time_step_, action_name_);
     runner.RunVisualizer(0.15);
     return return_ptr;
@@ -203,7 +203,7 @@ int do_main() {
     // query.desired_ee[5] = 4.26875e-12;
     
     fullstateVec_t xinit,xgoal;
-    double time_horizon = 0.05;
+    double time_horizon = 2.0;
     double time_step = 0.005;
     double realtime_rate = 0.05;
     std::string kIiwaUrdf = 
@@ -317,8 +317,8 @@ int do_main() {
         ConstraintRelaxingIk::IkCartesianWaypoint wp1;
         const Eigen::Vector3d xyz1(
             (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-            0.0,
-            0.35
+            0.3,
+            0.5
             // 0.03, -0.47, 0.25
             // 0.75, 0.0, 0.45
         );
