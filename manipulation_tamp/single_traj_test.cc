@@ -17,7 +17,7 @@
 #include "drake/lcmt_motion_plan_query.hpp"
 #include "drake/traj_gen/config.h"
 
-DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_admm, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -177,9 +177,9 @@ int main(int argc, char* argv[]) {
     query.time_step = 0.01;
     query.wait_time = 0;
 
-    double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
+    // double prev_q[] = {0, 0, 0, 0, 0, 0, 0};
     // double prev_q[] = {-0.133372, 0.251457, -0.0461879, -1.21048, 0.0324702, 0.928553, -0.190112};
-    // double prev_q[] = {1.84849, 1.30959, -0.0757701, -1.37273, -1.29295, 1.59139, 2.68207}; //for pushing
+    double prev_q[] = {1.84849, 1.30959, -0.0757701, -1.37273, -1.29295, 1.59139, 2.68207}; //for pushing
     // double prev_q[] = {-0.099479, 1.80031, -1.69171, -1.72316, 2.56677, 0.312838, -0.777406};
     // double prev_q[] = {-0.935018, 0.786996, -0.90662, -1.31144, 0.614953, 1.32472, -0.268566};
     // double prev_q[] = {-0.9498766005895738, -1.4303909653637479, 2.0864686773500476, -1.4801119967595946, 0.11195986419142938, 0.889741592707635, -0.003942442475240289};

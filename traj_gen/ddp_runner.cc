@@ -58,7 +58,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
 
         VectorXd q_v_iiwa(14);
         q_v_iiwa.setZero();
-        q_v_iiwa.head(7) = xinit;
+        q_v_iiwa.head(7) = xinit.head(7);
         plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
 
         MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
@@ -96,6 +96,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     unsigned int Num_run = 1;
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<Num_run;i++) testSolverKukaArm.solveTrajectory();
+    if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
     gettimeofday(&tend,NULL);
 
     lastTraj = testSolverKukaArm.getLastSolvedTrajectory();
@@ -210,7 +211,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
 }
 
 void DDPRunner::RunVisualizer(double realtime_rate){
-    lcm_.subscribe(kLcmTimeChannel_DDP,
+    lcm_.subscribe(kLcmTimeChannel,
                         &DDPRunner::HandleRobotTime, this);
     lcmt_iiwa_status iiwa_state;
     lcmt_schunk_wsg_status wsg_status;
@@ -265,8 +266,8 @@ void DDPRunner::RunVisualizer(double realtime_rate){
             iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
         }
 
-        lcm_.publish(kLcmStatusChannel_DDP, &iiwa_state);
-        lcm_.publish(kLcmSchunkStatusChannel_DDP, &wsg_status);
+        lcm_.publish(kLcmStatusChannel, &iiwa_state);
+        lcm_.publish(kLcmSchunkStatusChannel, &wsg_status);
     }
 }
 

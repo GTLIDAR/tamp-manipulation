@@ -26,6 +26,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/quaternion.h"
 
 #include "drake/lcmt_generic_string_msg.hpp"
 
@@ -64,6 +65,8 @@ using math::RollPitchYaw;
 using multibody::MultibodyForces;
 using multibody::MultibodyForces;
 using multibody::BodyIndex;
+using drake::multibody::JacobianWrtVariable;
+using drake::multibody::SpatialAcceleration;
 
 class DDP_KKTRunner_new {
 public:

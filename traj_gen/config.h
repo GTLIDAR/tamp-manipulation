@@ -45,6 +45,10 @@ const int32_t kNumJoints = 7;
 #define UDP_TRAJ_DIR "/home/ziyi/code/drake/traj_gen/trajectory_data/"
 const char* const kLcmQueryResultsChannel = "TREE_SEARCH_QUERY_RESULTS";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
+const char* const kLcmStatusChannel = "IIWA_STATUS";
+const char* const kLcmObjectStatusChannel = "OBJECT_STATUS";
+const char* const kLcmSchunkStatusChannel = "WSG_STATUS";
+const char* const kLcmTimeChannel = "IIWA_TIME";
 
 namespace drake {
 namespace traj_gen {

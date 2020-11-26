@@ -457,7 +457,7 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& xnew,
 }
 
 void ADMMRunner::RunVisualizer(double realtime_rate){
-    lcm_.subscribe(kLcmTimeChannel_ADMM,
+    lcm_.subscribe(kLcmTimeChannel,
                         &ADMMRunner::HandleRobotTime, this);
     lcmt_iiwa_status iiwa_state;
     lcmt_schunk_wsg_status wsg_status;
@@ -512,8 +512,8 @@ void ADMMRunner::RunVisualizer(double realtime_rate){
             iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
         }
 
-        lcm_.publish(kLcmStatusChannel_ADMM, &iiwa_state);
-        lcm_.publish(kLcmSchunkStatusChannel_ADMM, &wsg_status);
+        lcm_.publish(kLcmStatusChannel, &iiwa_state);
+        lcm_.publish(kLcmSchunkStatusChannel, &wsg_status);
     }
 }
 

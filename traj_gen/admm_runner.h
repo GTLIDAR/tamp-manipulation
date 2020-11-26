@@ -72,10 +72,6 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-const char* const kLcmStatusChannel_ADMM = "IIWA_STATUS";
-const char* const kLcmSchunkStatusChannel_ADMM = "WSG_STATUS";
-const char* const kLcmTimeChannel_ADMM = "IIWA_TIME";
-
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using multibody::ModelInstanceIndex;

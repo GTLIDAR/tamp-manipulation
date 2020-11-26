@@ -26,6 +26,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/quaternion.h"
 
 #include "drake/lcmt_generic_string_msg.hpp"
 
@@ -51,11 +52,6 @@ namespace drake {
 namespace traj_gen {
 namespace kuka_iiwa_arm {
 
-const char* const kLcmStatusChannel_DDP = "IIWA_STATUS";
-const char* const kLcmObjectStatusChannel_DDP = "OBJECT_STATUS";
-const char* const kLcmSchunkStatusChannel_DDP = "WSG_STATUS";
-const char* const kLcmTimeChannel_DDP = "IIWA_TIME";
-
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using examples::kuka_iiwa_arm::kIiwaLcmStatusPeriod;
 using multibody::ModelInstanceIndex;
@@ -63,6 +59,8 @@ using math::RigidTransformd;
 using math::RollPitchYaw;
 using multibody::MultibodyForces;
 using multibody::BodyIndex;
+using drake::multibody::JacobianWrtVariable;
+using drake::multibody::SpatialAcceleration;
 
 class DDP_KKTRunner {
 public:
