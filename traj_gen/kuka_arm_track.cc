@@ -662,63 +662,27 @@ stateR_commandC_tab_t& KukaArm_TRK::getfuList()
     return fuList;
 }
 
+VectorXd KukaArm_TRK::quasiStatic(const stateVec_t& X0){
+    Eigen::Matrix<double,stateSize/2+2,1> q_full;
+    Eigen::Matrix<double,stateSize/2+2,1> qd_full;
+    q_full.setZero();
+    qd_full.setZero();
+    q_full.topRows(stateSize/2)=X0.topRows(stateSize/2);
+    qd_full.topRows(stateSize/2)=X0.bottomRows(stateSize/2);
 
-void KukaArm_TRK::kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList,
-                                CostFunctionKukaArm_TRK*& costFunction){
-    if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
-    unsigned int Nl = xList.size();
+    auto context_ptr = plant_->CreateDefaultContext();
+    auto context = context_ptr.get();
+    plant_->SetPositions(context, q_full);
+    plant_->SetVelocities(context, qd_full);
 
-    costFunction->getc() = 0;
-    AA.setZero();
-    BB.setZero();
-    if(debugging_print) TRACE_KUKA_ARM("compute cost function\n");
+    VectorXd gtau_wb = plant_->CalcGravityGeneralizedForces(*context);
+    VectorXd Cv(plant_->num_velocities());
+    Cv.setZero();
+    plant_->CalcBiasTerm(*context, &Cv);
 
-    scalar_t c_mat_to_scalar;
-    c_mat_to_scalar.setZero();
+    commandVec_t u_qs = (-gtau_wb + Cv).topRows(stateSize/2); 
 
-    if(nargout == 2){
-        const int nargout_update1 = 3;
-        for(unsigned int k=0;k<Nl;k++){
-            if (k == Nl-1){
-                if(debugging_print) TRACE_KUKA_ARM("before the update1\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose()) * costFunction->getQf() * (xList[k] - xgoal);
-                costFunction->getc() += c_mat_to_scalar(0,0);
-                if(debugging_print) TRACE_KUKA_ARM("after the update1\n");
-            }else{
-                if(debugging_print) TRACE_KUKA_ARM("before the update2\n");
-                FList[k] = update(nargout_update1, xList[k], uList[k], AA, BB);
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal);
-                if(debugging_print) TRACE_KUKA_ARM("after the update2\n");
-                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k];
-                costFunction->getc() += c_mat_to_scalar(0,0);
-            }
-        }
-    }else{
-        stateVec_t cx_temp;
-        if(debugging_print) TRACE_KUKA_ARM("compute cost derivative\n");
-        for(unsigned int k=0;k<Nl-1;k++){
-            cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
-            costFunction->getcx()[k] = costFunction->getQ()*cx_temp;
-            costFunction->getcu()[k] = costFunction->getR()*uList[k];
-            costFunction->getcxx()[k] = costFunction->getQ();
-            costFunction->getcux()[k].setZero();
-            costFunction->getcuu()[k] = costFunction->getR();
-        }
-        if(debugging_print) TRACE_KUKA_ARM("update the final value of cost derivative \n");
-        costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal);
-        costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1];
-        costFunction->getcxx()[Nl-1] = costFunction->getQf();
-        costFunction->getcux()[Nl-1].setZero();
-        costFunction->getcuu()[Nl-1] = costFunction->getR();
-        if(debugging_print) TRACE_KUKA_ARM("set unused matrices to zero \n");
-
-        // the following useless matrices and scalars are set to Zero.
-        for(unsigned int k=0;k<Nl;k++){
-            FList[k].setZero();
-        }
-        costFunction->getc() = 0;
-    }
-    if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
+    return u_qs;
 }
 
 }  // namespace kuka_iiwa_arm

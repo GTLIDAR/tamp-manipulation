@@ -7,7 +7,6 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
   double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
-    commandVecTab_t u_0;
     time_step_ = time_step;
     double dt = time_step;
     N = int(time_horizon/time_step);
@@ -60,7 +59,6 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     xbar_old.resize(N + 1);
     ubar_old.resize(N);
     xubar.resize(N + 1);
-    u_0.resize(N);
     x_lambda.resize(N + 1);
     u_lambda.resize(N);
     x_temp.resize(N+1);
@@ -75,7 +73,6 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       u_temp[k].setZero();
       x_temp2[k].setZero();
       u_temp2[k].setZero();
-      u_0[k] << 0,0,0.2,0,0.2,0,0;
     }
     xbar[N].setZero();
     x_temp[N].setZero();
@@ -115,34 +112,17 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
     plant_.Finalize();
-
-    auto context_ptr = plant_.CreateDefaultContext();
-    auto context = context_ptr.get();
-
-    VectorXd q_v_iiwa(14);
-    q_v_iiwa.setZero();
-    q_v_iiwa.head(7) = xinit;
-    plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
-
-    MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrix(*context, &M_);
-
-    VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
-
-    cout << "bias total" << endl << gtau_wb << endl;
-
-    u_0.resize(N);
-    for(unsigned i=0;i<N;i++){
-      u_0[i].head(7) = - gtau_wb;
-      // u_0[i].setZero();
-    }
     
     #if WHOLE_BODY
       KukaArm_TRK KukaArmModel(dt, N, xgoal, &plant_, action_name);
     #else
       KukaArm_TRK KukaArmModel(dt, N, xgoal, action_name);
     #endif
-
+    commandVecTab_t u_0;
+    u_0.resize(N);
+    for(unsigned i=0;i<N;i++){
+      u_0[i] = KukaArmModel.quasiStatic(xinit);
+    }
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
     // KukaArm_TRK KukaArmModel(dt, N, xgoal);

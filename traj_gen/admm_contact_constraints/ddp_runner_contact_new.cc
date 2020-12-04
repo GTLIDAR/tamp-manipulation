@@ -14,7 +14,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 10; //100;
+    unsigned int iterMax = 50; //100;
 
     ILQR_KKTSolver_new::traj lastTraj;
     //=============================================
@@ -163,7 +163,7 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
     // run one or multiple times and then average
-    unsigned int Num_run = 0;
+    unsigned int Num_run = 1;
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
     if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -229,8 +229,8 @@ lcmt_manipulator_traj DDP_KKTRunner_new::RunDDP_KKT(fullstateVec_t xinit, fullst
     for(unsigned int i=N-2;i<=N;i++){      
         auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
         auto xyz = Eigen::Vector3d(0, 0, 0);
-        math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
-        plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
+        math::RigidTransform<double> X_W1(math::RotationMatrix<double>(rpy), xyz);
+        plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_W1);
         plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].middleRows<7>(13));
         plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
         const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
@@ -337,6 +337,7 @@ void DDP_KKTRunner_new::RunVisualizer(double realtime_rate){
         wsg_status.utime = robot_time_.utime;
         // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
         step_ = int(((robot_time_.utime) / 1000)*(0.001*realtime_rate/(time_step_/InterpolationScale)));
+        // cout << step_ << endl;
         
         if(step_ >= N*InterpolationScale)
         {

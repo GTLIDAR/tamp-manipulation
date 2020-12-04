@@ -52,32 +52,17 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
         plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
         plant_.Finalize();
-
-        auto context_ptr = plant_.CreateDefaultContext();
-        auto context = context_ptr.get();
-
-        VectorXd q_v_iiwa(14);
-        q_v_iiwa.setZero();
-        q_v_iiwa.head(7) = xinit.head(7);
-        plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
-
-        MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
-        plant_.CalcMassMatrix(*context, &M_);
-
-        VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
-
-        cout << "bias total" << endl << gtau_wb << endl;
-        commandVecTab_t u_0;
-        u_0.resize(N);
-        for(unsigned i=0;i<N;i++){
-          u_0[i].head(7) = - gtau_wb;
-        }
         //======================================
         #if WHOLE_BODY
           KukaArm KukaArmModel(dt, N, xgoal, &plant_);
         #else
           KukaArm KukaArmModel(dt, N, xgoal);
         #endif
+        commandVecTab_t u_0;
+        u_0.resize(N);
+        for(unsigned i=0;i<N;i++){
+          u_0[i] = KukaArmModel.quasiStatic(xinit);
+        }
         CostFunctionKukaArm costKukaArm(N);
         ILQRSolver testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
         testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     

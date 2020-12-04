@@ -78,6 +78,8 @@ using multibody::ModelInstanceIndex;
 using multibody::MultibodyForces;
 using math::RigidTransformd;
 using math::RollPitchYaw;
+using drake::multibody::JacobianWrtVariable;
+using drake::multibody::SpatialAcceleration;
 
 class ADMM_KKTRunner {
   public:

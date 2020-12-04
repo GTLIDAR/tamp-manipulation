@@ -7,7 +7,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
   double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
-    commandVecTab_t u_0;
     time_step_ = time_step;
     double dt = time_step;
     N = int(time_horizon/time_step);
@@ -64,7 +63,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     xbar_old.resize(N + 1);
     ubar_old.resize(N);
     xubar.resize(N + 1);
-    u_0.resize(N);
     x_lambda.resize(N + 1);
     u_lambda.resize(N);
     x_temp.resize(N+1);
@@ -79,7 +77,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
       u_temp[k].setZero();
       x_temp2[k].setZero();
       u_temp2[k].setZero();
-      u_0[k] << 0,0,0.2,0,0.2,0,0;
     }
     xbar[N].setZero();
     x_temp[N].setZero();
@@ -130,30 +127,15 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     parser.AddModelFromFile(box_sdf_path0, "object");
 
     plant_.Finalize();
-
-    auto context_ptr = plant_.CreateDefaultContext();
-    auto context = context_ptr.get();
-
-    VectorXd q_v_iiwa(14);
-    q_v_iiwa.setZero();
-    q_v_iiwa.head(7) = xinit;
-    plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
-
-    MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrix(*context, &M_);
-
-    VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
-
-    u_0.resize(N);
-    for(unsigned i=0;i<N;i++){
-      u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
-        // cout << "u_0: " << u_0[i].transpose() << endl;
-        // u_0[i].setZero();
-        // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
-    }
     
     //////////////////////////////////////////////////////////////////
     KukaArm_TRK_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
+    // generate warm start
+    commandVecTab_t u_0;
+    u_0.resize(N);
+    for(unsigned i=0;i<N;i++){
+      u_0[i] = KukaArmModel.quasiStatic(action_name, xinit);
+    }
 
     // Initialize ILQRSolver
     ILQRSolver_TRK_Contact::traj lastTraj;

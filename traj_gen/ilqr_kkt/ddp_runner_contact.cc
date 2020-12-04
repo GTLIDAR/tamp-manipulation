@@ -62,106 +62,21 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     parser.AddModelFromFile(box_sdf_path0, "object");
 
     plant_.Finalize();
-
-    auto context_ptr = plant_.CreateDefaultContext();
-    auto context = context_ptr.get();
-
-    VectorXd qd_full(15);
-    qd_full.topRows(6) = xinit.middleRows<6>(7);
-    qd_full.middleRows<7>(6) = xinit.bottomRows(7);
-    qd_full.bottomRows(2) = Vector2d::Zero();
-
-    Quaternion<double> qua_obj_eigen(xinit(0), xinit(1), xinit(2), xinit(3));
-
-    math::RigidTransform<double> X_WO(qua_obj_eigen, xinit.middleRows<3>(4));
-
-    plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
-    plant_.SetPositions(context, iiwa_model, xinit.middleRows<7>(13));
-    plant_.SetVelocities(context, iiwa_model, xinit.bottomRows(7));
-    plant_.SetPositions(context, wsg_model, Vector2d::Zero());
-    plant_.SetVelocities(context, wsg_model, Vector2d::Zero());
-
-    MatrixXd M_(15, 15);
-    VectorXd Cv(15);
-    VectorXd tau_g = plant_.CalcGravityGeneralizedForces(*context);
-
-    plant_.CalcMassMatrix(*context, &M_);
-    plant_.CalcBiasTerm(*context, &Cv);
-    const int num_cps = 2;
-    Vector3d contact_point_left;
-    Vector3d contact_point_right;
-    contact_point_left << 0, 0, 0; 
-    contact_point_right << 0, 0, 0; 
-
-    MatrixXd Jac(6*num_cps, 15);
-    MatrixXd Jac_left(6, 15);
-    MatrixXd Jac_right(6, 15);
-
-    SpatialAcceleration<double> Acc_Bias_left;
-    SpatialAcceleration<double> Acc_Bias_right;
-
-    if (action_name.compare("push")==0){
-        plant_.CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame(), &Jac_left); // the second last argument seems doesn't matter?
-        Acc_Bias_left = plant_.CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame());
-
-        plant_.CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame(), &Jac_right); // the second last argument seems doesn't matter?
-        Acc_Bias_right = plant_.CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame());
-    }
-    else{
-        plant_.CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame(), &Jac_left); // the second last argument seems doesn't matter?
-        Acc_Bias_left = plant_.CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame());
-
-        plant_.CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame(), &Jac_right); // the second last argument seems doesn't matter?
-        Acc_Bias_right = plant_.CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_.GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
-        ,plant_.GetFrameByName("base_link", object_model), plant_.world_frame());
-
-    }
-    Jac.block<6, 15>(0, 0) = Jac_left;
-    Jac.block<6, 15>(6, 0) = Jac_right;
-
-    MatrixXd M_Inv = M_.llt().solve(Matrix<double,15,15>::Identity()); 
-    MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 1e-5 * Matrix<double,6*num_cps,6*num_cps>::Identity();
-    MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,6*num_cps,6*num_cps>::Identity());
-
-    VectorXd Bias_MJ(15);
-    VectorXd Acc_Bias(6*num_cps);
-
-    Bias_MJ.setZero();
-    Bias_MJ = - Cv;
-    Bias_MJ += tau_g;
-    
-    Bias_MJ.middleRows<7>(6) += -tau_g.middleRows<kNumJoints>(6);
-
-    Acc_Bias.middleRows<6>(0) = -Acc_Bias_left.get_coeffs() - 500*Jac_left*qd_full;
-    Acc_Bias.middleRows<6>(6) = -Acc_Bias_right.get_coeffs() - 500*Jac_right*qd_full;
-    VectorXd force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
-
-    // VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
-    // cout << "bias total" << endl << gtau_wb << endl;
-    commandVecTab_t u_0;
-    u_0.resize(N);
-    for(unsigned i=0;i<N;i++){
-        // u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
-        u_0[i] = -tau_g.middleRows<kNumJoints>(6) - (Jac.transpose() * force).middleRows<kNumJoints>(6);
-        // cout << "u_0: " << u_0[i].transpose() << endl;
-        // u_0[i].setZero();
-        // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
-    }
     //======================================
     KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
     CostFunctionKukaArm_Contact costKukaArm(N, action_name);
     ILQR_KKTSolver testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
+
+    // generate warm start
+    commandVecTab_t u_0;
+    u_0.resize(N);
+    for(unsigned i=0;i<N;i++){
+      u_0[i] = KukaArmModel.quasiStatic(action_name, xinit);
+    }
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
     // run one or multiple times and then average
-    unsigned int Num_run = 0;
+    unsigned int Num_run = 1;
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<Num_run;i++) {testSolverKukaArm.solveTrajectory();}
     if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
@@ -222,18 +137,20 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     // }
 
     // Do the forward kinamtics for the EE to check the performance
-    // for(unsigned int i=N-2;i<=N;i++){      
-    //     auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
-    //     auto xyz = Eigen::Vector3d(0, 0, 0);
-    //     math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
-    //     plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
-    //     plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].middleRows<7>(13));
-    //     plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
-    //     const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
-    //     const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
-    //     const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
-    //     cout << "ee[" << i << "]:" << X_Wee.translation().transpose() << endl;
-    // }
+    auto context_ptr = plant_.CreateDefaultContext();
+    auto context = context_ptr.get();
+    for(unsigned int i=N-2;i<=N;i++){      
+        auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
+        auto xyz = Eigen::Vector3d(0, 0, 0);
+        math::RigidTransform<double> X_W1(math::RotationMatrix<double>(rpy), xyz);
+        plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_W1);
+        plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].middleRows<7>(13));
+        plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
+        const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
+        const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
+        const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
+        cout << "ee[" << i << "]:" << X_Wee.translation().transpose() << endl;
+    }
 
     // saving data file
     for(unsigned int i=0;i<N;i++){
