@@ -28,7 +28,7 @@ wsg_path = drake_path + "manipulation/models/wsg_50_description/sdf/schunk_wsg_5
 
 JSON_FILENAME = drake_path + "traj_gen/trajectory_data/14_cmd_rd_0.json"
 JSON_FILENAME_SIM = drake_path + "traj_gen/trajectory_data/14_rd_0.json"
-JSON_FILENAME_HW = drake_path + "traj_gen/trajectory_data/14_rd_100.json"
+JSON_FILENAME_HW = drake_path + "traj_gen/trajectory_data/14_vel_100_pos_f_5000.json"
 
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
@@ -327,10 +327,10 @@ class TrajPlotter(object):
         plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.4)
         plt.subplot(421)
         # plt.plot(self.tarray, self.jdict[0], label="traj0")
-        plt.plot(self.tarrayhw, self.jdicthw[0], label="rd=100 vel 0")
-        plt.plot(self.tarrayhwc, self.jdicthwc[0], label="rd=100 pos 0")
-        plt.plot(self.tarraysim, self.jdictsim[0], label="rd=0 vel 0")
-        plt.plot(self.tarraysimc, self.jdictsimc[0], label="rd=0 pos 0")
+        plt.plot(self.tarrayhw, self.jdicthw[0], label="rd=1 v=100 pos_f=5000 vel 0")
+        plt.plot(self.tarrayhwc, self.jdicthwc[0], label="rd=1 v=100 pos_f=5000 pos 0")
+        plt.plot(self.tarraysim, self.jdictsim[0], label="rd= v=10 pos_f=1000 vel 0")
+        plt.plot(self.tarraysimc, self.jdictsimc[0], label="rd= v=10 pos_f=1000 pos 0")
         # plt.ylim([-1.5,1.5])
         # plt.ylim([-3.2,3.2])
         plt.legend(loc="upper right")
@@ -341,10 +341,10 @@ class TrajPlotter(object):
 
         plt.subplot(422)
         # plt.plot(self.tarray, self.jdict[1], label="traj1")
-        plt.plot(self.tarrayhw, self.jdicthw[1], label="rd=100 vel 1")
-        plt.plot(self.tarrayhwc, self.jdicthwc[1], label="rd=100 pos 1")
-        plt.plot(self.tarraysim, self.jdictsim[1], label="rd=0 vel 1")
-        plt.plot(self.tarraysimc, self.jdictsimc[1], label="rd=0 pos 1")
+        plt.plot(self.tarrayhw, self.jdicthw[1], label="rd=1 v=100 pos_f=5000 vel 1")
+        plt.plot(self.tarrayhwc, self.jdicthwc[1], label="rd=1 v=100 pos_f=5000 pos 1")
+        plt.plot(self.tarraysim, self.jdictsim[1], label="rd= v=10 pos_f=1000 vel 1")
+        plt.plot(self.tarraysimc, self.jdictsimc[1], label="rd= v=10 pos_f=1000 pos 1")
         # plt.ylim([-1.5,1.5])
         # plt.ylim([-3.2,3.2])
         plt.legend(loc="upper right")
@@ -355,10 +355,10 @@ class TrajPlotter(object):
 
         plt.subplot(423)
         # plt.plot(self.tarray, self.jdict[2], label="traj2")
-        plt.plot(self.tarrayhw, self.jdicthw[2], label="rd=100 vel 2")
-        plt.plot(self.tarrayhwc, self.jdicthwc[2], label="rd=100 pos 2")
-        plt.plot(self.tarraysim, self.jdictsim[2], label="rd=0 vel 2")
-        plt.plot(self.tarraysimc, self.jdictsimc[2], label="rd=0 pos 2")
+        plt.plot(self.tarrayhw, self.jdicthw[2], label="rd=1 v=100 pos_f=5000 vel 2")
+        plt.plot(self.tarrayhwc, self.jdicthwc[2], label="rd=1 v=100 pos_f=5000 pos 2")
+        plt.plot(self.tarraysim, self.jdictsim[2], label="rd= v=10 pos_f=1000 vel 2")
+        plt.plot(self.tarraysimc, self.jdictsimc[2], label="rd= v=10 pos_f=1000 pos 2")
         # plt.ylim([-1.5,1.5])
         # plt.ylim([-3.2,3.2])
         plt.legend(loc="upper right")
@@ -369,10 +369,10 @@ class TrajPlotter(object):
 
         plt.subplot(424)
         # plt.plot(self.tarray, self.jdict[3], label="traj3")
-        plt.plot(self.tarrayhw, self.jdicthw[3], label="rd=100 vel 3")
-        plt.plot(self.tarrayhwc, self.jdicthwc[3], label="rd=100 pos 3")
-        plt.plot(self.tarraysim, self.jdictsim[3], label="rd=0 vel 3")
-        plt.plot(self.tarraysimc, self.jdictsimc[3], label="rd=0 pos 3")
+        plt.plot(self.tarrayhw, self.jdicthw[3], label="rd=1 v=100 pos_f=5000 vel 3")
+        plt.plot(self.tarrayhwc, self.jdicthwc[3], label="rd=1 v=100 pos_f=5000 pos 3")
+        plt.plot(self.tarraysim, self.jdictsim[3], label="rd= v=10 pos_f=1000 vel 3")
+        plt.plot(self.tarraysimc, self.jdictsimc[3], label="rd= v=10 pos_f=1000 pos 3")
         # plt.ylim([-1.5,1.5])
         # plt.ylim([-3.2,3.2])
         plt.legend(loc="upper right")
@@ -383,10 +383,10 @@ class TrajPlotter(object):
 
         plt.subplot(425)
         # plt.plot(self.tarray, self.jdict[4], label="traj4")
-        plt.plot(self.tarrayhw, self.jdicthw[4], label="rd=100 vel 4")
-        plt.plot(self.tarrayhwc, self.jdicthwc[4], label="rd=100 pos 4")
-        plt.plot(self.tarraysim, self.jdictsim[4], label="rd=0 vel 4")
-        plt.plot(self.tarraysimc, self.jdictsimc[4], label="rd=0 pos 4")
+        plt.plot(self.tarrayhw, self.jdicthw[4], label="rd=1 v=100 pos_f=5000 vel 4")
+        plt.plot(self.tarrayhwc, self.jdicthwc[4], label="rd=1 v=100 pos_f=5000 pos 4")
+        plt.plot(self.tarraysim, self.jdictsim[4], label="rd= v=10 pos_f=1000 vel 4")
+        plt.plot(self.tarraysimc, self.jdictsimc[4], label="rd= v=10 pos_f=1000 pos 4")
         # plt.ylim([-1.5,1.5])
         # plt.ylim([-3.2,3.2])
         plt.legend(loc="upper right")
@@ -397,10 +397,10 @@ class TrajPlotter(object):
 
         plt.subplot(426)
         # plt.plot(self.tarray, self.jdict[5], label="traj5")
-        plt.plot(self.tarrayhw, self.jdicthw[5], label="rd=100 vel 5")
-        plt.plot(self.tarrayhwc, self.jdicthwc[5], label="rd=100 pos 5")
-        plt.plot(self.tarraysim, self.jdictsim[5], label="rd=0 vel 5")
-        plt.plot(self.tarraysimc, self.jdictsimc[5], label="rd=0 pos 5")
+        plt.plot(self.tarrayhw, self.jdicthw[5], label="rd=1 v=100 pos_f=5000 vel 5")
+        plt.plot(self.tarrayhwc, self.jdicthwc[5], label="rd=1 v=100 pos_f=5000 pos 5")
+        plt.plot(self.tarraysim, self.jdictsim[5], label="rd= v=10 pos_f=1000 vel 5")
+        plt.plot(self.tarraysimc, self.jdictsimc[5], label="rd= v=10 pos_f=1000 pos 5")
         # plt.ylim([-1.5,1.5])
         # plt.ylim([-3.2,3.2])
         plt.legend(loc="upper right")
@@ -411,10 +411,10 @@ class TrajPlotter(object):
 
         plt.subplot(427)
         # plt.plot(self.tarray, self.jdict[6], label="traj6")
-        plt.plot(self.tarrayhw, self.jdicthw[6], label="rd=100 vel 6")
-        plt.plot(self.tarrayhwc, self.jdicthwc[6], label="rd=100 pos 6")
-        plt.plot(self.tarraysim, self.jdictsim[6], label="rd=0 vel 6")
-        plt.plot(self.tarraysimc, self.jdictsimc[6], label="rd=0 pos 6")
+        plt.plot(self.tarrayhw, self.jdicthw[6], label="rd=1 v=100 pos_f=5000 vel 6")
+        plt.plot(self.tarrayhwc, self.jdicthwc[6], label="rd=1 v=100 pos_f=5000 pos 6")
+        plt.plot(self.tarraysim, self.jdictsim[6], label="rd= v=10 pos_f=1000 vel 6")
+        plt.plot(self.tarraysimc, self.jdictsimc[6], label="rd= v=10 pos_f=1000 pos 6")
         # plt.ylim([-1.5,1.5])
         # plt.ylim([-3.2,3.2])
         plt.legend(loc="upper right")

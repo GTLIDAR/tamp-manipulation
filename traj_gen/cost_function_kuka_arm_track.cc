@@ -7,11 +7,11 @@ namespace kuka_iiwa_arm {
 CostFunctionKukaArm_TRK::CostFunctionKukaArm_TRK(double pos_weight, double vel_weight, double torque_weight, unsigned int N)
 {    
     pos_scale = 10;
-    vel_scale = 10;
-    pos_f_scale = 1000;
+    vel_scale = 100; // 10
+    pos_f_scale = 5000; // 1000
     vel_f_scale = 10;
     torque_scale = 10;//100;
-    torque_d_scale = 10;
+    torque_d_scale = 1;
     rho_pos_weight = pos_weight;
     rho_vel_weight = vel_weight;
     rho_torque_weight = torque_weight;

@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
     query.dim_q = 7;
     query.name = "move";
     query.level = 0;
-    query.time_horizon = 2;
+    query.time_horizon = 1;
     query.time_step = 0.005;
     query.wait_time = 0;
 
