@@ -196,3 +196,14 @@ drake_cc_binary(
         "//lcmtypes:motion_plan_query",
     ],
 )
+
+drake_cc_binary(
+    name = "ca_unitest",
+    srcs = ["ca_unitest.cc",],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@eigen",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)

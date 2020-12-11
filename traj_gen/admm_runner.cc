@@ -14,7 +14,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 2;
+    unsigned int ADMMiterMax = 5; 
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
