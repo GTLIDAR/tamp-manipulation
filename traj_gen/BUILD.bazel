@@ -201,9 +201,22 @@ drake_cc_binary(
     name = "ca_unitest",
     srcs = ["ca_unitest.cc",],
     visibility = ["//visibility:public"],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/kuka_connector_description:models",
+    ],
     deps = [
         "@eigen",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//math:geometric_transform",
+        "//traj_gen:config",
         "//solvers:mathematical_program",
         "//solvers:solve",
+        "//solvers:constraint",
     ],
 )
