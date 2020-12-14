@@ -17,6 +17,10 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+COPTS = ["-Wno-unused-parameter",
+ "-Wno-unused-function",
+ ]
+
 drake_cc_package_library(
     name = "solvers",
     visibility = ["//visibility:public"],
@@ -26,6 +30,7 @@ drake_cc_package_library(
         ":branch_and_bound",
         ":choose_best_solver",
         ":constraint",
+        ":nonlinear_constraint",
         ":cost",
         ":create_constraint",
         ":create_cost",
@@ -153,6 +158,23 @@ drake_cc_library(
         "//math:gradient",
         "//math:matrix_util",
     ],
+)
+
+drake_cc_library(
+    name = "nonlinear_constraint",
+    srcs = [
+        "nonlinear_constraint.cc",
+    ],
+    hdrs = [
+        "nonlinear_constraint.h",
+    ],
+    deps = [
+        # "@drake//:drake_shared_library",
+        "//common:symbolic",
+        "//math:gradient",
+        "//solvers:constraint",
+    ],
+    copts = COPTS,
 )
 
 drake_cc_library(
