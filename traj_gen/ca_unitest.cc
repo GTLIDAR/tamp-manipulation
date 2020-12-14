@@ -18,6 +18,7 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/traj_gen/constraint/fk_constraint.h"
 
 using namespace Eigen;
 using namespace std;
@@ -31,14 +32,11 @@ using multibody::MultibodyForces;
 using multibody::ModelInstanceIndex;
 using math::RollPitchYaw;
 using solvers::Constraint;
-
-using namespace solvers;
+using traj_gen::FKConstraint;
 
 class CollisionAvoidance_ADMM{
     public:
-    CollisionAvoidance_ADMM(MultibodyPlant<double>* plant){
-        plant_ = plant;
-    }
+    CollisionAvoidance_ADMM(const drake::multibody::MultibodyPlant<double>& plant): plant_(plant){}
     ~CollisionAvoidance_ADMM(){};
 
     void SolveOpt(){
@@ -49,10 +47,14 @@ class CollisionAvoidance_ADMM{
         auto x = prog.NewContinuousVariables(7, 20, "x");
         auto x0 = MatrixXd(7, 20);
         x0.setZero();
+        Vector3d lb, ub;
+        lb << -100, -100, -100;
+        ub << 100, 100, 100;
+
         for(unsigned int i=0;i<20;i++){
             auto x_var = x.col(i);
             auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), VectorXd::Zero(7), x_var);
-            // prog.AddConstraint(make_shared<FK>(x_var), x_var);
+            prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant_, "iiwa", "iiwa_link_ee_kuka", lb, ub, "FK"), x_var);
         }
 
         prog.SetInitialGuess(x, x0);
@@ -63,91 +65,18 @@ class CollisionAvoidance_ADMM{
     }
 
     VectorXd FK(const VectorXd& q){
-        auto context_ptr = plant_->CreateDefaultContext();
+        auto context_ptr = plant_.CreateDefaultContext();
         auto context = context_ptr.get();
 
-        auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
-        plant_->SetPositions(context, iiwa_model, q);
-        auto p_EE = plant_->CalcRelativeTransform(*context, plant_->world_frame(), plant_->GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
+        auto iiwa_model = plant_.GetModelInstanceByName("iiwa");
+        plant_.SetPositions(context, iiwa_model, q);
+        auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
         return p_EE.translation();
     }
 
     private:
-    multibody::MultibodyPlant<double>* plant_{};
+    const drake::multibody::MultibodyPlant<double>& plant_;
 
-};
-
-class FKConstraint : public Constraint {
- public:
-  static const int kNumConstraints = 3;
-  static const int num_vars = 7;
-  
-//   template <typename DerivedMBP, typename DerivedLB, typename DerivedUB>
-//   FKConstraint(const multibody::MultibodyPlant<DerivedMBP>* plant,
-//                 const Eigen::MatrixBase<DerivedLB>& lb,
-//                 const Eigen::MatrixBase<DerivedUB>& ub)
-//       : Constraint(kNumConstraints, num_vars, lb, ub),
-//         plant_(plant) {}
-  template <typename DerivedLB, typename DerivedUB>
-  FKConstraint(const multibody::MultibodyPlant<AutoDiffXd>* plant,
-                const Eigen::MatrixBase<DerivedLB>& lb,
-                const Eigen::MatrixBase<DerivedUB>& ub)
-      : Constraint(kNumConstraints, num_vars, lb, ub),
-        plant_ad(plant) {}
-
-  template <typename DerivedLB, typename DerivedUB>
-  FKConstraint(const multibody::MultibodyPlant<double>* plant,
-                const Eigen::MatrixBase<DerivedLB>& lb,
-                const Eigen::MatrixBase<DerivedUB>& ub)
-      : Constraint(kNumConstraints, num_vars, lb, ub),
-        plant_d(plant) {}
-
-  ~FKConstraint() override {}
-
- private:
-//   template <typename DerivedX, typename ScalarY>
-//   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
-//                      VectorX<ScalarY>* y) const{
-//     y->resize(num_constraints());
-//     auto context_ptr = plant_->CreateDefaultContext();
-//     auto context = context_ptr.get();
-//     auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
-//     plant_->SetPositions(context, iiwa_model, x);
-//     auto p_EE = plant_->CalcRelativeTransform(*context, plant_->world_frame(), plant_->GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
-//     *y = p_EE.translation();
-//   }
-
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-      Eigen::VectorXd* y) const override {
-    y->resize(num_constraints());
-    auto context_ptr = plant_d->CreateDefaultContext();
-    auto context = context_ptr.get();
-    auto iiwa_model = plant_d->GetModelInstanceByName("iiwa");
-    plant_d->SetPositions(context, iiwa_model, x);
-    auto p_EE = plant_d->CalcRelativeTransform(*context, plant_d->world_frame(), plant_d->GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
-    *y = p_EE.translation();
-    // DoEvalGeneric(x, y);
-  }
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-      AutoDiffVecXd* y) const override {
-    y->resize(num_constraints());
-    auto context_ptr = plant_ad->CreateDefaultContext();
-    auto context = context_ptr.get();
-    auto iiwa_model = plant_ad->GetModelInstanceByName("iiwa");
-    plant_ad->SetPositions(context, iiwa_model, x);
-    auto p_EE = plant_ad->CalcRelativeTransform(*context, plant_ad->world_frame(), plant_ad->GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
-    *y = p_EE.translation();
-    // DoEvalGeneric(x, y);
-  }
-
-  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>* y) const override { *y = x.topRows(3);}
-  
-//   template <typename DerivedMBP>
-//   multibody::MultibodyPlant<DerivedMBP>* plant_{};
-   multibody::MultibodyPlant<AutoDiffXd>* plant_ad{};
-   multibody::MultibodyPlant<double>* plant_d{};
 };
 
 void do_main(){
@@ -184,7 +113,7 @@ void do_main(){
     plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
     plant_.Finalize();
-    CollisionAvoidance_ADMM ca(&plant_);
+    CollisionAvoidance_ADMM ca(plant_);
     ca.SolveOpt();
     VectorXd q0(7);
     q0.setZero();

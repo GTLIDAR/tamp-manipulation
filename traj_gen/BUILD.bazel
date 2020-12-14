@@ -218,5 +218,14 @@ drake_cc_binary(
         "//solvers:mathematical_program",
         "//solvers:solve",
         "//solvers:constraint",
+        "//traj_gen/constraint:fk_constraint",
+    ],
+)
+
+drake_cc_binary(
+    name = "autodiff_example",
+    srcs = ["autodiff_example.cc"],
+    deps = [
+        "@drake//math:gradient",
     ],
 )
