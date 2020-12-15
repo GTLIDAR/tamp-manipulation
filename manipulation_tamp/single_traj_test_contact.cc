@@ -21,7 +21,8 @@
 #include "drake/lcmt_motion_plan_query.hpp"
 #include "drake/traj_gen/config.h"
 
-DEFINE_bool(use_admm, false, "whether to use admm or ddp");
+DEFINE_bool(use_admm, true, "whether to use admm or ddp");
+DEFINE_bool(use_contact, false, "whether to use admm or ddp");
 
 DEFINE_double(gripper_open_width, 100, "Width gripper opens to in mm");
 DEFINE_double(gripper_close_width, 10, "Width gripper closes to in mm");
@@ -55,6 +56,7 @@ using drake::math::RigidTransformd;
 using drake::math::RollPitchYaw;
 using drake::math::RotationMatrix;
 using drake::traj_gen::kuka_iiwa_arm::fullstateVec_t;
+using drake::traj_gen::kuka_iiwa_arm::stateVec_t;
 
 namespace drake {
 namespace manipulation_tamp {
@@ -72,9 +74,17 @@ void Run(VectorXd xinit, VectorXd xgoal, double time_horizon, double time_step, 
     action_name_ = action_name;
     lcmt_manipulator_traj traj;
     if (FLAGS_use_admm) {
-        traj = GetADMM_KKTRes(xinit, xgoal);
+        if (FLAGS_use_contact){
+            traj = GetADMM_KKTRes(xinit, xgoal);
+        }else{
+            traj = GetADMMRes(xinit, xgoal);
+        }
     } else {
-        traj = GetDDP_KKTRes(xinit, xgoal);
+        if (FLAGS_use_contact){
+            traj = GetDDP_KKTRes(xinit, xgoal);
+        }else{
+            traj = GetDDPRes(xinit, xgoal);
+        }
     }
     std::vector<double> widths;
     std::vector<double> forces;
@@ -101,24 +111,15 @@ double time_step_;
 double realtime_rate_; 
 string action_name_;
 
-lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal,
-    const lcmt_motion_plan_query* query) {
+lcmt_manipulator_traj GetDDPRes(VectorXd q_init, VectorXd q_goal) {
     std::cout<<"IK Successful, sent to ddp\n";
     std::cout<<"ddp initial pos: " << q_init.transpose() << std::endl;
     std::cout<<"ddp goal pos: " << q_goal.transpose() << std::endl;
 
-    VectorXd qv_init;
-    qv_init = Eigen::VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_init[0], q_init.size()) = q_init;
-    // std::cout<<"qv_init:\n"<<qv_init<<"\n";
-
-    VectorXd qv_goal;
-    qv_goal = VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
-    // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
-
     DDPRunner runner;
-    return runner.RunDDP(qv_init, qv_goal, query->time_horizon, query->time_step);
+    auto return_ptr = runner.RunDDP(q_init, q_goal, time_horizon_, time_step_);
+    runner.RunVisualizer(0.15);
+    return return_ptr;
 }
 
 lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal) {
@@ -132,23 +133,15 @@ lcmt_manipulator_traj GetDDP_KKTRes(VectorXd q_init, VectorXd q_goal) {
     return return_ptr;
 }
 
-lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal,
-    const lcmt_motion_plan_query* query) {
+lcmt_manipulator_traj GetADMMRes(VectorXd q_init, VectorXd q_goal) {
     std::cout<<"IK Successful, sent to admm\n";
     std::cout<<"admm initial pos: " << q_init.transpose() << std::endl;
     std::cout<<"admm goal pos: " << q_goal.transpose() << std::endl;
 
-    VectorXd qv_init;
-    qv_init = Eigen::VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_init[0], q_init.size()) = q_init;
-    // std::cout<<"qv_init:\n"<<qv_init<<"\n";
-
-    VectorXd qv_goal;
-    qv_goal = VectorXd::Zero(stateSize);
-    VectorXd::Map(&qv_goal[0], q_goal.size()) = q_goal;
-    // std::cout<<"qv_goal:\n"<<qv_goal<<"\n";
     ADMMRunner runner;
-    return runner.RunADMM(qv_init, qv_goal, query->time_horizon, query->time_step, query->name);
+    auto return_ptr =  runner.RunADMM(q_init, q_goal, time_horizon_, time_step_, action_name_);
+    runner.RunVisualizer(0.15);
+    return return_ptr;
 }
 
 lcmt_manipulator_traj GetADMM_KKTRes(VectorXd q_init, VectorXd q_goal) {
@@ -202,9 +195,8 @@ int do_main() {
     // query.desired_ee[4] = 0.0292037;
     // query.desired_ee[5] = 4.26875e-12;
     
-    fullstateVec_t xinit,xgoal;
-    double time_horizon = 2.0;
-    double time_step = 0.005;
+    double time_horizon = 1.0;
+    double time_step = 0.01;
     double realtime_rate = 0.05;
     std::string kIiwaUrdf = 
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
@@ -277,7 +269,7 @@ int do_main() {
         //waypoint (0)
         ConstraintRelaxingIk::IkCartesianWaypoint wp0;
         const Eigen::Vector3d xyz0(
-            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x, // 0.3856
             0.0,
             0.30
 
@@ -360,36 +352,50 @@ int do_main() {
 
 
     }
-    xinit.setZero();
-    xinit.topRows(13) << 
-    // 1, 0, 0, 0, 
-    // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
-    // 1, 0, 0, 0,
-    // 0.5800000000000001, -0.1, 0.1, 0, 0, 0, 0, 0, 0;
-    1, 0, 0, 0,
-    (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
-    // 1.0, 0.0, 0.0, 0.0, 0.605, -0.33, 0.30000000000000004, 0, 0, 0, 0, 0, 0;
+    if(FLAGS_use_contact){
+        fullstateVec_t xinit,xgoal;
+        xinit.setZero();
+        xinit.topRows(13) << 
+        // 1, 0, 0, 0, 
+        // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
+        // 1, 0, 0, 0,
+        // 0.5800000000000001, -0.1, 0.1, 0, 0, 0, 0, 0, 0;
+        1, 0, 0, 0,
+        (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0, 0.09, 0, 0, 0, 0, 0, 0;
+        // 1.0, 0.0, 0.0, 0.0, 0.605, -0.33, 0.30000000000000004, 0, 0, 0, 0, 0, 0;
 
-    VectorXd q_obj_final = get_q_object_final(xinit.topRows(7), EE_init, EE_final);
-    cout << q_obj_final << endl;
-    // xinit.topRows(13) << 1, 0, 0, 0, 
-    // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
+        VectorXd q_obj_final = get_q_object_final(xinit.topRows(7), EE_init, EE_final);
+        cout << q_obj_final << endl;
+        // xinit.topRows(13) << 1, 0, 0, 0, 
+        // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
+        
+        // xinit.topRows(13) << 1, 0, 0, 0, 
+        // 0, 0, 0.8, 0, 0, 0, 0, 0, 0;
+        // xinit.middleRows<7>(13) << 0, 0, 0, 0, 0, 0, 0;
+        xinit.middleRows<7>(13) = ik_res[1];
+
+        xgoal.setZero();
+        xgoal.topRows(7) = q_obj_final;
+        // xgoal.topRows(13) << 1, 0, 0, 0, 
+        // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0.3, 0.29, 0, 0, 0, 0, 0, 0;
+
+        // xgoal.topRows(13) << 1, 0, 0, 0, 
+        // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x+0.3, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
+        xgoal.middleRows<7>(13) = ik_res[2];
+
+        runner.Run(xinit, xgoal, time_horizon, time_step, realtime_rate, action);
+    }
+    else{
+        stateVec_t xinit,xgoal;
+        xinit.setZero();
+        xinit.topRows(7) = ik_res[1];
+
+        xgoal.setZero();
+        xgoal.topRows(7) = ik_res[2];
+
+        runner.Run(xinit, xgoal, time_horizon, time_step, realtime_rate, action);
+    }
     
-    // xinit.topRows(13) << 1, 0, 0, 0, 
-    // 0, 0, 0.8, 0, 0, 0, 0, 0, 0;
-    // xinit.middleRows<7>(13) << 0, 0, 0, 0, 0, 0, 0;
-    xinit.middleRows<7>(13) = ik_res[1];
-
-    xgoal.setZero();
-    xgoal.topRows(7) = q_obj_final;
-    // xgoal.topRows(13) << 1, 0, 0, 0, 
-    // (FLAGS_belt_width+FLAGS_table_width)/2+0.033-FLAGS_default_iiwa_x, 0.3, 0.29, 0, 0, 0, 0, 0, 0;
-
-    // xgoal.topRows(13) << 1, 0, 0, 0, 
-    // (FLAGS_belt_width+FLAGS_table_width)/2+0.01-FLAGS_default_iiwa_x+0.3, 0.55, FLAGS_kConveyorBeltTopZInWorld-FLAGS_kTableTopZInWorld+0.09, 0, 0, 0, 0, 0, 0;
-    xgoal.middleRows<7>(13) = ik_res[2];
-
-    runner.Run(xinit, xgoal, time_horizon, time_step, realtime_rate, action);
 
     return 0;
 }
