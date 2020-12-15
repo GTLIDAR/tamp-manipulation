@@ -248,7 +248,7 @@ void DDPRunner::RunVisualizer(double realtime_rate){
 
         // pass the interpolated traj to lcm
         for (int32_t j=0; j < iiwa_state.num_joints; ++j) { 
-            iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
+            iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][j];
         }
 
         lcm_.publish(kLcmStatusChannel, &iiwa_state);

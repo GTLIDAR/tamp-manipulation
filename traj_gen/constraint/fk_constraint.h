@@ -38,6 +38,7 @@ template <typename T>
 class FKConstraint : public solvers::NonlinearConstraint<T> {
  public: 
   FKConstraint(const drake::multibody::MultibodyPlant<T>& plant,
+               const Eigen::VectorXd& target,
                const std::string& model_name,
                const std::string& frame_name,
                const Eigen::VectorXd& lb,
@@ -51,6 +52,7 @@ class FKConstraint : public solvers::NonlinearConstraint<T> {
 
  private:
   const drake::multibody::MultibodyPlant<T>& plant_;
+  const Eigen::VectorXd target_;
   const multibody::ModelInstanceIndex model_instance_;
   const std::string frame_name_;
   std::unique_ptr<drake::systems::Context<T>> context_;

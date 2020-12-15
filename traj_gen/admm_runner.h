@@ -57,6 +57,9 @@ using Eigen::Vector3d;
 #include "drake/traj_gen/kuka_arm_track.h"
 
 #include "drake/lcmt_motion_plan_query.hpp"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
+#include "drake/traj_gen/constraint/fk_constraint.h"
 
 
 using namespace std;
@@ -78,16 +81,27 @@ using multibody::ModelInstanceIndex;
 using multibody::MultibodyForces;
 using math::RigidTransformd;
 using math::RollPitchYaw;
+using traj_gen::FKConstraint;
 
 class ADMMRunner {
   public:
+  void Initialize(unsigned int NKnot, unsigned int ADMMiterMax);
+
   lcmt_manipulator_traj RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double time_horizon, double time_step, string action_name);
 
-  projStateAndCommandTab_t projection(const stateVecTab_t& xnew,
-    const commandVecTab_t& unew, unsigned int NumberofKnotPt,
-    string action_name);
+  /// ADMM sub-block for collision avoidance
+  /// similar to optimization-based IK
+  stateVecTab_t CollisionAvoidance(const drake::multibody::MultibodyPlant<double>& plant, const stateVecTab_t& X);
 
+  /// ADMM sub-block for projection block
+  /// applicable to box and cone constraints
+  projStateAndCommandTab_t projection(const stateVecTab_t& X,
+  const commandVecTab_t& U, unsigned int NumberofKnotPt,
+  string action_name);
+
+  /// Run a trajectory visualizer through drake visualizer
+  /// see drake/traj_gen/ilqr_kkt/traj_visualizer.cc for more details
   void RunVisualizer(double realtime_rate);
 
   void saveVector(const Eigen::MatrixXd & _vec, const char * _name);
@@ -102,6 +116,36 @@ class ADMMRunner {
   // lcmt_manipulator_traj ddp_traj_;
 
   //parameters
+  // Primal
+  stateVecTab_t xnew;
+  stateVecTab_t xnew_ca;
+  commandVecTab_t unew;
+  stateVecTab_t xbar;
+  commandVecTab_t ubar;
+  stateVecTab_t xbar_old;
+  commandVecTab_t ubar_old;
+
+  // Dual
+  stateVecTab_t x_lambda;
+  stateVecTab_t x_lambda_ca;
+  commandVecTab_t u_lambda;
+
+  stateVecTab_t x_temp;
+  stateVecTab_t x_temp_ca;
+  commandVecTab_t u_temp;
+  stateVecTab_t x_temp2;
+  commandVecTab_t u_temp2;
+  projStateAndCommandTab_t xubar;
+  vector<double> res_x;
+  vector<double> res_x_ca;
+  vector<double> res_x_pos;
+  vector<double> res_x_vel;
+  vector<double> res_u;
+  vector<double> res_xlambda;
+  vector<double> res_xlambda_ca;
+  vector<double> res_ulambda;
+  vector<double> final_cost;
+
   LCM lcm_;
   lcmt_robot_time robot_time_;
   bool plan_finished_;
