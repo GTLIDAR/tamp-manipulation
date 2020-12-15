@@ -176,6 +176,10 @@ drake_cc_library(
         "//multibody/parsing",
         "//math:geometric_transform",
         "//traj_gen:config",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//solvers:constraint",
+        "//traj_gen/constraint:fk_constraint",
     ],
 )
 

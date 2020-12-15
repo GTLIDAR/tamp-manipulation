@@ -176,7 +176,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
 
 
     // Run ADMM
-    cout << "\n=========== begin ADMM ===========\n";
+    cout << "\n=========== begin ADMM-KKT ===========\n";
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<ADMMiterMax;i++){// TODO: Stopping criterion is needed
       // TODO: "-" operator for stateVecTab?

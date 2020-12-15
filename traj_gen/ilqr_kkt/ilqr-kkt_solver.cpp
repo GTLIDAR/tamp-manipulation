@@ -370,7 +370,7 @@ void ILQR_KKTSolver::initializeTraj()
     Op.expected = 0;
     Op.print_head = 6;
     Op.last_head = Op.print_head;
-    if(Op.debug_level > 0) TRACE("\n=========== begin iLQR ===========\n");
+    if(Op.debug_level > 0) TRACE("\n=========== begin iLQR-KKT ===========\n");
 }
 
 void ILQR_KKTSolver::standardizeParameters(tOptSet *o) {

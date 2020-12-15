@@ -44,23 +44,26 @@ class CollisionAvoidance_ADMM{
         solvers::MathematicalProgram prog = solvers::MathematicalProgram();
 
         // Instantiate the decision variables
-        auto x = prog.NewContinuousVariables(7, 20, "x");
-        auto x0 = MatrixXd(7, 20);
+        auto x = prog.NewContinuousVariables(7, 5, "x");
+        auto x0 = MatrixXd(7, 5);
         x0.setZero();
-        Vector3d lb, ub;
-        lb << -100, -100, -100;
-        ub << 100, 100, 100;
+        Vector1d lb, ub;
+        lb << 0.05;
+        ub << 100;
+        Vector3d target;
+        target << 0.1, 0.1, 0.1;
 
-        for(unsigned int i=0;i<20;i++){
+        for(unsigned int i=0;i<5;i++){
             auto x_var = x.col(i);
             auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), VectorXd::Zero(7), x_var);
-            prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant_, "iiwa", "iiwa_link_ee_kuka", lb, ub, "FK"), x_var);
+            prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant_, target, "iiwa", "iiwa_link_ee_kuka", 
+                                            lb, ub, "FK"), x_var);
         }
 
         prog.SetInitialGuess(x, x0);
         auto result = solvers::Solve(prog);
         cout << "Is optimization successful?" << result.is_success() << endl;
-        cout << "Optimal x: " << result.GetSolution().transpose() << endl;
+        cout << "Optimal x: " << result.GetSolution() << endl;
         cout << "solver is: " << result.get_solver_id().name() << endl;
     }
 
