@@ -60,6 +60,30 @@ class FKConstraint : public solvers::NonlinearConstraint<T> {
 
 };
 
+template <typename T>
+class FKConstraint_z : public solvers::NonlinearConstraint<T> {
+ public: 
+  FKConstraint_z(const drake::multibody::MultibodyPlant<T>& plant,
+               const std::string& model_name,
+               const std::string& frame_name,
+               const Eigen::VectorXd& lb,
+               const Eigen::VectorXd& ub,
+               const std::string& description = "");
+
+  ~FKConstraint_z() override {}
+
+  void EvaluateConstraint(const Eigen::Ref<const drake::VectorX<T>>& x,
+                          drake::VectorX<T>* y) const override;
+
+ private:
+  const drake::multibody::MultibodyPlant<T>& plant_;
+  const multibody::ModelInstanceIndex model_instance_;
+  const multibody::ModelInstanceIndex iiwa_model_;
+  const std::string frame_name_;
+  std::unique_ptr<drake::systems::Context<T>> context_;
+
+};
+
 } // traj_gen
 } // drake
 

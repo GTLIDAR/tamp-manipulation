@@ -55,7 +55,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 15; 
+    unsigned int ADMMiterMax = 30; 
     this->Initialize(N, ADMMiterMax);
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -112,7 +112,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
     pos_weight_ = 1000;
-    vel_weight_ = 0;
+    vel_weight_ = 1000;
     torque_weight_ = 0;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight_, vel_weight_, torque_weight_, N); //postion/velocity/torque weights
@@ -127,6 +127,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     xnew = lastTraj.xList;
     unew = lastTraj.uList;
     final_cost[0] = lastTraj.finalCost;
+
+    // Initialize some primal and dual parameters
     xnew_ca = xnew;
 
     for(unsigned int k=0;k<N;k++){
@@ -137,6 +139,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     x_lambda[N] = xnew[N] - xbar[N];
     x_lambda_ca[N] = xnew_ca[N] - xbar[N];
 
+    std::vector<double> error_ca;
+    error_ca.resize(ADMMiterMax);
 
     // Run ADMM
     cout << "\n=========== begin ADMM ===========\n";
@@ -188,6 +192,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
         // Save residuals for all iterations
         res_x[i] += (xnew[j] - xbar[j]).norm();
         res_x_ca[i] += (xnew_ca[j] - xbar[j]).norm();
+        error_ca[i] += (xnew_ca[j] - xnew[j]).norm();
         res_x_pos[i] += (xnew[j].head(kNumJoints) - xbar[j].head(kNumJoints)).norm();
         res_x_vel[i] += (xnew[j].tail(7) - xbar[j].tail(7)).norm();
         // res_x_vel[i] += pow(xnew[j](7) - xbar[j](7), 2.0);
@@ -202,6 +207,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
       res_x[i] += (xnew[N] - xbar[N]).norm();
       res_x_ca[i] += (xnew_ca[N] - xbar[N]).norm();
+      error_ca[i] += (xnew_ca[N] - xnew[N]).norm();
       res_x_pos[i] += (xnew[N].head(kNumJoints) - xbar[N].head(kNumJoints)).norm();
       res_x_vel[i] += (xnew[N].tail(7) - xbar[N].tail(7)).norm();
       // res_x_vel[i] += pow(xnew[N](7) - xbar[N](7), 2.0);
@@ -301,6 +307,12 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     for(unsigned int i=0;i<ADMMiterMax;i++)
     {
+      cout << "error_ca[" << i << "]:" << error_ca[i] << endl;
+    }
+    cout << endl;
+
+    for(unsigned int i=0;i<ADMMiterMax;i++)
+    {
       cout << "res_x_pos[" << i << "]:" << res_x_pos[i] << endl;
     }
     cout << endl;
@@ -368,11 +380,20 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     for(unsigned int i=0;i<X.size();i++){
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
+        // Constraints that ensures the distance away from the obstacle
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "iiwa", "iiwa_link_ee_kuka", 
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+
+        // Constraints to make the arm above the table
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "right_ball_contact3", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "left_ball_contact3", 
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
     }
 
@@ -402,10 +423,10 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& X,
     double joint_limit;
     // double vel_limit;
     // double vel_limit [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5};
-    double vel_limit [] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5}; 
+    double vel_limit [] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}; 
     // double torque_limit;
-    // double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
-    double torque_limit [] = {15, 15, 15, 15, 15, 15, 15};
+    double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
+    // double torque_limit [] = {15, 15, 15, 15, 15, 15, 15};
 
     if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
       joint_limit = 2.8;

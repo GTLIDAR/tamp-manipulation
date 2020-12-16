@@ -82,6 +82,7 @@ using multibody::MultibodyForces;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using traj_gen::FKConstraint;
+using traj_gen::FKConstraint_z;
 
 class ADMMRunner {
   public:
