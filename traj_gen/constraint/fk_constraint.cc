@@ -24,13 +24,14 @@ FKConstraint<T>::FKConstraint(
       plant_(plant),
       target_(target),
       model_instance_(plant_.GetModelInstanceByName(model_name)),
+      iiwa_model_(plant_.GetModelInstanceByName("iiwa")),
       frame_name_(frame_name),
       context_(plant_.CreateDefaultContext()) {}
 
 template <typename T>
 void FKConstraint<T>::EvaluateConstraint(
     const Eigen::Ref<const drake::VectorX<T>>& x, drake::VectorX<T>* y) const {
-  plant_.SetPositions(context_.get(), model_instance_, x);
+  plant_.SetPositions(context_.get(), iiwa_model_, x);
   drake::VectorX<T> pt(3);
   pt = plant_.CalcRelativeTransform(*context_, plant_.world_frame(), plant_.GetFrameByName(frame_name_, model_instance_)).translation();
   *y = drake::Vector1<T>((pt-target_).norm());

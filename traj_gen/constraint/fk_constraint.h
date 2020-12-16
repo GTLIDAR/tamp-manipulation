@@ -54,6 +54,7 @@ class FKConstraint : public solvers::NonlinearConstraint<T> {
   const drake::multibody::MultibodyPlant<T>& plant_;
   const Eigen::VectorXd target_;
   const multibody::ModelInstanceIndex model_instance_;
+  const multibody::ModelInstanceIndex iiwa_model_;
   const std::string frame_name_;
   std::unique_ptr<drake::systems::Context<T>> context_;
 
