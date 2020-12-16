@@ -145,6 +145,10 @@ class ADMMRunner {
   vector<double> res_xlambda_ca;
   vector<double> res_ulambda;
   vector<double> final_cost;
+  
+  double pos_weight_;
+  double vel_weight_;
+  double torque_weight_;
 
   LCM lcm_;
   lcmt_robot_time robot_time_;

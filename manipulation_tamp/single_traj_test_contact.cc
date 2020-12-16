@@ -269,9 +269,9 @@ int do_main() {
         //waypoint (0)
         ConstraintRelaxingIk::IkCartesianWaypoint wp0;
         const Eigen::Vector3d xyz0(
-            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x, // 0.3856
-            0.0,
-            0.30
+            // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x, // 0.3856
+            // 0.0,
+            // 0.30
 
             // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
             // -0.16,
@@ -282,11 +282,14 @@ int do_main() {
             // 0.09
             // 0.605, -0.19499999999999995, 0.30000000000000004
             // 0.5800000000000001, -0.1, 0.275
+
+            /// For new test
+            0.57, -0.15, 0.1
         );
         const math::RollPitchYaw<double> rpy0(
-            0,
-            1.57079632679,
-            1.57079632679
+            // 0,
+            // 1.57079632679,
+            // 1.57079632679
 
             // 0,
             // 0,
@@ -297,6 +300,9 @@ int do_main() {
             // -1.57079632679
             // 0.0, 0.0, -1.5708
             // 0.0, 1.5708, 0.0
+
+            /// For new test
+            0.0, 0.0, 0.0
         );
         // rpy0.To
         EE_init = RigidTransformd(rpy0, xyz0);
@@ -308,17 +314,19 @@ int do_main() {
         // waypoint (1)
         ConstraintRelaxingIk::IkCartesianWaypoint wp1;
         const Eigen::Vector3d xyz1(
-            (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
-            0.3,
-            0.5
+            // (FLAGS_belt_width+FLAGS_table_width)/2+0.03-FLAGS_default_iiwa_x,
+            // 0.3,
+            // 0.5
             // 0.03, -0.47, 0.25
             // 0.75, 0.0, 0.45
+
+            /// for new test
+            0.6, 0.25, 0.1
         );
         const math::RollPitchYaw<double> rpy1(
-            // 0.0, 0.0, 0.0
-            0.0,
-            1.57079632679,
-            1.57079632679
+            // 0.0,
+            // 1.57079632679,
+            // 1.57079632679
 
             // 1.57079632679,
             // 0,
@@ -327,6 +335,9 @@ int do_main() {
             // 0.707,
             // 0.707
             // 0.0, 1.57, -1.57
+            
+            /// For new test
+            0.0, 0.0, 0.0
         );
 
         EE_final = RigidTransformd(rpy1, xyz1);

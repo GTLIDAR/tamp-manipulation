@@ -67,7 +67,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     std::string kIiwaUrdf =
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
     std::string schunkPath =
-      FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+      FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
     std::string connectorPath =
       FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
 
@@ -111,14 +111,11 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    double pos_weight;
-    double vel_weight;
-    double torque_weight;
-    pos_weight = 1000;
-    vel_weight = 0;
-    torque_weight = 0;
+    pos_weight_ = 1000;
+    vel_weight_ = 0;
+    torque_weight_ = 0;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
-    CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight, vel_weight, torque_weight, N); //postion/velocity/torque weights
+    CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight_, vel_weight_, torque_weight_, N); //postion/velocity/torque weights
     ILQRSolver_TRK testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
     ILQRSolver_TRK testSolverKukaArm_init(KukaArmModel,costKukaArm_init,ENABLE_FULLDDP,ENABLE_QPBOX); //only for initialization
 
@@ -196,7 +193,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
         // res_x_vel[i] += pow(xnew[j](7) - xbar[j](7), 2.0);
         res_u[i] += (unew[j] - ubar[j]).norm();
 
-        res_xlambda[i] += vel_weight*(xbar[j] - xbar_old[j]).norm();
+        res_xlambda[i] += vel_weight_*(xbar[j] - xbar_old[j]).norm();
         res_ulambda[i] += 0*(ubar[j] - ubar_old[j]).norm();
       }
       xbar[N] = xubar[N].head(stateSize);
@@ -363,15 +360,19 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     auto x0 = MatrixXd(7, X.size());
     x0.setZero();
     Vector1d lb, ub;
-    lb << 1.0;
+    lb << 0.085;
     ub << 100;
     Vector3d target;
-    target << 0.3856, 0.15, 0.40;
-
+    // target << 0.3856, 0.15, 0.40;
+    target << 0.6, 0.05, 0.1;
     for(unsigned int i=0;i<X.size();i++){
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "iiwa", "iiwa_link_ee_kuka", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
     }
 
@@ -400,7 +401,8 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& X,
 
     double joint_limit;
     // double vel_limit;
-    double vel_limit [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5}; 
+    // double vel_limit [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5};
+    double vel_limit [] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5}; 
     // double torque_limit;
     // double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
     double torque_limit [] = {15, 15, 15, 15, 15, 15, 15};
@@ -418,11 +420,16 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& X,
     for(unsigned int i=0;i<NumberofKnotPt+1;i++){
     for(unsigned int j=0;j<stateSize+commandSize;j++){
         if(j < stateSize/2){//postion constraints
-        if(X[i](j,0) > joint_limit){
-            XU_new[i](j,0) = joint_limit;
-        }
-        else if(X[i](j,0) < -joint_limit){
-            XU_new[i](j,0) = -joint_limit;
+        if(pos_weight_ > 0){
+          if(X[i](j,0) > joint_limit){
+              XU_new[i](j,0) = joint_limit;
+          }
+          else if(X[i](j,0) < -joint_limit){
+              XU_new[i](j,0) = -joint_limit;
+          }
+          else{
+              XU_new[i](j,0) = X[i](j,0);
+          }
         }
         else{
             XU_new[i](j,0) = X[i](j,0);
@@ -430,20 +437,24 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& X,
         }
 
         else if(j >= stateSize/2 && j < stateSize){//velocity constraints
-
-        if(X[i](j,0) > vel_limit[j-stateSize/2]){
-            XU_new[i](j,0) = vel_limit[j-stateSize/2];
-        }
-        else if(X[i](j,0) < -vel_limit[j-stateSize/2]){
-            XU_new[i](j,0) = -vel_limit[j-stateSize/2];
-        }
-        else{
+        if(vel_weight_ > 0){
+          if(X[i](j,0) > vel_limit[j-stateSize/2]){
+              XU_new[i](j,0) = vel_limit[j-stateSize/2];
+          }
+          else if(X[i](j,0) < -vel_limit[j-stateSize/2]){
+              XU_new[i](j,0) = -vel_limit[j-stateSize/2];
+          }
+          else{
+              XU_new[i](j,0) = X[i](j,0);
+          }
+        }else{
             XU_new[i](j,0) = X[i](j,0);
         }
         }
 
         else{//torque constraints
         if(i<NumberofKnotPt){
+          if(torque_weight_ > 0){
             if(U[i](j-stateSize,0) > torque_limit[j-stateSize]){
             XU_new[i](j,0) = torque_limit[j-14];
             }
@@ -453,6 +464,9 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& X,
             else{
             XU_new[i](j,0) = U[i](j-stateSize,0);
             }
+          }else{
+            XU_new[i](j,0) = U[i](j-stateSize,0);
+          }
         }
         else{
             XU_new[i].bottomRows(commandSize) = VectorXd::Zero(commandSize);

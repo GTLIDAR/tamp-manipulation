@@ -72,8 +72,10 @@ class CollisionAvoidance_ADMM{
         auto context = context_ptr.get();
 
         auto iiwa_model = plant_.GetModelInstanceByName("iiwa");
+        auto wsg_model = plant_.GetModelInstanceByName("wsg");
         plant_.SetPositions(context, iiwa_model, q);
-        auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
+        // auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
+        auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("right_ball_contact3", wsg_model));
         return p_EE.translation();
     }
 
@@ -87,7 +89,7 @@ void do_main(){
     std::string kIiwaUrdf = 
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
     std::string schunkPath = 
-        FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+        FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf");
     std::string connectorPath = 
         FindResourceOrThrow("drake/manipulation/models/kuka_connector_description/urdf/KukaConnector_no_world_joint.urdf");
 
