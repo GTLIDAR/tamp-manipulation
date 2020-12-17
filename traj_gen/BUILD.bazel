@@ -186,9 +186,13 @@ drake_cc_library(
 drake_cc_binary(
     name = "rerun_multi_traj",
     srcs = ["rerun_multi_traj.cc",],
+    visibility = ["//visibility:public"],
     deps = [
         "@lcm",
         "@gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+        "//lcmtypes:generic_string_msg",
         "//common:find_resource",
         "//math:geometric_transform",
         "//traj_gen:admm_runner",

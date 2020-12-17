@@ -24,6 +24,7 @@
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_robot_time.hpp"
+#include "drake/lcmt_object_status.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -76,9 +77,9 @@ namespace traj_gen {
 namespace kuka_iiwa_arm {
 
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
-using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyForces;
+using multibody::BodyIndex;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using traj_gen::FKConstraint;
@@ -158,8 +159,10 @@ class ADMMRunner {
   double time_step_;
   unsigned int N;
   stateVecTab_t joint_state_traj;
+  stateVecTab_t joint_state_traj_ca;
   commandVecTab_t torque_traj;
   stateVecTab_t joint_state_traj_interp;
+  stateVecTab_t joint_state_traj_interp_ca;
   commandVecTab_t torque_traj_interp;
   stateVecTab_half_t position_traj_interp;
   // unsigned int traj_knot_number_ = 0;

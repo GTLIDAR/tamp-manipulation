@@ -347,7 +347,7 @@ int do_main() {
         wp_vec.push_back(wp1);
 
         Eigen::VectorXd iiwa_q(7);
-        iiwa_q << -0.133372, 0.251457, -0.0461879, -1.21048, 0.0324702, 0.928553, -0.190112; //warm-start for grasping from top
+        iiwa_q << 0.586903,  1.25261,  -0.139577,   -1.49367,   0.600153,   -1.15729,  -0.114158; //warm-start for grasping from top
 
         ConstraintRelaxingIk ik(
             kIiwaUrdf,

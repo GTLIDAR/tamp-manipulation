@@ -55,7 +55,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 30; 
+    unsigned int ADMMiterMax = 100; 
     this->Initialize(N, ADMMiterMax);
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -111,8 +111,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    pos_weight_ = 1000;
-    vel_weight_ = 1000;
+    pos_weight_ = 1e4;
+    vel_weight_ = 1e3;
     torque_weight_ = 0;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight_, vel_weight_, torque_weight_, N); //postion/velocity/torque weights
@@ -155,7 +155,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       x_temp_ca[N] = xbar[N] - x_lambda_ca[N];
 
       cout << "\n=========== ADMM iteration " << i+1 << " ===========\n";
-      // iLQR solver block
+      /// iLQR solver block
       testSolverKukaArm.firstInitSolver(xinit, xgoal, x_temp, u_temp, unew, N, dt, iterMax, tolFun, tolGrad);
       testSolverKukaArm.solveTrajectory();
       lastTraj = testSolverKukaArm.getLastSolvedTrajectory();
@@ -163,10 +163,14 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       unew = lastTraj.uList;
 
       cout << "\n=========== begin NLP for collision avoidance ===========\n";
-      // Collision avoidance block
+      /// Collision avoidance block
       xnew_ca = CollisionAvoidance(plant_, x_temp_ca);
+        // manually set the velocity back to xnew's just to maintain the same dimension for simplicity
+      for(unsigned int k=0;k<=N;k++){
+        xnew_ca[k].bottomRows(kNumJoints) = xnew[k].bottomRows(kNumJoints);
+      }
 
-      // Projection block to feasible sets (state and control contraints)
+      /// Projection block to feasible sets (state and control contraints)
       xbar_old = xbar;
       ubar_old = ubar;
       for(unsigned int k=0;k<N;k++){
@@ -227,11 +231,14 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     gettimeofday(&tend,NULL);
 
     joint_state_traj.resize(N+1);
+    joint_state_traj_ca.resize(N+1);
     joint_state_traj_interp.resize(N*InterpolationScale+1);
+    joint_state_traj_interp_ca.resize(N*InterpolationScale+1);
     position_traj_interp.resize(N*InterpolationScale+1);
     
     for(unsigned int i=0;i<=N;i++){
       joint_state_traj[i] = xnew[i];
+      joint_state_traj_ca[i] = xnew_ca[i];
     }
     torque_traj = unew;
 
@@ -240,11 +247,13 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       for(unsigned int j=0;j<N*InterpolationScale;j++){
        unsigned int index = j/10;
        joint_state_traj_interp[j](i,0) =  joint_state_traj[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj[index+1](i,0) - joint_state_traj[index](i,0))/10.0;
+       joint_state_traj_interp_ca[j](i,0) =  joint_state_traj_ca[index](i,0) + (static_cast<double>(j)-static_cast<double>(index*10.0))*(joint_state_traj_ca[index+1](i,0) - joint_state_traj_ca[index](i,0))/10.0;
        if(i<stateSize/2){
          position_traj_interp[j](i,0) = joint_state_traj_interp[j](i,0);
        }
       }
       joint_state_traj_interp[N*InterpolationScale](i,0) = joint_state_traj[N](i,0);
+      joint_state_traj_interp_ca[N*InterpolationScale](i,0) = joint_state_traj_ca[N](i,0);
       if(i<stateSize/2){
          position_traj_interp[N*InterpolationScale](i,0) = joint_state_traj_interp[N*InterpolationScale](i,0);
        }
@@ -272,17 +281,42 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     cout << "lastTraj.xList[0]:" << xnew[0].transpose() << endl;
     cout << "lastTraj.uList[0]:" << unew[0].transpose() << endl;
 
+    // Do the forward kinamtics for the EE to check the performance
+    auto context_ptr = plant_.CreateDefaultContext();
+    auto context = context_ptr.get();
+    Vector2d wsg_width;
+    wsg_width << -25, 25;
+    for(unsigned int i=0;i<=N;i++){      
+      auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
+      auto xyz = Eigen::Vector3d(0, 0, 0);
+      math::RigidTransform<double> X_W1(math::RotationMatrix<double>(rpy), xyz);
+      plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].topRows(7));
+      plant_.SetPositions(context, wsg_model, wsg_width);
+      plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
+      const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
+      const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
+      const BodyIndex wsg_left_body_index = plant_.GetBodyByName("left_ball_contact3", wsg_model).index();
+      const BodyIndex wsg_right_body_index = plant_.GetBodyByName("right_ball_contact3", wsg_model).index();
+      const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
+      const math::RigidTransform<double>& X_Wwsg_l = X_WB_all[wsg_left_body_index];
+      const math::RigidTransform<double>& X_Wwsg_r = X_WB_all[wsg_right_body_index];
+      cout << "ee[" << i << "]:" << X_Wee.translation().transpose() << endl;
+      cout << "wsg_l[" << i << "]:" << X_Wwsg_l.translation().transpose() << endl;
+      cout << "wsg_r[" << i << "]:" << X_Wwsg_r.translation().transpose() << endl;
+    }
+
     // saving data file
     for(unsigned int i=0;i<N;i++){
       saveVector(joint_state_traj[i], "joint_trajectory_ADMM_demo");
       saveVector(torque_traj[i], "joint_torque_command_ADMM_demo");
       saveVector(xubar[i], "xubar_ADMM_demo");
     }
-    saveVector(xnew[N], "joint_trajectory_ADMM_demo");
+    saveVector(joint_state_traj[N], "joint_trajectory_ADMM_demo");
     saveVector(xubar[N], "xubar_ADMM_demo");
 
     for(unsigned int i=0;i<=N*InterpolationScale;i++){
       saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_demo");
+      saveVector(joint_state_traj_interp_ca[i], "xnew_ca_interpolated_ADMM_demo");
     }
 
     for(unsigned int i=0;i<ADMMiterMax;i++)
@@ -372,7 +406,7 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     auto x0 = MatrixXd(7, X.size());
     x0.setZero();
     Vector1d lb, ub;
-    lb << 0.085;
+    lb << 0.12;
     ub << 100;
     Vector3d target;
     // target << 0.3856, 0.15, 0.40;
@@ -383,18 +417,18 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
         // Constraints that ensures the distance away from the obstacle
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "iiwa", "iiwa_link_ee_kuka", 
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
 
         // Constraints to make the arm above the table
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "right_ball_contact3", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "left_ball_contact3", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+                                        drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "right_ball_contact3", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "left_ball_contact3", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
     }
 
     prog.SetInitialGuess(x, x0);
@@ -504,7 +538,9 @@ void ADMMRunner::RunVisualizer(double realtime_rate){
                         &ADMMRunner::HandleRobotTime, this);
     lcmt_iiwa_status iiwa_state;
     lcmt_schunk_wsg_status wsg_status;
+    lcmt_object_status object_state;
     iiwa_state.num_joints = kIiwaArmNumJoints;
+    object_state.num_joints = 7;
     iiwa_state.joint_position_measured.resize(kIiwaArmNumJoints, 0.);   
     iiwa_state.joint_velocity_estimated.resize(kIiwaArmNumJoints, 0.);
     iiwa_state.joint_position_commanded.resize(kIiwaArmNumJoints, 0.);
@@ -522,6 +558,21 @@ void ADMMRunner::RunVisualizer(double realtime_rate){
     wsg_status.actual_position_mm = -25;
     wsg_status.actual_speed_mm_per_s = 25;
 
+    object_state.joint_position_measured.resize(7, 0.);   
+    object_state.joint_velocity_estimated.resize(7, 0.);
+    object_state.joint_position_commanded.resize(7, 0.);
+    object_state.joint_position_ipo.resize(7, 0.);
+    object_state.joint_torque_measured.resize(7, 0.);
+    object_state.joint_torque_commanded.resize(7, 0.);
+    object_state.joint_torque_external.resize(7, 0.);
+
+    VectorXd obstacle_pose(7);
+    obstacle_pose <<  1.0, 0.0, 0.0, 0.0, 0.6, 0.05, 0.1;
+    for (int joint = 0; joint < 7; joint++) 
+    {
+      object_state.joint_position_measured[joint] = obstacle_pose[joint];
+    }
+    
     drake::log()->info("Publishing trajectory to visualizer");
     plan_finished_ = false;
 
@@ -556,6 +607,7 @@ void ADMMRunner::RunVisualizer(double realtime_rate){
         }
 
         lcm_.publish(kLcmStatusChannel, &iiwa_state);
+        lcm_.publish(kLcmObjectStatusChannel, &object_state);
         lcm_.publish(kLcmSchunkStatusChannel, &wsg_status);
     }
 }

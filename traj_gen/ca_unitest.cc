@@ -72,10 +72,10 @@ class CollisionAvoidance_ADMM{
         auto context = context_ptr.get();
 
         auto iiwa_model = plant_.GetModelInstanceByName("iiwa");
-        auto wsg_model = plant_.GetModelInstanceByName("wsg");
+        // auto wsg_model = plant_.GetModelInstanceByName("wsg");
         plant_.SetPositions(context, iiwa_model, q);
-        // auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
-        auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("right_ball_contact3", wsg_model));
+        auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
+        // auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("right_ball_contact3", wsg_model));
         return p_EE.translation();
     }
 
@@ -121,7 +121,8 @@ void do_main(){
     CollisionAvoidance_ADMM ca(plant_);
     ca.SolveOpt();
     VectorXd q0(7);
-    q0.setZero();
+    // q0.setZero();
+    q0 << 0.586903,  1.25261,  -0.139577,   -1.49367,   0.600153,   -1.15729,  -0.114158;
     cout << ca.FK(q0) << endl;
 }
 }
