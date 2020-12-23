@@ -18,7 +18,7 @@ from search_tree.multi_wp_motion_plan_runner import MultiWPStaionaryManipMotionP
 
 from pyperplan.planner import _parse, _ground
 
-TRAJ_OPTION = "refine"
+TRAJ_OPTION = "ddp"
 MULTI_WP = True
 
 def main():
@@ -46,7 +46,7 @@ def main():
     planner = CausalGraphTampPlanner(task, motion_planner)
 
     start = time.time()
-    planner.plan(option=TRAJ_OPTION)
+    planner.plan_iterative(option=TRAJ_OPTION)
     end = time.time()
     print("Total Planning Time: ", end - start, "sec")
     

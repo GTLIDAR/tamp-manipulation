@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import json
 import numpy as np
+import copy
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 drake_path = file_path+"/../../.."
@@ -151,6 +152,60 @@ class CausalGraphTampPlanner(object):
 
         with open(foldername+filename, 'w') as out:
             json.dump(costs, out)
+    
+    def plan_iterative(self, total_depth_limit=-1, option="ddp", show=False):
+        """ iteratively update causal graph decomposition while planning
+        """
+        remaining_task = copy.deepcopy(self.task)
+        
+        root = PddlTampNode.make_root_node(self.state)
+        total_n_visited = 0
+        start = time.time()
+
+        while len(remaining_task.goals):
+            # get next subproblem and subtask
+            subproblems = get_subproblems(self.causal_graph, remaining_task, show=show)
+            subproblems = self._rank_subproblems(subproblems)
+
+            sp = subproblems[0]
+            subtask = generate_subtask(remaining_task, sp, remaining_task.initial_state)
+
+            # solve current subtask
+            task_start = time.time()
+            print("Starting Subtree")
+            tree = PddlTree(root, subtask, self.motion_planner)
+            (tree.goals, n_visited) = tree.hybrid_search(
+                total_depth_limit=total_depth_limit, n_sols=1, option=option
+            )
+            total_n_visited += n_visited
+            (num_nodes, bf) = tree.get_branching_factor()
+            self.num_nodes.append(num_nodes)
+            self.branching_factor.append(bf)
+            self.refinement_time += tree.refinement_time
+            print("Subtask Search Time:", time.time()-task_start)
+
+            if len(tree.goals):
+                self.state = tree.goals[0].state
+                root = self._get_next_root_node(tree.goals[0])
+
+                self.trajectories.extend(tree.get_traj(tree.goals[0]))
+                self.actions.extend(tree.get_sol(tree.goals[0]))
+                self.move_query_sequence.extend(tree.get_move_query_sequence(tree.goals[0], save_results=False))
+                self.trees.append(tree)
+
+                remaining_task.initial_state = self.state
+                remaining_task.goals -= subtask.goals
+            else:
+                print("This tree does not have solution...")
+                raise RuntimeError
+
+        print("CG Plan Completed")
+        print("Total time:", time.time()-start)
+        print("Solution:")
+        for op in self.actions:
+            print(op)
+
+        return (self.trajectories, self.actions)
 
     def plan(self, total_depth_limit=-1, option="ddp", show=False):
         """ Runs plan that uses causal graph to generate subproblems first
@@ -282,6 +337,9 @@ class CausalGraphTampPlanner(object):
         root.g = prev_goal.g
 
         return root
+
+class IterativeCausalGraphTampPlanner(CausalGraphTampPlanner):
+    pass
 
 def main():
     domain_file = drake_path + "/manipulation_tamp/pddl/conveyor_belt_multi_grasp_mode/domain_coupled.pddl"
