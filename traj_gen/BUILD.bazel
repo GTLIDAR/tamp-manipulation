@@ -135,6 +135,7 @@ drake_cc_library(
         "//examples/kuka_iiwa_arm:iiwa_lcm",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
+        "@lcm",
         "//lcmtypes:generic_string_msg",
         "//traj_gen:cost_function_kuka_arm",
         "//traj_gen:ilqrsolver",
@@ -164,7 +165,7 @@ drake_cc_library(
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
         "//lcmtypes:generic_string_msg",
-
+        "@lcm",
         "//traj_gen:cost_function_kuka_arm_track",
         "//traj_gen:ilqrsolver_track",
         "//traj_gen:kuka_arm_track",
@@ -175,15 +176,23 @@ drake_cc_library(
         "//multibody/parsing",
         "//math:geometric_transform",
         "//traj_gen:config",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//solvers:constraint",
+        "//traj_gen/constraint:fk_constraint",
     ],
 )
 
 drake_cc_binary(
     name = "rerun_multi_traj",
     srcs = ["rerun_multi_traj.cc",],
+    visibility = ["//visibility:public"],
     deps = [
         "@lcm",
         "@gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+        "//lcmtypes:generic_string_msg",
         "//common:find_resource",
         "//math:geometric_transform",
         "//traj_gen:admm_runner",
@@ -193,5 +202,38 @@ drake_cc_binary(
         "//traj_gen:config",
         "//lcmtypes:manipulator_traj",
         "//lcmtypes:motion_plan_query",
+    ],
+)
+
+drake_cc_binary(
+    name = "ca_unitest",
+    srcs = ["ca_unitest.cc",],
+    visibility = ["//visibility:public"],
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/kuka_connector_description:models",
+    ],
+    deps = [
+        "@eigen",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//math:geometric_transform",
+        "//traj_gen:config",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//solvers:constraint",
+        "//traj_gen/constraint:fk_constraint",
+    ],
+)
+
+drake_cc_binary(
+    name = "autodiff_example",
+    srcs = ["autodiff_example.cc"],
+    deps = [
+        "@drake//math:gradient",
     ],
 )

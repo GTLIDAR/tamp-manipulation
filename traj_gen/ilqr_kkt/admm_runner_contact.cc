@@ -7,7 +7,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
   double time_horizon, double time_step, string action_name) {
     struct timeval tbegin,tend;
     double texec = 0.0;
-    commandVecTab_t u_0;
     time_step_ = time_step;
     double dt = time_step;
     N = int(time_horizon/time_step);
@@ -15,11 +14,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 5;
-
-    if (time_horizon <= 1.5) {
-      ADMMiterMax = 20;
-    }
+    unsigned int ADMMiterMax = 5; // 30
 
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -68,7 +63,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     xbar_old.resize(N + 1);
     ubar_old.resize(N);
     xubar.resize(N + 1);
-    u_0.resize(N);
     x_lambda.resize(N + 1);
     u_lambda.resize(N);
     x_temp.resize(N+1);
@@ -83,7 +77,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
       u_temp[k].setZero();
       x_temp2[k].setZero();
       u_temp2[k].setZero();
-      u_0[k] << 0,0,0.2,0,0.2,0,0;
     }
     xbar[N].setZero();
     x_temp[N].setZero();
@@ -134,30 +127,15 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     parser.AddModelFromFile(box_sdf_path0, "object");
 
     plant_.Finalize();
-
-    auto context_ptr = plant_.CreateDefaultContext();
-    auto context = context_ptr.get();
-
-    VectorXd q_v_iiwa(14);
-    q_v_iiwa.setZero();
-    q_v_iiwa.head(7) = xinit;
-    plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
-
-    MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrix(*context, &M_);
-
-    VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
-
-    u_0.resize(N);
-    for(unsigned i=0;i<N;i++){
-      u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
-        // cout << "u_0: " << u_0[i].transpose() << endl;
-        // u_0[i].setZero();
-        // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
-    }
     
     //////////////////////////////////////////////////////////////////
     KukaArm_TRK_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
+    // generate warm start
+    commandVecTab_t u_0;
+    u_0.resize(N);
+    for(unsigned i=0;i<N;i++){
+      u_0[i] = KukaArmModel.quasiStatic(action_name, xinit);
+    }
 
     // Initialize ILQRSolver
     ILQRSolver_TRK_Contact::traj lastTraj;
@@ -171,8 +149,8 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
     pos_obj_weight = 0;
     pos_iiwa_weight = 10; 
     vel_obj_weight = 0;
-    vel_iiwa_weight = 10;
-    torque_weight = 1;
+    vel_iiwa_weight = 10; // 1000
+    torque_weight = 1; // 10
 
     CostFunctionKukaArm_TRK_Contact costKukaArm_init(0, 0, 0, 0, 0, N, action_name); //only for initialization
     CostFunctionKukaArm_TRK_Contact costKukaArm_admm(pos_obj_weight, pos_iiwa_weight, 
@@ -198,7 +176,7 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
 
 
     // Run ADMM
-    cout << "\n=========== begin ADMM ===========\n";
+    cout << "\n=========== begin ADMM-KKT ===========\n";
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<ADMMiterMax;i++){// TODO: Stopping criterion is needed
       // TODO: "-" operator for stateVecTab?
@@ -269,10 +247,6 @@ lcmt_manipulator_traj ADMM_KKTRunner::RunADMM_KKT(fullstateVec_t xinit, fullstat
       }
     }
     gettimeofday(&tend,NULL);
-
-    testSolverKukaArm.firstInitSolver(xinit, xgoal, xbar, ubar, unew, N, dt, iterMax, tolFun, tolGrad);
-    testSolverKukaArm.initializeTraj();
-    xnew = testSolverKukaArm.updatedxList;
 
     #if useUDPSolver
       finalTimeProfile = KukaArmModel.getFinalTimeProfile();
@@ -501,7 +475,7 @@ projfullStateAndCommandTab_t ADMM_KKTRunner::projection(const fullstateVecTab_t&
 }
 
 void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
-    lcm_.subscribe(kLcmTimeChannel_ADMM,
+    lcm_.subscribe(kLcmTimeChannel,
                         &ADMM_KKTRunner::HandleRobotTime, this);
     lcmt_iiwa_status iiwa_state;
     lcmt_schunk_wsg_status wsg_status;
@@ -566,7 +540,7 @@ void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
             iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
         }
 
-        lcm_.publish(kLcmStatusChannel_ADMM, &iiwa_state);
+        lcm_.publish(kLcmStatusChannel, &iiwa_state);
         
 
         for (int joint = 0; joint < 7; joint++) 
@@ -574,8 +548,8 @@ void ADMM_KKTRunner::RunVisualizer(double realtime_rate){
             object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
         }
 
-        lcm_.publish(kLcmObjectStatusChannel_ADMM, &object_state);
-        lcm_.publish(kLcmSchunkStatusChannel_ADMM, &wsg_status);
+        lcm_.publish(kLcmObjectStatusChannel, &object_state);
+        lcm_.publish(kLcmSchunkStatusChannel, &wsg_status);
     }
 }
 

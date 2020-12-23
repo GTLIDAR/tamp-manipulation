@@ -25,21 +25,18 @@ protected:
     stateMat_t Rho_state;
     commandMat_t Rho_torque;
 	commandMat_t R;
-	commandMat_t Rd;
 
 	stateVec_t QDiagElementVec;
 	stateVec_t QfDiagElementVec;
 	commandVec_t RDiagElementVec;
     stateVec_t Rho_state_DiagElementVec;
 	commandVec_t Rho_torque_DiagElementVec;
-	commandVec_t RdDiagElementVec;
 
 	double pos_scale;
     double vel_scale;
     double pos_f_scale;
     double vel_f_scale;
     double torque_scale;
-	double torque_d_scale;
     double rho_pos_weight;
 	double rho_vel_weight;
     double rho_torque_weight;
@@ -57,7 +54,6 @@ public:
     stateMat_t& getRho_state();
 	commandMat_t& getRho_torque();
 	commandMat_t& getR();
-	commandMat_t& getRd();
 	stateVecTab_t& getcx();
 	commandVecTab_t& getcu();
 	stateMatTab_t& getcxx();

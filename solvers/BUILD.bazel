@@ -17,16 +17,20 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+COPTS = ["-Wno-unused-parameter",
+ "-Wno-unused-function",
+ ]
+
 drake_cc_package_library(
     name = "solvers",
     visibility = ["//visibility:public"],
     deps = [
-        ":aggregate_costs_constraints",
         ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
         ":choose_best_solver",
         ":constraint",
+        ":nonlinear_constraint",
         ":cost",
         ":create_constraint",
         ":create_cost",
@@ -154,6 +158,23 @@ drake_cc_library(
         "//math:gradient",
         "//math:matrix_util",
     ],
+)
+
+drake_cc_library(
+    name = "nonlinear_constraint",
+    srcs = [
+        "nonlinear_constraint.cc",
+    ],
+    hdrs = [
+        "nonlinear_constraint.h",
+    ],
+    deps = [
+        # "@drake//:drake_shared_library",
+        "//common:symbolic",
+        "//math:gradient",
+        "//solvers:constraint",
+    ],
+    copts = COPTS,
 )
 
 drake_cc_library(
@@ -364,16 +385,6 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "aggregate_costs_constraints",
-    srcs = ["aggregate_costs_constraints.cc"],
-    hdrs = ["aggregate_costs_constraints.h"],
-    deps = [
-        ":binding",
-        ":cost",
     ],
 )
 
@@ -1687,15 +1698,6 @@ drake_cc_googletest(
     deps = [
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "aggregate_costs_constraints_test",
-    deps = [
-        ":aggregate_costs_constraints",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:symbolic_test_util",
     ],
 )
 

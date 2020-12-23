@@ -10,8 +10,7 @@ CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
     vel_scale = 10;
     pos_f_scale = 1000;//0.001;
     vel_f_scale = 10;//10;
-    torque_scale = 10;//100;
-    torque_d_scale = 10;
+    torqoe_scale = 1;//100;
 
     // initial, final costs (pos ,vel)
     // torque cost
@@ -20,13 +19,11 @@ CostFunctionKukaArm::CostFunctionKukaArm(unsigned int N)
                         vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10, vel_scale*10;
     QfDiagElementVec << pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0, pos_f_scale*1000.0,
                         vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0, vel_f_scale*100.0;
-    RDiagElementVec << torque_scale*0.005, torque_scale*0.005, torque_scale*0.007, torque_scale*0.007, torque_scale*0.02, torque_scale*0.02, torque_scale*0.05;
-    RdDiagElementVec << torque_d_scale*0.005, torque_d_scale*0.005, torque_d_scale*0.007, torque_d_scale*0.007, torque_d_scale*0.02, torque_d_scale*0.02, torque_d_scale*0.05;
+    RDiagElementVec << torqoe_scale*0.005, torqoe_scale*0.005, torqoe_scale*0.007, torqoe_scale*0.007, torqoe_scale*0.02, torqoe_scale*0.02, torqoe_scale*0.05;
 
     Q = QDiagElementVec.asDiagonal();
     Qf = QfDiagElementVec.asDiagonal();
     R = RDiagElementVec.asDiagonal();
-    Rd = RdDiagElementVec.asDiagonal();
 
     // TimeHorizon = total time
     // TimeStep = time between two timesteps
@@ -51,11 +48,6 @@ stateMat_t& CostFunctionKukaArm::getQf()
 commandMat_t& CostFunctionKukaArm::getR()
 {
     return R;
-}
-
-commandMat_t& CostFunctionKukaArm::getRd()
-{
-    return Rd;
 }
 
 stateVecTab_t& CostFunctionKukaArm::getcx()

@@ -14,7 +14,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 15; //100;
+    unsigned int iterMax = 30; //100;
 
     ILQR_KKTSolver::traj lastTraj;
     //=============================================
@@ -62,33 +62,18 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     parser.AddModelFromFile(box_sdf_path0, "object");
 
     plant_.Finalize();
-
-    auto context_ptr = plant_.CreateDefaultContext();
-    auto context = context_ptr.get();
-
-    VectorXd q_v_iiwa(14);
-    q_v_iiwa.setZero();
-    q_v_iiwa.head(7) = xinit;
-    plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
-
-    MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrix(*context, &M_);
-
-    VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
-
-    // cout << "bias total" << endl << gtau_wb << endl;
-    commandVecTab_t u_0;
-    u_0.resize(N);
-    for(unsigned i=0;i<N;i++){
-    //   u_0[i] = -gtau_wb.middleRows<kNumJoints>(6);
-        // cout << "u_0: " << u_0[i].transpose() << endl;
-        u_0[i].setZero();
-        // u_0[i] << 10, 10, 10, 10, 10, 10, 10;
-    }
     //======================================
     KukaArm_Contact KukaArmModel(dt, N, xgoal, &plant_, action_name);
     CostFunctionKukaArm_Contact costKukaArm(N, action_name);
     ILQR_KKTSolver testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
+
+    // generate warm start
+    commandVecTab_t u_0;
+    u_0.resize(N);
+    for(unsigned i=0;i<N;i++){
+      u_0[i] = KukaArmModel.quasiStatic(action_name, xinit);
+        // u_0[i] << 0, 0, 0, 0, 0, 0, 0;
+    }
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 
     // run one or multiple times and then average
@@ -153,11 +138,13 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     // }
 
     // Do the forward kinamtics for the EE to check the performance
+    auto context_ptr = plant_.CreateDefaultContext();
+    auto context = context_ptr.get();
     for(unsigned int i=N-2;i<=N;i++){      
         auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
         auto xyz = Eigen::Vector3d(0, 0, 0);
-        math::RigidTransform<double> X_WO(math::RotationMatrix<double>(rpy), xyz);
-        plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_WO);
+        math::RigidTransform<double> X_W1(math::RotationMatrix<double>(rpy), xyz);
+        plant_.SetFreeBodyPoseInWorldFrame(context, plant_.GetBodyByName("base_link", object_model), X_W1);
         plant_.SetPositions(context, iiwa_model, lastTraj.xList[i].middleRows<7>(13));
         plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
         const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
@@ -212,7 +199,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
 }
 
 void DDP_KKTRunner::RunVisualizer(double realtime_rate){
-    lcm_.subscribe(kLcmTimeChannel_DDP,
+    lcm_.subscribe(kLcmTimeChannel,
                         &DDP_KKTRunner::HandleRobotTime, this);
     lcmt_iiwa_status iiwa_state;
     lcmt_schunk_wsg_status wsg_status;
@@ -277,7 +264,7 @@ void DDP_KKTRunner::RunVisualizer(double realtime_rate){
             iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][13 + j];
         }
 
-        lcm_.publish(kLcmStatusChannel_DDP, &iiwa_state);
+        lcm_.publish(kLcmStatusChannel, &iiwa_state);
         
 
         for (int joint = 0; joint < 7; joint++) 
@@ -285,8 +272,8 @@ void DDP_KKTRunner::RunVisualizer(double realtime_rate){
             object_state.joint_position_measured[joint] = joint_state_traj_interp[step_][joint];
         }
 
-        lcm_.publish(kLcmObjectStatusChannel_DDP, &object_state);
-        lcm_.publish(kLcmSchunkStatusChannel_DDP, &wsg_status);
+        lcm_.publish(kLcmObjectStatusChannel, &object_state);
+        lcm_.publish(kLcmSchunkStatusChannel, &wsg_status);
     }
 }
 

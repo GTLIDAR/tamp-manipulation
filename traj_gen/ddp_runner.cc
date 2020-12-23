@@ -9,11 +9,12 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     struct timeval tbegin,tend;
     double texec = 0.0;
 
+    time_step_ = time_step;
     double dt = time_step;
-    unsigned int N = int(time_horizon/time_step);
+    N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 20; //100;
+    unsigned int iterMax = 15; //100;
 
     #if useILQRSolver
         ILQRSolver::traj lastTraj;
@@ -51,32 +52,17 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
         plant_.WeldFrames(iiwa_ee_frame, wsg_frame, X_EG);
 
         plant_.Finalize();
-
-        auto context_ptr = plant_.CreateDefaultContext();
-        auto context = context_ptr.get();
-
-        VectorXd q_v_iiwa(14);
-        q_v_iiwa.setZero();
-        q_v_iiwa.head(7) = xinit;
-        plant_.SetPositionsAndVelocities(context, iiwa_model, q_v_iiwa);
-
-        MatrixXd M_(plant_.num_velocities(), plant_.num_velocities());
-        plant_.CalcMassMatrix(*context, &M_);
-
-        VectorXd gtau_wb = plant_.CalcGravityGeneralizedForces(*context);
-
-        cout << "bias total" << endl << gtau_wb << endl;
-        commandVecTab_t u_0;
-        u_0.resize(N);
-        for(unsigned i=0;i<N;i++){
-          u_0[i].head(7) = - gtau_wb;
-        }
         //======================================
         #if WHOLE_BODY
           KukaArm KukaArmModel(dt, N, xgoal, &plant_);
         #else
           KukaArm KukaArmModel(dt, N, xgoal);
         #endif
+        commandVecTab_t u_0;
+        u_0.resize(N);
+        for(unsigned i=0;i<N;i++){
+          u_0[i] = KukaArmModel.quasiStatic(xinit);
+        }
         CostFunctionKukaArm costKukaArm(N);
         ILQRSolver testSolverKukaArm(KukaArmModel,costKukaArm,ENABLE_FULLDDP,ENABLE_QPBOX);
         testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
@@ -95,6 +81,7 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     unsigned int Num_run = 1;
     gettimeofday(&tbegin,NULL);
     for(unsigned int i=0;i<Num_run;i++) testSolverKukaArm.solveTrajectory();
+    if(Num_run == 0) {testSolverKukaArm.initializeTraj();}
     gettimeofday(&tend,NULL);
 
     lastTraj = testSolverKukaArm.getLastSolvedTrajectory();
@@ -154,14 +141,14 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     #endif
 
     cout << "lastTraj.xList[" << N << "]:" << lastTraj.xList[N].transpose() << endl;
-    cout << "lastTraj.uList[" << N << "]:" << lastTraj.uList[N].transpose() << endl;
+    cout << "lastTraj.uList[" << N-1 << "]:" << lastTraj.uList[N-1].transpose() << endl;
 
     cout << "lastTraj.xList[0]:" << lastTraj.xList[0].transpose() << endl;
     cout << "lastTraj.uList[0]:" << lastTraj.uList[0].transpose() << endl;
 
-    for(unsigned int i=N-5;i<=N;i++){
-      cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
-    }
+    // for(unsigned int i=N-5;i<=N;i++){
+    //   cout << "lastTraj.xList[" << i << "]:" << lastTraj.xList[i].transpose() << endl;
+    // }
     // saving data file
     for(unsigned int i=0;i<N;i++){
       saveVector(joint_state_traj[i], "joint_trajectory");
@@ -206,6 +193,72 @@ lcmt_manipulator_traj DDPRunner::RunDDP(stateVec_t xinit, stateVec_t xgoal,
     }
 
     return *ptr;
+}
+
+void DDPRunner::RunVisualizer(double realtime_rate){
+    lcm_.subscribe(kLcmTimeChannel,
+                        &DDPRunner::HandleRobotTime, this);
+    lcmt_iiwa_status iiwa_state;
+    lcmt_schunk_wsg_status wsg_status;
+    iiwa_state.num_joints = kIiwaArmNumJoints;
+    iiwa_state.joint_position_measured.resize(kIiwaArmNumJoints, 0.);   
+    iiwa_state.joint_velocity_estimated.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_position_commanded.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_position_ipo.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_measured.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_commanded.resize(kIiwaArmNumJoints, 0.);
+    iiwa_state.joint_torque_external.resize(kIiwaArmNumJoints, 0.);
+    
+    //////////////// !!!!!!!!!! /////////////////////
+    // Warning: just for visualization since the gripper_position_output_port has been depricated in latest drake update
+    // actual_position_mm = finger1 -- negative
+    // actual_speed_mm_per_s = finger2 -- positive
+    // maximum width = 110
+
+    wsg_status.actual_position_mm = -25;
+    wsg_status.actual_speed_mm_per_s = 25;
+
+    drake::log()->info("Publishing trajectory to visualizer");
+    plan_finished_ = false;
+
+    while(true){
+        while (0 == lcm_.handleTimeout(10) || iiwa_state.utime == -1 
+        || plan_finished_) { }
+
+        // if(!start_publish){
+        //   start_time = robot_time_.utime;     
+        //   cout << "start_time: " << start_time << endl; 
+        //   start_publish = true;
+        // }
+
+        // Update status time to simulation time
+        // Note: utime is in microseconds
+        iiwa_state.utime = robot_time_.utime;
+        wsg_status.utime = robot_time_.utime;
+        // step_ = int((robot_time_.utime / 1000)*(kIiwaLcmStatusPeriod/(time_step/InterpolationScale)));
+        step_ = int(((robot_time_.utime) / 1000)*(0.001*realtime_rate/(time_step_/InterpolationScale)));
+        // cout << step_ << endl;
+
+        if(step_ >= N*InterpolationScale)
+        {
+            drake::log()->info("Interpolated trajectory has been published");
+            plan_finished_ = true;
+            break;
+        }
+
+        // pass the interpolated traj to lcm
+        for (int32_t j=0; j < iiwa_state.num_joints; ++j) { 
+            iiwa_state.joint_position_measured[j] = joint_state_traj_interp[step_][j];
+        }
+
+        lcm_.publish(kLcmStatusChannel, &iiwa_state);
+        lcm_.publish(kLcmSchunkStatusChannel, &wsg_status);
+    }
+}
+
+void DDPRunner::HandleRobotTime(const ::lcm::ReceiveBuffer*, const std::string&,
+                      const lcmt_robot_time* robot_time) {
+        robot_time_ = *robot_time;
 }
 
 void DDPRunner::saveVector(const Eigen::MatrixXd & _vec, const char * _name) {

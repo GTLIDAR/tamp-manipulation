@@ -1,0 +1,25 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+
+package(
+    default_visibility = [":__subpackages__"],
+)
+
+drake_cc_library(
+    name = "fk_constraint",
+    srcs = ["fk_constraint.cc"],
+    hdrs = ["fk_constraint.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@eigen",
+        "@drake//math:gradient",
+        "//solvers:nonlinear_constraint",
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//math:geometric_transform",
+
+    ],
+)

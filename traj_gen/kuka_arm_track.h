@@ -130,13 +130,7 @@ protected:
 public:
     stateVec_t kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau);
     void kuka_arm_dyn_cst_ilqr(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, CostFunctionKukaArm_TRK*& costFunction);
-    void kuka_arm_dyn_cst_min_output(const int& nargout, 
-        const stateVec_t& xList_curr, const commandVec_t& uList_curr,  
-        const stateVec_t& xList_cur_bar, const commandVec_t& uList_cur_bar, 
-        const bool& isUNan, stateVec_t& xList_next, commandVec_t uList_prev,
-        CostFunctionKukaArm_TRK*& costFunction);
-    void kuka_arm_dyn_cst_udp(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, CostFunctionKukaArm_TRK*& costFunction);
-    // void kuka_arm_dyn_cst_v3(const int& nargout, const stateVecTab_t& xList, const commandVecTab_t& uList, stateVecTab_t& FList, stateTensTab_t& fxxList, stateTensTab_t& fxuList, stateR_commandC_Tens_t& fuuList, CostFunctionKukaArm*& costFunction);
+    void kuka_arm_dyn_cst_min_output(const int& nargout, const stateVec_t& xList_curr, const commandVec_t& uList_curr,  const stateVec_t& xList_cur_bar, const commandVec_t& uList_cur_bar, const bool& isUNan, stateVec_t& xList_next, CostFunctionKukaArm_TRK*& costFunction);
     stateVec_t update(const int& nargout, const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B);
     void grad(const stateVec_t& X, const commandVec_t& U, stateMat_t& A, stateR_commandC_t& B);
     void hessian(const stateVec_t& X, const commandVec_t& U, stateTens_t& fxx_p, stateR_stateC_commandD_t& fxu_p, stateR_commandC_commandD_t& fuu_p);    
@@ -148,6 +142,8 @@ public:
     commandVec_t& getUpperCommandBounds();
     stateMatTab_t& getfxList();
     stateR_commandC_tab_t& getfuList();
+
+    VectorXd quasiStatic(const stateVec_t& X0);
 private:
 protected:
         // accessors //

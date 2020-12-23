@@ -230,7 +230,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         q_iiwa_full.setZero();
         qd_iiwa_full.setZero();
         q_iiwa_full.topRows(7)=q_iiwa;
-        q_iiwa_full.bottomRows(2) << -0.025, 0.025;
+        q_iiwa_full.bottomRows(2) << -25, 25;
         qd_iiwa_full.topRows(7)=qd_iiwa;
         qd_full.topRows(6) = qd_obj;
         qd_full.bottomRows(9) = qd_iiwa_full;
@@ -282,69 +282,108 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         // }
         // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
         // DRAKE_DEMAND(nan_Cv_true == false);
+    
 
         // Compute Jacobian and AccBias of B_o on finger frame wrt object frame
         const int num_cps = 2;
         Vector3d contact_point_left;
         Vector3d contact_point_right;
 
-        MatrixXd Jac(3*num_cps, 15);
-        MatrixXd Jac_left(3, 15);
-        MatrixXd Jac_right(3, 15);
+        // MatrixXd Jac(3*num_cps, 15);
+        // MatrixXd Jac_left(3, 15);
+        // MatrixXd Jac_right(3, 15);
 
-        Vector3d Acc_Bias_left;
-        Vector3d Acc_Bias_right;
+        MatrixXd Jac(6*num_cps, 15);
+        MatrixXd Jac_left(6, 15);
+        MatrixXd Jac_right(6, 15);
+
+        // VectorXd Acc_Bias_left(3);
+        // VectorXd Acc_Bias_right(3);
+
+        SpatialAcceleration<double> Acc_Bias_left;
+        SpatialAcceleration<double> Acc_Bias_right;
         
         contact_point_left << 0, 0, 0; 
         contact_point_right << 0, 0, 0; 
+        // if (action_name_.compare("push")==0){
+        //     plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+        //     Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+
+        //     plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+        //     Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+        // }
+        // else{
+        //     plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+        //     Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+
+        //     plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+        //     Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+        //     ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+
+        // }
+        // Jac.block<3, 15>(0, 0) = Jac_left;
+        // Jac.block<3, 15>(3, 0) = Jac_right;
+
         if (action_name_.compare("push")==0){
-            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+            plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
-            Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+            Acc_Bias_left = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+            plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
-            Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+            Acc_Bias_right = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
         }
         else{
-            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+            plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
-            Acc_Bias_left = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+            Acc_Bias_left = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
-            plant_->CalcJacobianTranslationalVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+            plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
-            Acc_Bias_right = plant_->CalcBiasTranslationalAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+            Acc_Bias_right = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
             ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
 
         }
-        Jac.block<3, 15>(0, 0) = Jac_left;
-        Jac.block<3, 15>(3, 0) = Jac_right;
+        Jac.block<6, 15>(0, 0) = Jac_left;
+        Jac.block<6, 15>(6, 0) = Jac_right;
 
+
+        // MatrixXd M_Inv = M_.llt().solve(Matrix<double,15,15>::Identity()); 
+        // MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 0 * Matrix<double,3*num_cps,3*num_cps>::Identity();
+        // MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,3*num_cps,3*num_cps>::Identity());
 
         MatrixXd M_Inv = M_.llt().solve(Matrix<double,15,15>::Identity()); 
-        MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 0 * Matrix<double,3*num_cps,3*num_cps>::Identity();
-        MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,3*num_cps,3*num_cps>::Identity());
+        MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 1e-5 * Matrix<double,6*num_cps,6*num_cps>::Identity();
+        MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,6*num_cps,6*num_cps>::Identity());
         
 
         VectorXd Bias_MJ(15);
-        VectorXd Acc_Bias(3*num_cps);
+        // VectorXd Acc_Bias(3*num_cps);
+        VectorXd Acc_Bias(6*num_cps);
 
         Bias_MJ.setZero();
         Bias_MJ = - Cv;
-        Bias_MJ.middleRows<6>(0) += tau_g.middleRows<6>(0);
+        Bias_MJ += tau_g;
         
         if (action_name_.compare("push")==0){        
             VectorXd dry_friction(6);
-            dry_friction << 0, 0, 0, -2.0, 0, 0;
+            dry_friction << 0, 0, 0, -0.0, 0, 0;
             Bias_MJ.middleRows<6>(0) += dry_friction;
         }
         Bias_MJ.middleRows<7>(6) += tau;
 
-        Acc_Bias.middleRows<3>(0) = -Acc_Bias_left - 500*Jac_left*qd_full;
-        Acc_Bias.middleRows<3>(3) = -Acc_Bias_right - 500*Jac_right*qd_full;
+        Acc_Bias.middleRows<6>(0) = -Acc_Bias_left.get_coeffs() - 500*Jac_left*qd_full;
+        Acc_Bias.middleRows<6>(6) = -Acc_Bias_right.get_coeffs() - 500*Jac_right*qd_full;
         // bool nan_BiasMJ_true = false;
         // for (int j = 0; j < Bias_MJ.rows(); j++) {
         //     if (isnan(Bias_MJ(j))) {
@@ -359,6 +398,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         //=============================================
         VectorXd force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
+        // cout << force.transpose() << endl;
         VectorXd Acc_total = M_Inv * (Bias_MJ + Jac.transpose() * force);
         VectorXd ang_dd_obj = Acc_total.topRows(3);
         VectorXd pos_dd_obj = Acc_total.middleRows<3>(3);
@@ -372,21 +412,16 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         Xdot_new << qua_d_obj, pos_d_obj, ang_dd_obj, pos_dd_obj, qd_iiwa, qdd_iiwa;
         
         // bool nan_Xdot_true = false;
-        // for (int j = 0; j < Xdot_new.rows(); j++) {
-        //     if (isnan(Xdot_new(j))) {
-        //         std::cout<<"New Xdot contains NaN"<<"\n";
-        //         // std::cout<<Xdot_new.transpose()<<"\n";
-        //         break;
-        //     }
-        // }
+        for (int j = 0; j < Xdot_new.rows(); j++) {
+            if (isnan(Xdot_new(j))) {
+                std::cout<<"New Xdot contains NaN"<<"\n";
+                // std::cout<<Xdot_new.transpose()<<"\n";
+                break;
+            }
+        }
         // std::cout<<"Xdot: " << endl << Xdot_new<<"\n";
         // DRAKE_DEMAND(nan_Xdot_true == false);
-        
-
-        // if(nan_true){
-        //     cout << "Bias_MJ: " << Bias_MJ.transpose() << endl;
-        //     cout << "Matrix M_J: " << M_J << endl;
-        // }
+    
 
         if(finalTimeProfile.counter0_ == 10){
             gettimeofday(&tend_period,NULL);
@@ -420,12 +455,12 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         q_iiwa_full.setZero();
         qd_iiwa_full.setZero();
         q_iiwa_full.topRows(7)=q_iiwa;
-        q_iiwa_full.bottomRows(2) << -0.025, 0.025;
+        q_iiwa_full.bottomRows(2) << -25, 25;
         qd_iiwa_full.topRows(7)=qd_iiwa;
         qd_full.topRows(6) = qd_obj;
         qd_full.bottomRows(9) = qd_iiwa_full;
 
-        Quaternion<double> qua_obj_eigen(qua_obj);
+        Quaternion<double> qua_obj_eigen(qua_obj(0), qua_obj(1), qua_obj(2), qua_obj(3));
 
         math::RigidTransform<double> X_WO(qua_obj_eigen, pos_obj);
 
@@ -443,21 +478,23 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
 
         // Compute Mass matrix, Bias and gravititional terms
         MatrixXd M_(15, 15);
+        // MatrixXd M_iiwa(7, 7);
         VectorXd Cv(15);
+        // VectorXd Cv_iiwa(7);
         VectorXd tau_g_iiwa;
         VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
 
         plant_->CalcMassMatrix(*context, &M_);
         plant_->CalcBiasTerm(*context, &Cv);
         bool nan_Cv_true = false;
-        // for (int j = 0; j < Cv.rows(); j++) {
-        //     if (isnan(Cv(j))) {
-        //         std::cout<<"Cv contains NaN"<<"\n";
-        //         nan_Cv_true = true;
-        //         // std::cout<<Xdot_new.transpose()<<"\n";
-        //         break;
-        //     }
-        // }
+        for (int j = 0; j < Cv.rows(); j++) {
+            if (isnan(Cv(j))) {
+                std::cout<<"Cv contains NaN"<<"\n";
+                nan_Cv_true = true;
+                // std::cout<<Xdot_new.transpose()<<"\n";
+                break;
+            }
+        }
         // std::cout<<"Cv: " << endl << Cv.transpose()<<"\n";
         DRAKE_DEMAND(nan_Cv_true == false);
 
@@ -492,6 +529,7 @@ fullstateVec_t KukaArm_TRK_Contact::kuka_arm_dynamics(const fullstateVec_t& X, c
         M_J.block<15, 15>(0, 0) = M_;
         M_J.block<15, 3*num_cps>(0, 15) = Jac.transpose();
         M_J.block<3*num_cps, 15>(15, 0) = Jac;
+        // M_J += 1e-2 * Matrix<double,15+3*num_cps,15+3*num_cps>::Identity();
         
         VectorXd Bias_MJ(15+3*num_cps);
         Bias_MJ.setZero();
@@ -1001,63 +1039,93 @@ fullstateR_commandC_tab_t& KukaArm_TRK_Contact::getfuList()
     return fuList;
 }
 
+VectorXd KukaArm_TRK_Contact::quasiStatic(string action_name, const fullstateVec_t& X0){
+    auto context_ptr = plant_->CreateDefaultContext();
+    auto context = context_ptr.get();
+    auto object_model = plant_->GetModelInstanceByName("object");
+    auto iiwa_model = plant_->GetModelInstanceByName("iiwa");
+    auto wsg_model = plant_->GetModelInstanceByName("wsg");
 
-void KukaArm_TRK_Contact::kuka_arm_dyn_cst_udp(const int& nargout, const fullstateVecTab_t& xList, const commandVecTab_t& uList, fullstateVecTab_t& FList,
-                                CostFunctionKukaArm_TRK_Contact*& costFunction){
-    if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
-    unsigned int Nl = xList.size();
+    VectorXd qd_full(15);
+    qd_full.topRows(6) = X0.middleRows<6>(7);
+    qd_full.middleRows<7>(6) = X0.bottomRows(7);
+    qd_full.bottomRows(2) = Vector2d::Zero();
 
-    costFunction->getc() = 0;
-    AA.setZero();
-    BB.setZero();
-    if(debugging_print) TRACE_KUKA_ARM("compute cost function\n");
+    Quaternion<double> qua_obj_eigen(X0(0), X0(1), X0(2), X0(3));
 
-    scalar_t c_mat_to_scalar;
-    c_mat_to_scalar.setZero();
+    math::RigidTransform<double> X_WO(qua_obj_eigen, X0.middleRows<3>(4));
 
-    if(nargout == 2){
-        const int nargout_update1 = 3;
-        for(unsigned int k=0;k<Nl;k++){
-            if (k == Nl-1){
-                if(debugging_print) TRACE_KUKA_ARM("before the update1\n");
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose()) * costFunction->getQf() * (xList[k] - xgoal);
-                costFunction->getc() += c_mat_to_scalar(0,0);
-                if(debugging_print) TRACE_KUKA_ARM("after the update1\n");
-            }else{
-                if(debugging_print) TRACE_KUKA_ARM("before the update2\n");
-                FList[k] = update(nargout_update1, xList[k], uList[k], AA, BB);
-                c_mat_to_scalar = 0.5*(xList[k].transpose() - xgoal.transpose())*costFunction->getQ()*(xList[k] - xgoal);
-                if(debugging_print) TRACE_KUKA_ARM("after the update2\n");
-                c_mat_to_scalar += 0.5*uList[k].transpose()*costFunction->getR()*uList[k];
-                costFunction->getc() += c_mat_to_scalar(0,0);
-            }
-        }
-    }else{
-        fullstateVec_t cx_temp;
-        if(debugging_print) TRACE_KUKA_ARM("compute cost derivative\n");
-        for(unsigned int k=0;k<Nl-1;k++){
-            cx_temp << xList[k](0,0)-xgoal(0), xList[k](1,0)-xgoal(1), xList[k](2,0)-xgoal(2), xList[k](3,0)-xgoal(3);
-            costFunction->getcx()[k] = costFunction->getQ()*cx_temp;
-            costFunction->getcu()[k] = costFunction->getR()*uList[k];
-            costFunction->getcxx()[k] = costFunction->getQ();
-            costFunction->getcux()[k].setZero();
-            costFunction->getcuu()[k] = costFunction->getR();
-        }
-        if(debugging_print) TRACE_KUKA_ARM("update the final value of cost derivative \n");
-        costFunction->getcx()[Nl-1] = costFunction->getQf()*(xList[Nl-1]-xgoal);
-        costFunction->getcu()[Nl-1] = costFunction->getR()*uList[Nl-1];
-        costFunction->getcxx()[Nl-1] = costFunction->getQf();
-        costFunction->getcux()[Nl-1].setZero();
-        costFunction->getcuu()[Nl-1] = costFunction->getR();
-        if(debugging_print) TRACE_KUKA_ARM("set unused matrices to zero \n");
+    plant_->SetFreeBodyPoseInWorldFrame(context, plant_->GetBodyByName("base_link", object_model), X_WO);
+    plant_->SetPositions(context, iiwa_model, X0.middleRows<7>(13));
+    plant_->SetVelocities(context, iiwa_model, X0.bottomRows(7));
+    plant_->SetPositions(context, wsg_model, Vector2d::Zero());
+    plant_->SetVelocities(context, wsg_model, Vector2d::Zero());
 
-        // the following useless matrices and scalars are set to Zero.
-        for(unsigned int k=0;k<Nl;k++){
-            FList[k].setZero();
-        }
-        costFunction->getc() = 0;
+    MatrixXd M_(15, 15);
+    VectorXd Cv(15);
+    VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*context);
+
+    plant_->CalcMassMatrix(*context, &M_);
+    plant_->CalcBiasTerm(*context, &Cv);
+    const int num_cps = 2;
+    Vector3d contact_point_left;
+    Vector3d contact_point_right;
+    contact_point_left << 0, 0, 0; 
+    contact_point_right << 0, 0, 0; 
+
+    MatrixXd Jac(6*num_cps, 15);
+    MatrixXd Jac_left(6, 15);
+    MatrixXd Jac_right(6, 15);
+
+    SpatialAcceleration<double> Acc_Bias_left;
+    SpatialAcceleration<double> Acc_Bias_right;
+
+    if (action_name.compare("push")==0){
+        plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+        Acc_Bias_left = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact3", wsg_model), contact_point_left
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+
+        plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+        Acc_Bias_right = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact3", wsg_model), contact_point_right
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
     }
-    if(debugging_print) TRACE_KUKA_ARM("finish kuka_arm_dyn_cst\n");
+    else{
+        plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_left); // the second last argument seems doesn't matter?
+        Acc_Bias_left = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("left_ball_contact1", wsg_model), contact_point_left
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+
+        plant_->CalcJacobianSpatialVelocity(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame(), &Jac_right); // the second last argument seems doesn't matter?
+        Acc_Bias_right = plant_->CalcBiasSpatialAcceleration(*context, JacobianWrtVariable::kV, plant_->GetFrameByName("right_ball_contact1", wsg_model), contact_point_right
+        ,plant_->GetFrameByName("base_link", object_model), plant_->world_frame());
+
+    }
+    Jac.block<6, 15>(0, 0) = Jac_left;
+    Jac.block<6, 15>(6, 0) = Jac_right;
+
+    MatrixXd M_Inv = M_.llt().solve(Matrix<double,15,15>::Identity()); 
+    MatrixXd JM_InvJT = Jac * M_Inv * Jac.transpose() + 1e-5 * Matrix<double,6*num_cps,6*num_cps>::Identity();
+    MatrixXd JM_InvJT_Inv = JM_InvJT.llt().solve(Matrix<double,6*num_cps,6*num_cps>::Identity());
+
+    VectorXd Bias_MJ(15);
+    VectorXd Acc_Bias(6*num_cps);
+
+    Bias_MJ.setZero();
+    Bias_MJ = - Cv;
+    Bias_MJ += tau_g;
+    
+    Bias_MJ.middleRows<7>(6) += -tau_g.middleRows<kNumJoints>(6) + Cv.middleRows<kNumJoints>(6);
+
+    Acc_Bias.middleRows<6>(0) = -Acc_Bias_left.get_coeffs() - 500*Jac_left*qd_full;
+    Acc_Bias.middleRows<6>(6) = -Acc_Bias_right.get_coeffs() - 500*Jac_right*qd_full;
+    VectorXd force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
+    
+    commandVec_t u_qs = -tau_g.middleRows<kNumJoints>(6) + Cv.middleRows<kNumJoints>(6) - (Jac.transpose() * force).middleRows<kNumJoints>(6);
+
+    return u_qs;
 }
 
 }  // namespace kuka_iiwa_arm

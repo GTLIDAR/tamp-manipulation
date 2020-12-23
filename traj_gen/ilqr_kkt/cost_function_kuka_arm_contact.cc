@@ -17,7 +17,7 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N, std::st
         double vel_obj_scale;
         double pos_obj_f_scale;
         double vel_obj_f_scale;
-        double torqoe_scale = 30;//100;
+        double torqoe_scale = 1;//100;
         
         if (action_name.compare("push")==0){
             pos_obj_scale = 0;
@@ -34,8 +34,8 @@ CostFunctionKukaArm_Contact::CostFunctionKukaArm_Contact(unsigned int N, std::st
 
         double pos_iiwa_scale = 10;
         double vel_iiwa_scale = 10;
-        double pos_iiwa_f_scale = 100;//0.001;
-        double vel_iiwa_f_scale = 100;//10;
+        double pos_iiwa_f_scale = 1000;//0.001;
+        double vel_iiwa_f_scale = 10;//10;
 
         QDiagElementVec << pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100, pos_obj_scale*100,
                             vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10, vel_obj_scale*10,
