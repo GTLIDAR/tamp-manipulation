@@ -55,8 +55,9 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 100; 
+    unsigned int ADMMiterMax = 30; 
     this->Initialize(N, ADMMiterMax);
+    target_ << 0.5, 0.05, 0.15;
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
     //   ADMMiterMax = 5;
@@ -111,9 +112,9 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    pos_weight_ = 1e4;
+    if(action_name.compare("move-collision-avoidance")==0){pos_weight_ = 1e4;}else{pos_weight_ = 0;}
     vel_weight_ = 1e3;
-    torque_weight_ = 0;
+    torque_weight_ = 10;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight_, vel_weight_, torque_weight_, N); //postion/velocity/torque weights
     ILQRSolver_TRK testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
@@ -162,24 +163,34 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       xnew = lastTraj.xList;
       unew = lastTraj.uList;
 
-      cout << "\n=========== begin NLP for collision avoidance ===========\n";
-      /// Collision avoidance block
-      xnew_ca = CollisionAvoidance(plant_, x_temp_ca);
-        // manually set the velocity back to xnew's just to maintain the same dimension for simplicity
-      for(unsigned int k=0;k<=N;k++){
-        xnew_ca[k].bottomRows(kNumJoints) = xnew[k].bottomRows(kNumJoints);
+      if(pos_weight_ != 0){
+        cout << "\n=========== begin NLP for collision avoidance ===========\n";
+        /// Collision avoidance block
+        xnew_ca = CollisionAvoidance(plant_, x_temp_ca);
+          // manually set the velocity back to xnew's just to maintain the same dimension for simplicity
+        for(unsigned int k=0;k<=N;k++){
+          xnew_ca[k].bottomRows(kNumJoints) = xnew[k].bottomRows(kNumJoints);
+        }
+
+        for(unsigned int k=0;k<N;k++){
+          // Average joint position and corresponding dual variables from iLQR and CA blocks
+          x_temp2[k] = (xnew[k] + x_lambda[k] + xnew_ca[k] + x_lambda_ca[k])/2;
+          u_temp2[k] = unew[k] + u_lambda[k];
+        }
+        x_temp2[N] = (xnew[N] + x_lambda[N] + xnew_ca[N] + x_lambda_ca[N])/2;
+      
+      }else{
+      // Normal updates without collision avoidance
+      for(unsigned int k=0;k<N;k++){
+        x_temp2[k] = xnew[k] + x_lambda[k];
+        u_temp2[k] = unew[k] + u_lambda[k];
+      }
+      x_temp2[N] = xnew[N] + x_lambda[N];
       }
 
       /// Projection block to feasible sets (state and control contraints)
       xbar_old = xbar;
       ubar_old = ubar;
-      for(unsigned int k=0;k<N;k++){
-        // Average joint position and corresponding dual variables from iLQR and CA blocks
-        x_temp2[k] = (xnew[k] + x_lambda[k] + xnew_ca[k] + x_lambda_ca[k])/2;
-        u_temp2[k] = unew[k] + u_lambda[k];
-      }
-      x_temp2[N] = (xnew[N] + x_lambda[N] + xnew_ca[N] + x_lambda_ca[N])/2;
-
       xubar = projection(x_temp2, u_temp2, N, action_name);
 
       // Dual variables update
@@ -306,67 +317,121 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     }
 
     // saving data file
-    for(unsigned int i=0;i<N;i++){
-      saveVector(joint_state_traj[i], "joint_trajectory_ADMM_demo");
-      saveVector(torque_traj[i], "joint_torque_command_ADMM_demo");
-      saveVector(xubar[i], "xubar_ADMM_demo");
-    }
-    saveVector(joint_state_traj[N], "joint_trajectory_ADMM_demo");
-    saveVector(xubar[N], "xubar_ADMM_demo");
+    if(pos_weight_ != 0){
+      for(unsigned int i=0;i<N;i++){
+        saveVector(joint_state_traj[i], "joint_trajectory_ADMM_demo");
+        saveVector(torque_traj[i], "joint_torque_command_ADMM_demo");
+        saveVector(xubar[i], "xubar_ADMM_demo");
+      }
+      saveVector(joint_state_traj[N], "joint_trajectory_ADMM_demo");
+      saveVector(xubar[N], "xubar_ADMM_demo");
 
-    for(unsigned int i=0;i<=N*InterpolationScale;i++){
-      saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_demo");
-      saveVector(joint_state_traj_interp_ca[i], "xnew_ca_interpolated_ADMM_demo");
-    }
+      for(unsigned int i=0;i<=N*InterpolationScale;i++){
+        saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_demo");
+        saveVector(joint_state_traj_interp_ca[i], "xnew_ca_interpolated_ADMM_demo");
+      }
 
-    for(unsigned int i=0;i<ADMMiterMax;i++)
-    {
-      saveValue(res_x_pos[i], "residual_x_pos_move_demo_nocontact");
-      saveValue(res_x_vel[i], "residual_x_vel_move_demo_nocontact");
-      saveValue(res_u[i], "residual_u_move_demo_nocontact");
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        saveValue(res_x_pos[i], "residual_x_pos_move_demo_nocontact");
+        saveValue(res_x_vel[i], "residual_x_vel_move_demo_nocontact");
+        saveValue(res_u[i], "residual_u_move_demo_nocontact");
+      }
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_x[" << i << "]:" << res_x[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_x_ca[" << i << "]:" << res_x_ca[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "error_ca[" << i << "]:" << error_ca[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_x_pos[" << i << "]:" << res_x_pos[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_x_vel[" << i << "]:" << res_x_vel[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_u[" << i << "]:" << res_u[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<=ADMMiterMax;i++)
+      {
+        cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
+      }
+
+    }else{
+      // saving data for normal ADMM
+      for(unsigned int i=0;i<N;i++){
+        saveVector(joint_state_traj[i], "joint_trajectory_ADMM_demo_normal");
+        saveVector(torque_traj[i], "joint_torque_command_ADMM_demo_normal");
+        saveVector(xubar[i], "xubar_ADMM_demo_normal");
+      }
+      saveVector(joint_state_traj[N], "joint_trajectory_ADMM_demo_normal");
+      saveVector(xubar[N], "xubar_ADMM_demo_normal");
+
+      for(unsigned int i=0;i<=N*InterpolationScale;i++){
+        saveVector(joint_state_traj_interp[i], "joint_trajectory_interpolated_ADMM_demo_normal");
+        saveVector(joint_state_traj_interp_ca[i], "xnew_ca_interpolated_ADMM_demo_normal");
+      }
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        saveValue(res_x_pos[i], "residual_x_pos_move_demo_nocontact_normal");
+        saveValue(res_x_vel[i], "residual_x_vel_move_demo_nocontact_normal");
+        saveValue(res_u[i], "residual_u_move_demo_nocontact_normal");
+      }
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_x[" << i << "]:" << res_x[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_x_pos[" << i << "]:" << res_x_pos[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_x_vel[" << i << "]:" << res_x_vel[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<ADMMiterMax;i++)
+      {
+        cout << "res_u[" << i << "]:" << res_u[i] << endl;
+      }
+      cout << endl;
+
+      for(unsigned int i=0;i<=ADMMiterMax;i++)
+      {
+        cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
+      }
+
     }
     cout << "-------- ADMM Trajectory Generation Finished! --------" << endl;
-
-    for(unsigned int i=0;i<ADMMiterMax;i++)
-    {
-      cout << "res_x[" << i << "]:" << res_x[i] << endl;
-    }
-    cout << endl;
-
-    for(unsigned int i=0;i<ADMMiterMax;i++)
-    {
-      cout << "res_x_ca[" << i << "]:" << res_x_ca[i] << endl;
-    }
-    cout << endl;
-
-    for(unsigned int i=0;i<ADMMiterMax;i++)
-    {
-      cout << "error_ca[" << i << "]:" << error_ca[i] << endl;
-    }
-    cout << endl;
-
-    for(unsigned int i=0;i<ADMMiterMax;i++)
-    {
-      cout << "res_x_pos[" << i << "]:" << res_x_pos[i] << endl;
-    }
-    cout << endl;
-
-    for(unsigned int i=0;i<ADMMiterMax;i++)
-    {
-      cout << "res_x_vel[" << i << "]:" << res_x_vel[i] << endl;
-    }
-    cout << endl;
-
-    for(unsigned int i=0;i<ADMMiterMax;i++)
-    {
-      cout << "res_u[" << i << "]:" << res_u[i] << endl;
-    }
-    cout << endl;
-
-    for(unsigned int i=0;i<=ADMMiterMax;i++)
-    {
-      cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
-    }
 
     // need this for dynamic memory allocation (push_back)
     auto ptr = std::make_unique<lcmt_manipulator_traj>();
@@ -408,15 +473,17 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     Vector1d lb, ub;
     lb << 0.12;
     ub << 100;
-    Vector3d target;
+    Vector3d target_2;
     // target << 0.3856, 0.15, 0.40;
-    target << 0.6, 0.05, 0.1;
+    target_2 << 0.65, 0.24, 0.15;
     for(unsigned int i=0;i<X.size();i++){
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         // Constraints that ensures the distance away from the obstacle
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "iiwa", "iiwa_link_ee_kuka", 
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "iiwa_link_ee_kuka", 
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
         //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
@@ -425,6 +492,8 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
         // Constraints to make the arm above the table
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
                                         drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_x<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
+        //                                 std::numeric_limits<double>::infinity() * VectorXd::Ones(1) * -1, drake::Vector1d(0.5), "FK_x"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "right_ball_contact3", 
         //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "left_ball_contact3", 
@@ -455,21 +524,20 @@ projStateAndCommandTab_t ADMMRunner::projection(const stateVecTab_t& X,
     XU_new.resize(NumberofKnotPt+1);
 
     double joint_limit;
+    // joint_limit = 2.8;
     // double vel_limit;
-    // double vel_limit [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5};
-    double vel_limit [] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}; 
+    double vel_limit [] = {1.0, 1.0, 1.4, 2.0, 2.2, 2.5, 2.5};
+    // double vel_limit [] = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5}; 
     // double torque_limit;
     double torque_limit [] = {150, 150, 80, 80, 80, 30, 30};
     // double torque_limit [] = {15, 15, 15, 15, 15, 15, 15};
 
-    if (action_name.compare("throw")==0 || action_name.compare("push")==0) {
+    if (action_name.compare("throw")==0) {
       joint_limit = 2.8;
-      // vel_limit = 1.5;
-      // torque_limit = 15;
+  
     } else {
       joint_limit = 2.8;
-      // vel_limit = 1.5;
-      // torque_limit = 15;
+  
     }
 
     for(unsigned int i=0;i<NumberofKnotPt+1;i++){
@@ -567,7 +635,8 @@ void ADMMRunner::RunVisualizer(double realtime_rate){
     object_state.joint_torque_external.resize(7, 0.);
 
     VectorXd obstacle_pose(7);
-    obstacle_pose <<  1.0, 0.0, 0.0, 0.0, 0.6, 0.05, 0.1;
+    obstacle_pose.topRows(4) <<  1.0, 0.0, 0.0, 0.0;
+    obstacle_pose.bottomRows(3) = target_;
     for (int joint = 0; joint < 7; joint++) 
     {
       object_state.joint_position_measured[joint] = obstacle_pose[joint];

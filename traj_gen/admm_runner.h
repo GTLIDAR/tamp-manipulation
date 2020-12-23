@@ -84,6 +84,7 @@ using math::RigidTransformd;
 using math::RollPitchYaw;
 using traj_gen::FKConstraint;
 using traj_gen::FKConstraint_z;
+using traj_gen::FKConstraint_x;
 
 class ADMMRunner {
   public:
@@ -151,6 +152,7 @@ class ADMMRunner {
   double pos_weight_;
   double vel_weight_;
   double torque_weight_;
+  Vector3d target_;
 
   LCM lcm_;
   lcmt_robot_time robot_time_;

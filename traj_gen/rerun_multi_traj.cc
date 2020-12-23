@@ -191,7 +191,7 @@ class ReplayTraj {
 class ReplayTrajVisualizer {
   public:
   void Run(double realtime_rate) {
-    double time_horizon_ = 1.0;
+    double time_horizon_ = 2.0;
     time_step_ = 0.01;
     // int NumberofKnotPt = 2000;
     N = int(1*((time_horizon_/time_step_)*InterpolationScale));
@@ -202,7 +202,8 @@ class ReplayTrajVisualizer {
     //======================================================================
     // (Test only) Reading Saved Trajectory
     std::string _file_name = UDP_TRAJ_DIR;
-    _file_name += "joint_trajectory_interpolated_ADMM_demo"; //"joint_trajectory_ADMM";
+    // _file_name += "joint_trajectory_interpolated_ADMM_demo"; //"joint_trajectory_ADMM";
+    _file_name += "joint_trajectory_interpolated"; //"joint_trajectory_ADMM";
     // _file_name += "xnew_ca_interpolated_ADMM_demo"; //"joint_trajectory_ADMM";
     _file_name += ".csv";
     ifstream myfile(_file_name);
@@ -272,7 +273,7 @@ class ReplayTrajVisualizer {
     object_state.joint_torque_external.resize(7, 0.);
 
     VectorXd obstacle_pose(7);
-    obstacle_pose <<  1.0, 0.0, 0.0, 0.0, 0.6, 0.05, 0.1;
+    obstacle_pose <<  1.0, 0.0, 0.0, 0.0, 0.5, 0.05, 0.15;
     for (int joint = 0; joint < 7; joint++) 
     {
       object_state.joint_position_measured[joint] = obstacle_pose[joint];

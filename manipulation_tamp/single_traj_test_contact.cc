@@ -195,12 +195,13 @@ int do_main() {
     // query.desired_ee[4] = 0.0292037;
     // query.desired_ee[5] = 4.26875e-12;
     
-    double time_horizon = 1.0;
+    double time_horizon = 2.0;
     double time_step = 0.01;
     double realtime_rate = 0.05;
     std::string kIiwaUrdf = 
           FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/iiwa7_no_world_joint.urdf");
-    std::string action = "move";
+    std::string action = "move-collision-avoidance";
+    // std::string action = "move";
     std::vector<Eigen::VectorXd> ik_res;
     RigidTransformd EE_init, EE_final;
     if (action.compare("push")==0){
@@ -284,7 +285,9 @@ int do_main() {
             // 0.5800000000000001, -0.1, 0.275
 
             /// For new test
-            0.57, -0.15, 0.1
+            // 0.57, -0.15, 0.1
+            // 0.6, 0.05, 0.4
+            0.4, -0.47, 0.5
         );
         const math::RollPitchYaw<double> rpy0(
             // 0,
@@ -302,7 +305,8 @@ int do_main() {
             // 0.0, 1.5708, 0.0
 
             /// For new test
-            0.0, 0.0, 0.0
+            // 0.0, 0.0, 1.57
+            0.0, 1.57, -1.57
         );
         // rpy0.To
         EE_init = RigidTransformd(rpy0, xyz0);
@@ -321,7 +325,9 @@ int do_main() {
             // 0.75, 0.0, 0.45
 
             /// for new test
-            0.6, 0.25, 0.1
+            // 0.6, 0.25, 0.1
+            // 0.6, 0.05, 0.1
+            0.5, 0.24, 0.1
         );
         const math::RollPitchYaw<double> rpy1(
             // 0.0,
@@ -347,8 +353,8 @@ int do_main() {
         wp_vec.push_back(wp1);
 
         Eigen::VectorXd iiwa_q(7);
-        iiwa_q << 0.586903,  1.25261,  -0.139577,   -1.49367,   0.600153,   -1.15729,  -0.114158; //warm-start for grasping from top
-
+        // iiwa_q << 0.586903,  1.25261,  -0.139577,   -1.49367,   0.600153,   -1.15729,  -0.114158; //warm-start for grasping from top
+        iiwa_q << -0.7308516855974105, 0.8341378815411034, -0.21259118270849867, -1.3765524861818652, 0.19254343241237698, 0.9491769796478348, 0.5822255937906854;
         ConstraintRelaxingIk ik(
             kIiwaUrdf,
             FLAGS_ee_name

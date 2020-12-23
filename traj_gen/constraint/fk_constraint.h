@@ -84,6 +84,54 @@ class FKConstraint_z : public solvers::NonlinearConstraint<T> {
 
 };
 
+template <typename T>
+class FKConstraint_y : public solvers::NonlinearConstraint<T> {
+ public: 
+  FKConstraint_y(const drake::multibody::MultibodyPlant<T>& plant,
+               const std::string& model_name,
+               const std::string& frame_name,
+               const Eigen::VectorXd& lb,
+               const Eigen::VectorXd& ub,
+               const std::string& description = "");
+
+  ~FKConstraint_y() override {}
+
+  void EvaluateConstraint(const Eigen::Ref<const drake::VectorX<T>>& x,
+                          drake::VectorX<T>* y) const override;
+
+ private:
+  const drake::multibody::MultibodyPlant<T>& plant_;
+  const multibody::ModelInstanceIndex model_instance_;
+  const multibody::ModelInstanceIndex iiwa_model_;
+  const std::string frame_name_;
+  std::unique_ptr<drake::systems::Context<T>> context_;
+
+};
+
+template <typename T>
+class FKConstraint_x : public solvers::NonlinearConstraint<T> {
+ public: 
+  FKConstraint_x(const drake::multibody::MultibodyPlant<T>& plant,
+               const std::string& model_name,
+               const std::string& frame_name,
+               const Eigen::VectorXd& lb,
+               const Eigen::VectorXd& ub,
+               const std::string& description = "");
+
+  ~FKConstraint_x() override {}
+
+  void EvaluateConstraint(const Eigen::Ref<const drake::VectorX<T>>& x,
+                          drake::VectorX<T>* y) const override;
+
+ private:
+  const drake::multibody::MultibodyPlant<T>& plant_;
+  const multibody::ModelInstanceIndex model_instance_;
+  const multibody::ModelInstanceIndex iiwa_model_;
+  const std::string frame_name_;
+  std::unique_ptr<drake::systems::Context<T>> context_;
+
+};
+
 } // traj_gen
 } // drake
 

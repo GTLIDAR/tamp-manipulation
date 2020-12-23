@@ -14,7 +14,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     N = int(time_horizon/time_step);
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 15; //100;
+    unsigned int iterMax = 30; //100;
 
     ILQR_KKTSolver::traj lastTraj;
     //=============================================
@@ -72,6 +72,7 @@ lcmt_manipulator_traj DDP_KKTRunner::RunDDP_KKT(fullstateVec_t xinit, fullstateV
     u_0.resize(N);
     for(unsigned i=0;i<N;i++){
       u_0[i] = KukaArmModel.quasiStatic(action_name, xinit);
+        // u_0[i] << 0, 0, 0, 0, 0, 0, 0;
     }
     testSolverKukaArm.firstInitSolver(xinit, xgoal, u_0, N, dt, iterMax, tolFun, tolGrad);     
 

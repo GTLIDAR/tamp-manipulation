@@ -400,7 +400,7 @@ fullstateVec_t KukaArm_Contact::kuka_arm_dynamics(const fullstateVec_t& X, const
         Bias_MJ.setZero();
         Bias_MJ = - Cv;
         // Bias_MJ.middleRows<9>(6) += tau_g.middleRows<9>(6);
-        Bias_MJ += tau_g;
+        // Bias_MJ += tau_g;
         
         if (action_name_.compare("push")==0){        
             VectorXd dry_friction(6);
@@ -1120,15 +1120,16 @@ VectorXd KukaArm_Contact::quasiStatic(string action_name, const fullstateVec_t& 
 
     Bias_MJ.setZero();
     Bias_MJ = - Cv;
-    Bias_MJ += tau_g;
+    // Bias_MJ += tau_g;
     
-    Bias_MJ.middleRows<7>(6) += -tau_g.middleRows<kNumJoints>(6) + Cv.middleRows<kNumJoints>(6);
+    // Bias_MJ.middleRows<7>(6) += -tau_g.middleRows<kNumJoints>(6) + Cv.middleRows<kNumJoints>(6);
+    Bias_MJ.middleRows<7>(6) += Cv.middleRows<kNumJoints>(6);
 
     Acc_Bias.middleRows<6>(0) = -Acc_Bias_left.get_coeffs() - 500*Jac_left*qd_full;
     Acc_Bias.middleRows<6>(6) = -Acc_Bias_right.get_coeffs() - 500*Jac_right*qd_full;
     VectorXd force = JM_InvJT_Inv * (Acc_Bias - Jac * M_Inv*Bias_MJ);
     
-    commandVec_t u_qs = -tau_g.middleRows<kNumJoints>(6) + Cv.middleRows<kNumJoints>(6) - (Jac.transpose() * force).middleRows<kNumJoints>(6);
+    commandVec_t u_qs = Cv.middleRows<kNumJoints>(6) - (Jac.transpose() * force).middleRows<kNumJoints>(6);
 
     return u_qs;
 }
