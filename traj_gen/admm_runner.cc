@@ -57,6 +57,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     unsigned int iterMax = 15;
     unsigned int ADMMiterMax = 30; 
     this->Initialize(N, ADMMiterMax);
+
+    // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
     target_ << 0.5, 0.05, 0.15;
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -473,17 +475,17 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     Vector1d lb, ub;
     lb << 0.12;
     ub << 100;
-    Vector3d target_2;
+    // Vector3d target_2;
     // target << 0.3856, 0.15, 0.40;
-    target_2 << 0.65, 0.24, 0.15;
+    // target_2 << 0.65, 0.24, 0.15;
     for(unsigned int i=0;i<X.size();i++){
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         // Constraints that ensures the distance away from the obstacle
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "iiwa_link_ee_kuka", 
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
         //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
