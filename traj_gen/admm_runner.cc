@@ -55,7 +55,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 30; 
+    unsigned int ADMMiterMax = 5; 
     this->Initialize(N, ADMMiterMax);
 
     // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
@@ -298,7 +298,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     auto context_ptr = plant_.CreateDefaultContext();
     auto context = context_ptr.get();
     Vector2d wsg_width;
-    wsg_width << -25, 25;
+    wsg_width << -0.025, 0.025;
     for(unsigned int i=0;i<=N;i++){      
       auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
       auto xyz = Eigen::Vector3d(0, 0, 0);
@@ -308,8 +308,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
       const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
       const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
-      const BodyIndex wsg_left_body_index = plant_.GetBodyByName("left_ball_contact3", wsg_model).index();
-      const BodyIndex wsg_right_body_index = plant_.GetBodyByName("right_ball_contact3", wsg_model).index();
+      const BodyIndex wsg_left_body_index = plant_.GetBodyByName("finger_link_1", iiwa_model).index();
+      const BodyIndex wsg_right_body_index = plant_.GetBodyByName("finger_link_2", iiwa_model).index();
       const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
       const math::RigidTransform<double>& X_Wwsg_l = X_WB_all[wsg_left_body_index];
       const math::RigidTransform<double>& X_Wwsg_r = X_WB_all[wsg_right_body_index];
