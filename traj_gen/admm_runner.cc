@@ -55,11 +55,12 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 5; 
+    unsigned int ADMMiterMax = 30; 
     this->Initialize(N, ADMMiterMax);
 
     // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
     target_ << 0.5, 0.05, 0.15;
+    // target_ << 0.6, 0.05, 0.1;
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
     //   ADMMiterMax = 5;
@@ -486,10 +487,10 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
         //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
-        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
-        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
-        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "finger_link_1", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "finger_link_2", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
 
         // Constraints to make the arm above the table
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 

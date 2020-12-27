@@ -63,7 +63,7 @@ class CollisionAvoidance_ADMM{
         prog.SetInitialGuess(x, x0);
         auto result = solvers::Solve(prog);
         cout << "Is optimization successful?" << result.is_success() << endl;
-        cout << "Optimal x: " << result.GetSolution() << endl;
+        // cout << "Optimal x: " << result.GetSolution() << endl;
         cout << "solver is: " << result.get_solver_id().name() << endl;
     }
 
@@ -74,7 +74,9 @@ class CollisionAvoidance_ADMM{
         auto iiwa_model = plant_.GetModelInstanceByName("iiwa");
         // auto wsg_model = plant_.GetModelInstanceByName("wsg");
         plant_.SetPositions(context, iiwa_model, q);
-        auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
+        // auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("finger_link_1", iiwa_model));
+        auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("finger_link_2", iiwa_model));
+        // auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("iiwa_link_ee_kuka", iiwa_model));
         // auto p_EE = plant_.CalcRelativeTransform(*context, plant_.world_frame(), plant_.GetFrameByName("right_ball_contact3", wsg_model));
         return p_EE.translation();
     }
@@ -122,7 +124,9 @@ void do_main(){
     ca.SolveOpt();
     VectorXd q0(7);
     // q0.setZero();
-    q0 << 0.586903,  1.25261,  -0.139577,   -1.49367,   0.600153,   -1.15729,  -0.114158;
+    // q0 << -0.729787,  0.590899, -0.235838,  -1.10948,  0.132383,    1.4518,   0.62609;
+    q0 << 0.809903,   1.20881, -0.272282,  -1.77445,   0.72218,  -1.27438, 0.0795477;
+    // q0 << 0.586903,  1.25261,  -0.139577,   -1.49367,   0.600153,   -1.15729,  -0.114158;
     cout << ca.FK(q0) << endl;
 }
 }
