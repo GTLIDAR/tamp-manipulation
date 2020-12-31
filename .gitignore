@@ -31,6 +31,5 @@
 *.pyc
 *.soln
 *sas_plan
-/manipulation_tamp/results/
 /traj_gen/trajectory_data/
 /tutorials/
