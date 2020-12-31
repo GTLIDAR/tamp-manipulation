@@ -13,7 +13,7 @@ drake_path = file_path+"/.."
 result_path = drake_path+"/manipulation_tamp/results/"
 
 # JSON_FILENAME = result_path + "fixed_admm_traj20201023T000819.json"
-JSON_FILENAME = "/home/zhigen/code/drake/traj_gen/trajectory_data/fixvec_0-1-2-3-4-5-6-7-8-9-10-11-12-13.json"
+JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/admm_traj20201231T002323.json"
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 

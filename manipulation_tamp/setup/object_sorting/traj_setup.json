@@ -3,7 +3,7 @@
     "gripper_wait_time": 0.25,
 
     "ddp_time_step": 0.01,
-    "admm_time_step": 0.005,
+    "admm_time_step": 0.01,
     "manual_time_step": 0.005,
     "min_time_step": 0.001,
 

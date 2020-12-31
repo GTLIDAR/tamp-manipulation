@@ -54,8 +54,13 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
+    std::string collision_avoidance_action = "move-to-object";
+
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 30; 
+    unsigned int ADMMiterMax = 15; 
+    if (action_name.find("move-to-object")==0) {
+      ADMMiterMax = 30; 
+    }
     this->Initialize(N, ADMMiterMax);
     target_ << 0.5, 0.05, 0.15;
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
@@ -112,7 +117,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    if(action_name.compare("move-collision-avoidance")==0){pos_weight_ = 1e4;}else{pos_weight_ = 0;}
+    if(action_name.find(collision_avoidance_action)==0){pos_weight_ = 1e4;}else{pos_weight_ = 0;}
     vel_weight_ = 1e3;
     torque_weight_ = 10;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
