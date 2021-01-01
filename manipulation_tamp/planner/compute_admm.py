@@ -16,7 +16,7 @@ JSON_QUERY_FILENAME = drake_path + "/manipulation_tamp/results/admm_queries20201
 JSON_DDP_TRAJ_FILENAME = drake_path + "/manipulation_tamp/results/object_sorting_plan20201229T223845.json"
 
 MIN_TIME_STEP = 0.002
-MAX_TIME_STEP = 0.005
+MAX_TIME_STEP = 0.01
 
 class MotionQueryHandler:
     def __init__(self, query_file, ddp_traj_file):
@@ -130,8 +130,8 @@ class MotionQueryHandler:
             
 def main():
     runner = MotionQueryHandler(JSON_QUERY_FILENAME, JSON_DDP_TRAJ_FILENAME)
-    runner.Run()
-    # runner.run_single_traj(6)
+    #runner.Run()
+    runner.run_single_traj(0)
 
 if __name__ == "__main__":
     main()

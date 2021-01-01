@@ -57,7 +57,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     std::string collision_avoidance_action = "move-to-object";
 
     unsigned int iterMax = 15;
-    unsigned int ADMMiterMax = 15; 
+    unsigned int ADMMiterMax = 30; 
     if (action_name.find("move-to-object")==0) {
       ADMMiterMax = 30; 
     }
@@ -117,7 +117,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    if(action_name.find(collision_avoidance_action)==0){pos_weight_ = 1e4;}else{pos_weight_ = 0;}
+    if(action_name.find(collision_avoidance_action)==0){pos_weight_ = 1e4;}else{pos_weight_ = 0;} // 1e4
     vel_weight_ = 1e3;
     torque_weight_ = 10;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
