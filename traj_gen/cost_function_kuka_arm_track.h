@@ -32,14 +32,14 @@ protected:
     stateVec_t Rho_state_DiagElementVec;
 	commandVec_t Rho_torque_DiagElementVec;
 
-	double pos_scale;
-    double vel_scale;
-    double pos_f_scale;
-    double vel_f_scale;
-    double torque_scale;
-    double rho_pos_weight;
-	double rho_vel_weight;
-    double rho_torque_weight;
+	// double pos_scale;
+    // double vel_scale;
+    // double pos_f_scale;
+    // double vel_f_scale;
+    // double torque_scale;
+    // double rho_pos_weight;
+	// double rho_vel_weight;
+    // double rho_torque_weight;
 
 	stateVecTab_t cx_new;
 	commandVecTab_t cu_new; 
@@ -60,6 +60,14 @@ public:
 	commandR_stateC_tab_t& getcux();
 	commandMatTab_t& getcuu();
 	double& getc();
+	double pos_scale;
+    double vel_scale;
+    double pos_f_scale;
+    double vel_f_scale;
+    double torque_scale;
+    double rho_pos_weight;
+	double rho_vel_weight;
+    double rho_torque_weight;
 
 	// unsigned int N;
 private:

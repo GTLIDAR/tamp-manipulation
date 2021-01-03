@@ -37,42 +37,42 @@
 
     "move-to-object-top": {
         "traj_op": true,
-        "time_horizon": [2.5, 0.5],
+        "time_horizon": [2.5, 0.75],
         "wait_time": 0,
         "constrain_orientation": [true, true],
         "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
         "init_offset_constrain_orientation": true,
-        "init_offset_time": 1
+        "init_offset_time": 0.75
     },
 
     "move-to-object-side": {
         "traj_op": true,
-        "time_horizon": [2.5, 0.5],
+        "time_horizon": [2.5, 0.75],
         "wait_time": 0,
         "constrain_orientation": [true, true],
         "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
         "init_offset_constrain_orientation": true,
-        "init_offset_time": 1
+        "init_offset_time": 0.75
     },
 
     "move-to-goal-table": {
         "traj_op": true,
-        "time_horizon": [2.5, 0.5],
+        "time_horizon": [2.5, 0.75],
         "wait_time": 0,
         "constrain_orientation": [true, true],
         "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
         "init_offset_constrain_orientation": true,
-        "init_offset_time": 1
+        "init_offset_time": 0.75
     },
 
     "move-to-free-table": {
         "traj_op": true,
-        "time_horizon": [2.5, 0.5],
+        "time_horizon": [2.5, 0.75],
         "wait_time": 0,
         "constrain_orientation": [true, true],
         "init_offset_wp": [0, 0, 0.25, 0, 0, 0],
         "init_offset_constrain_orientation": true,
-        "init_offset_time": 1
+        "init_offset_time": 0.75
     },
 
 

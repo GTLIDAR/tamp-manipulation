@@ -54,13 +54,16 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     double tolFun = 1e-5;//1e-5;//relaxing default value: 1e-10; - reduction exit crieria
     double tolGrad = 1e-5;//relaxing default value: 1e-10; - gradient exit criteria
 
-    std::string collision_avoidance_action = "move-to-object";
-
     unsigned int iterMax = 15;
     unsigned int ADMMiterMax = 30; 
     if (action_name.find("move-to-object")==0) {
-      ADMMiterMax = 30; 
+      ADMMiterMax = 50; 
     }
+
+    if (time_horizon <= 1) {
+      ADMMiterMax = 75;
+    }
+
     this->Initialize(N, ADMMiterMax);
     target_ << 0.5, 0.05, 0.15;
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
@@ -117,11 +120,18 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    if(action_name.find(collision_avoidance_action)==0){pos_weight_ = 1e4;}else{pos_weight_ = 0;} // 1e4
+    if((action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object")==0) && time_horizon > 1) {
+      pos_weight_ = 1e4;
+    } else {
+      pos_weight_ = 0;
+    } // 1e4
     vel_weight_ = 1e3;
-    torque_weight_ = 10;
+    torque_weight_ = 1;
     CostFunctionKukaArm_TRK costKukaArm_init(0, 0, 0, N); //only for initialization
     CostFunctionKukaArm_TRK costKukaArm_admm(pos_weight_, vel_weight_, torque_weight_, N); //postion/velocity/torque weights
+    // if (time_horizon<1) {
+    //   costKukaArm_admm.pos_scale = 500;
+    // }
     ILQRSolver_TRK testSolverKukaArm(KukaArmModel,costKukaArm_admm,ENABLE_FULLDDP,ENABLE_QPBOX);
     ILQRSolver_TRK testSolverKukaArm_init(KukaArmModel,costKukaArm_init,ENABLE_FULLDDP,ENABLE_QPBOX); //only for initialization
 
@@ -171,7 +181,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       if(pos_weight_ != 0){
         cout << "\n=========== begin NLP for collision avoidance ===========\n";
         /// Collision avoidance block
-        xnew_ca = CollisionAvoidance(plant_, x_temp_ca);
+        xnew_ca = CollisionAvoidance(plant_, x_temp_ca, action_name);
           // manually set the velocity back to xnew's just to maintain the same dimension for simplicity
         for(unsigned int k=0;k<=N;k++){
           xnew_ca[k].bottomRows(kNumJoints) = xnew[k].bottomRows(kNumJoints);
@@ -466,7 +476,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
   }
 
 stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPlant<double>& plant,
-                                             const stateVecTab_t& X){
+                                             const stateVecTab_t& X, string action_name){
     /// Input consists of position + velocity
     // Define the optimization problem
     solvers::MathematicalProgram prog = solvers::MathematicalProgram();
@@ -476,7 +486,7 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     auto x0 = MatrixXd(7, X.size());
     x0.setZero();
     Vector1d lb, ub;
-    lb << 0.12;
+    lb << 0.08;
     ub << 100;
     Vector3d target_2;
     // target << 0.3856, 0.15, 0.40;
@@ -485,10 +495,12 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         // Constraints that ensures the distance away from the obstacle
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "iiwa_link_ee_kuka", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
+        if (action_name.find("move-to-object")==0) {
+          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "iiwa_link_ee_kuka", 
+                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
+                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
+        }
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
         //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 

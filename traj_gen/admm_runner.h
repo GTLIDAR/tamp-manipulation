@@ -95,7 +95,7 @@ class ADMMRunner {
 
   /// ADMM sub-block for collision avoidance
   /// similar to optimization-based IK
-  stateVecTab_t CollisionAvoidance(const drake::multibody::MultibodyPlant<double>& plant, const stateVecTab_t& X);
+  stateVecTab_t CollisionAvoidance(const drake::multibody::MultibodyPlant<double>& plant, const stateVecTab_t& X, string action_name);
 
   /// ADMM sub-block for projection block
   /// applicable to box and cone constraints

@@ -133,6 +133,7 @@ void HandleQuery(
                 break;
             } else {
                 std::cout<<"feasible at wp "<<i<<"\n";
+                std::cout<<q_sol_wp.back()<<"\n";
             }
 
             q_sol.push_back(q_sol_wp.back());
