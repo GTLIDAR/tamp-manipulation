@@ -56,8 +56,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     unsigned int iterMax = 15;
     unsigned int ADMMiterMax = 30; 
-    if (action_name.find("move-to-object")==0) {
-      ADMMiterMax = 50; 
+    if (action_name.find("move-to-object-1")==0 || action_name.find("move-to-object-2")==0) {
+      ADMMiterMax = 30; 
     }
 
     if (time_horizon <= 1) {
@@ -67,7 +67,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     this->Initialize(N, ADMMiterMax);
 
     // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
-    target_ << 0.5, 0.05, 0.15;
+    // target_ << 0.85, -0.098, 0.3;
+    // target_ << 0.5, 0.05, 0.15;
     // target_ << 0.6, 0.05, 0.1;
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
@@ -123,7 +124,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    if((action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object")==0) && time_horizon > 1) {
+    if((action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object-1")==0 || action_name.find("move-to-object-2")==0) && time_horizon > 1) {
       pos_weight_ = 1e4;
     } else {
       pos_weight_ = 0;
@@ -489,33 +490,64 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     auto x0 = MatrixXd(7, X.size());
     x0.setZero();
     Vector1d lb, ub;
-    lb << 0.08;
-    ub << 100;
+    Vector3d target_1;
     // Vector3d target_2;
     // target << 0.3856, 0.15, 0.40;
     // target_2 << 0.65, 0.24, 0.15;
+    if(action_name.find("move-to-object-1")==0){
+      target_1 << 0.85, -0.098, 0.1;
+      // target_2 << 0.85, -0.098, 0.3;
+      lb << 0.08;
+      ub << 100;
+    }else if(action_name.find("move-to-object-2")==0){
+      // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
+      target_1 << 0.5, 0.05, 0.15;
+      lb << 0.12;
+      ub << 100;
+    }
+    
     for(unsigned int i=0;i<X.size();i++){
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         // Constraints that ensures the distance away from the obstacle
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "iiwa_link_ee_kuka", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        if(action_name.find("move-to-object-2")==0){
+          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "iiwa_link_ee_kuka", 
+                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_1", 
+                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
+          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_2", 
+                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
+        }
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
-        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "finger_link_1", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "finger_link_2", 
-                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_c2"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "finger_link_1", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1_c2"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "finger_link_2", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2_c2"), x_var);
 
         // Constraints to make the arm above the table
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
                                         drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z"), x_var);
-        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_x<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
-        //                                 std::numeric_limits<double>::infinity() * VectorXd::Ones(1) * -1, drake::Vector1d(0.5), "FK_x"), x_var);
-        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "right_ball_contact3", 
-        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "left_ball_contact3", 
-        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "finger_link_1", 
+                                        drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z_finger1"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "finger_link_2", 
+                                        drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z_finger2"), x_var);
+        
+        if(action_name.find("move-to-object-1")==0){
+          // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "iiwa_link_ee_kuka", 
+          //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+          // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_1", 
+          //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
+          // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_2", 
+          //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
+
+          // Constrain the x direction
+          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_x<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
+                                          std::numeric_limits<double>::infinity() * VectorXd::Ones(1) * -1, drake::Vector1d(0.6), "FK_x"), x_var);
+
+          cout << "111111111111" << endl;
+        }
+
     }
 
     prog.SetInitialGuess(x, x0);
@@ -654,7 +686,8 @@ void ADMMRunner::RunVisualizer(double realtime_rate){
 
     VectorXd obstacle_pose(7);
     obstacle_pose.topRows(4) <<  1.0, 0.0, 0.0, 0.0;
-    obstacle_pose.bottomRows(3) = target_;
+    // obstacle_pose.bottomRows(3) << 0.85, -0.098, 0.1;
+    obstacle_pose.bottomRows(3) << 0.5, 0.05, 0.15;
     for (int joint = 0; joint < 7; joint++) 
     {
       object_state.joint_position_measured[joint] = obstacle_pose[joint];

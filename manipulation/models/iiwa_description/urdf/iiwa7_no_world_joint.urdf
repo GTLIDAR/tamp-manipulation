@@ -360,14 +360,14 @@
   <joint name="finger_joint_1" type="fixed">
     <parent link="iiwa_link_7"/>
     <child link="finger_link_1"/>
-    <origin rpy="0 -1.57079632679 0" xyz="0 0.025 0.11"/>
+    <origin rpy="0 -1.57079632679 0" xyz="0 0.025 0.245"/>
   </joint>
   <link name="finger_link_1">
   </link>
   <joint name="finger_joint_2" type="fixed">
     <parent link="iiwa_link_7"/>
     <child link="finger_link_2"/>
-    <origin rpy="0 -1.57079632679 0" xyz="0 -0.025 0.11"/>
+    <origin rpy="0 -1.57079632679 0" xyz="0 -0.025 0.245"/>
   </joint>
   <link name="finger_link_2">
   </link>
