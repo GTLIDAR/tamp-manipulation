@@ -65,7 +65,10 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     }
 
     this->Initialize(N, ADMMiterMax);
+
+    // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
     target_ << 0.5, 0.05, 0.15;
+    // target_ << 0.6, 0.05, 0.1;
     // if (action_name.compare("push")==0 || action_name.compare("throw")==0) {
     //   iterMax = 50;
     //   ADMMiterMax = 5;
@@ -311,7 +314,7 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     auto context_ptr = plant_.CreateDefaultContext();
     auto context = context_ptr.get();
     Vector2d wsg_width;
-    wsg_width << -25, 25;
+    wsg_width << -0.025, 0.025;
     for(unsigned int i=0;i<=N;i++){      
       auto rpy = math::RollPitchYawd(Eigen::Vector3d(0, 0, 0));
       auto xyz = Eigen::Vector3d(0, 0, 0);
@@ -321,8 +324,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
       plant_.SetVelocities(context, iiwa_model, lastTraj.xList[i].bottomRows(7));
       const auto& X_WB_all = plant_.get_body_poses_output_port().Eval<std::vector<math::RigidTransform<double>>>(*context);
       const BodyIndex ee_body_index = plant_.GetBodyByName("iiwa_link_ee_kuka", iiwa_model).index();
-      const BodyIndex wsg_left_body_index = plant_.GetBodyByName("left_ball_contact3", wsg_model).index();
-      const BodyIndex wsg_right_body_index = plant_.GetBodyByName("right_ball_contact3", wsg_model).index();
+      const BodyIndex wsg_left_body_index = plant_.GetBodyByName("finger_link_1", iiwa_model).index();
+      const BodyIndex wsg_right_body_index = plant_.GetBodyByName("finger_link_2", iiwa_model).index();
       const math::RigidTransform<double>& X_Wee = X_WB_all[ee_body_index];
       const math::RigidTransform<double>& X_Wwsg_l = X_WB_all[wsg_left_body_index];
       const math::RigidTransform<double>& X_Wwsg_r = X_WB_all[wsg_right_body_index];
@@ -488,23 +491,21 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     Vector1d lb, ub;
     lb << 0.08;
     ub << 100;
-    Vector3d target_2;
+    // Vector3d target_2;
     // target << 0.3856, 0.15, 0.40;
-    target_2 << 0.65, 0.24, 0.15;
+    // target_2 << 0.65, 0.24, 0.15;
     for(unsigned int i=0;i<X.size();i++){
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         // Constraints that ensures the distance away from the obstacle
-        if (action_name.find("move-to-object")==0) {
-          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "iiwa_link_ee_kuka", 
-                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
-                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
-        }
-        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "right_ball_contact3", 
-        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target, "wsg", "left_ball_contact3", 
-        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "iiwa_link_ee_kuka", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
+        //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_2"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "finger_link_1", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_, "iiwa", "finger_link_2", 
+                                        lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
 
         // Constraints to make the arm above the table
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 

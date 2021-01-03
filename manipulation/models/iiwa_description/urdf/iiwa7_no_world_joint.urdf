@@ -357,8 +357,21 @@
   </joint>
   <link name="iiwa_link_ee">
   </link>
+  <joint name="finger_joint_1" type="fixed">
+    <parent link="iiwa_link_7"/>
+    <child link="finger_link_1"/>
+    <origin rpy="0 -1.57079632679 0" xyz="0 0.025 0.11"/>
+  </joint>
+  <link name="finger_link_1">
+  </link>
+  <joint name="finger_joint_2" type="fixed">
+    <parent link="iiwa_link_7"/>
+    <child link="finger_link_2"/>
+    <origin rpy="0 -1.57079632679 0" xyz="0 -0.025 0.11"/>
+  </joint>
+  <link name="finger_link_2">
+  </link>
   <frame link="iiwa_link_ee" name="iiwa_frame_ee" rpy="3.141592653589793 -1.570796326794897 0" xyz="0 0 0"/>
-
     
   <!--Extensions -->
   <!-- Load Gazebo lib and set the robot namespace -->
