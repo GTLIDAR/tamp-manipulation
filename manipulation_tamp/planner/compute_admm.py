@@ -131,7 +131,7 @@ class MotionQueryHandler:
 def main():
     runner = MotionQueryHandler(JSON_QUERY_FILENAME, JSON_DDP_TRAJ_FILENAME)
     #runner.Run()
-    runner.run_single_traj(22)
+    runner.run_single_traj(12)
 
 if __name__ == "__main__":
     main()
