@@ -12,8 +12,11 @@ from utils.traj_utils import dict_to_lcmt_multi_wp_manip_query, lcmt_manipulator
 file_path = os.path.dirname(os.path.abspath(__file__))
 drake_path = file_path+"/../.."
 
-JSON_QUERY_FILENAME = drake_path + "/manipulation_tamp/results/admm_queries20201229T223846.json"
-JSON_DDP_TRAJ_FILENAME = drake_path + "/manipulation_tamp/results/object_sorting_plan20201229T223845.json"
+# JSON_QUERY_FILENAME = drake_path + "/manipulation_tamp/results/admm_queries20201229T223846.json"
+# JSON_DDP_TRAJ_FILENAME = drake_path + "/manipulation_tamp/results/object_sorting_plan20201229T223845.json"
+
+JSON_QUERY_FILENAME = drake_path + "/manipulation_tamp/results/conv_belt_queries.json"
+JSON_DDP_TRAJ_FILENAME = drake_path + "/manipulation_tamp/results/traj20201015T210029.json"
 
 MIN_TIME_STEP = 0.002
 MAX_TIME_STEP = 0.01
@@ -98,6 +101,7 @@ class MotionQueryHandler:
     
     def run_single_traj(self, q_idx):
         self._cur_query = self._queries[q_idx]
+        print("Action: "+self._cur_query.name)
         if self._cur_query.time_step > MAX_TIME_STEP:
             self._cur_query.time_step = MAX_TIME_STEP
         
@@ -107,7 +111,6 @@ class MotionQueryHandler:
         
         else:
             print("Computing ADMM "+str(q_idx+1)+"/"+str(len(self._queries)))
-            print("Action: "+self._cur_query.name)
 
             self._completed = False
             start_time = time.time()
@@ -118,6 +121,41 @@ class MotionQueryHandler:
                 self._lcm.handle()
         
         self._save_trajs()
+    
+    def run_action_names(self, action_name):
+        self.q_idx = 0
+        total_time = 0
+        for self.q_idx in range(len(self._queries)):
+            if self._queries[self.q_idx] is not None and self._queries[self.q_idx].name.startswith(action_name):
+                self._cur_query = self._queries[self.q_idx]
+            else:
+                self._cur_query = None
+
+            if self._cur_query is None:
+                print("No move query in this action. Keeping original trajectory")
+                self.trajs.append(self._ddp_traj[self.q_idx])
+                continue
+
+            if self._cur_query.time_step > MAX_TIME_STEP:
+                self._cur_query.time_step = MAX_TIME_STEP
+
+            print("Computing ADMM "+str(self.q_idx+1)+"/"+str(len(self._queries)))
+            print("Action: "+self._cur_query.name)
+
+            self._completed = False
+            start_time = time.time()
+            self._lcm.publish("TREE_SEARCH_QUERY", self._cur_query.encode())
+            print("LCM Query Published...")
+
+            while not self._completed:
+                self._lcm.handle()
+            
+            end_time = time.time()
+            total_time += end_time-start_time
+            print("Computation time:", end_time-start_time)
+        
+        print("Total computation time:", total_time)
+        self._save_trajs()        
 
     
     def _save_trajs(self):
@@ -131,7 +169,8 @@ class MotionQueryHandler:
 def main():
     runner = MotionQueryHandler(JSON_QUERY_FILENAME, JSON_DDP_TRAJ_FILENAME)
     #runner.Run()
-    runner.run_single_traj(20)
+    runner.run_single_traj(11)
+    # runner.run_action_names("move-to-object")
 
 if __name__ == "__main__":
     main()

@@ -56,13 +56,13 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     unsigned int iterMax = 15;
     unsigned int ADMMiterMax = 30; 
-    if (action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object-side")==0 || action_name.find("move-to-object-top")==0) {
-      ADMMiterMax = 50; 
-    }
+    // if (action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object-side")==0 || action_name.find("move-to-object-top")==0) {
+    //   ADMMiterMax = 50; 
+    // }
 
-    if (time_horizon <= 1) {
-      ADMMiterMax = 75;
-    }
+    // if (time_horizon <= 1) {
+    //   ADMMiterMax = 50;
+    // }
 
     this->Initialize(N, ADMMiterMax);
 
@@ -124,10 +124,10 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
-    if((action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object-side")==0 || action_name.find("move-to-object-top")==0) && time_horizon > 1) {
+    if((action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object")==0 || action_name.find("throw")==0) && time_horizon > 1) {
     // if((action_name.find("move")==0 && time_horizon > 1) {
-      // pos_weight_ = 1e4;
-      pos_weight_ = 0;
+      pos_weight_ = 1e4;
+      // pos_weight_ = 0;
     } else {
       pos_weight_ = 0;
     } // 1e4
@@ -515,14 +515,14 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         // Constraints that ensures the distance away from the obstacle
-        if(action_name.find("move-to-object-top")==0 || action_name.find("move-to-goal-table")==0){
-          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "iiwa_link_ee_kuka", 
-                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_1", 
-                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
-          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_2", 
-                                          lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
-        }
+        // if(action_name.find("move-to-object-top")==0 || action_name.find("move-to-goal-table")==0){
+        //   prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "iiwa_link_ee_kuka", 
+        //                                   lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        //   prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_1", 
+        //                                   lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
+        //   prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_2", 
+        //                                   lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
+        // }
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "iiwa_link_ee_kuka", 
         //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_c2"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_2, "iiwa", "finger_link_1", 
@@ -538,19 +538,19 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
         prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "finger_link_2", 
                                         drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z_finger2"), x_var);
         
-        if(action_name.find("move-to-object-side")==0){
-          // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "iiwa_link_ee_kuka", 
-          //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
-          // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_1", 
-          //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
-          // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_2", 
-          //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
+        // if(action_name.find("move-to-object-side")==0){
+        //   // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "iiwa_link_ee_kuka", 
+        //   //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
+        //   // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_1", 
+        //   //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger1"), x_var);
+        //   // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_2", 
+        //   //                                 lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
 
-          // Constrain the x direction
-          prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_x<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
-                                          std::numeric_limits<double>::infinity() * VectorXd::Ones(1) * -1, drake::Vector1d(0.6), "FK_x"), x_var);
+        //   // Constrain the x direction
+        //   prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_x<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
+        //                                   std::numeric_limits<double>::infinity() * VectorXd::Ones(1) * -1, drake::Vector1d(0.6), "FK_x"), x_var);
 
-        }
+        // }
 
     }
 
