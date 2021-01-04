@@ -56,8 +56,8 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
 
     unsigned int iterMax = 15;
     unsigned int ADMMiterMax = 30; 
-    if (action_name.find("move-to-object-side")==0 || action_name.find("move-to-object-top")==0) {
-      ADMMiterMax = 30; 
+    if (action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object-side")==0 || action_name.find("move-to-object-top")==0) {
+      ADMMiterMax = 50; 
     }
 
     if (time_horizon <= 1) {
@@ -125,7 +125,9 @@ lcmt_manipulator_traj ADMMRunner::RunADMM(stateVec_t xinit, stateVec_t xgoal,
     // Initialize ILQRSolver
     ILQRSolver_TRK::traj lastTraj;
     if((action_name.find("move-to-goal-table")==0 || action_name.find("move-to-object-side")==0 || action_name.find("move-to-object-top")==0) && time_horizon > 1) {
-      pos_weight_ = 1e4;
+    // if((action_name.find("move")==0 && time_horizon > 1) {
+      // pos_weight_ = 1e4;
+      pos_weight_ = 0;
     } else {
       pos_weight_ = 0;
     } // 1e4
@@ -494,23 +496,26 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
     // Vector3d target_2;
     // target << 0.3856, 0.15, 0.40;
     // target_2 << 0.65, 0.24, 0.15;
-    if(action_name.find("move-to-object-side")==0){
-      target_1 << 0.85, -0.098, 0.1;
-      // target_2 << 0.85, -0.098, 0.3;
-      lb << 0.08;
-      ub << 100;
-    }else if(action_name.find("move-to-object-top")==0){
-      // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
-      target_1 << 0.5, 0.05, 0.15;
-      lb << 0.12;
-      ub << 100;
-    }
+    // if(action_name.find("move-to-object-side")==0){
+    //   target_1 << 0.85, -0.098, 0.1;
+    //   // target_2 << 0.85, -0.098, 0.3;
+    //   lb << 0.1;
+    //   ub << 100;
+    // }else if(action_name.find("move-to-object-top")==0){
+    //   // collision sphere center for waypoint from 0.4, -0.47, 0.5, 0.0, 1.57, -1.57 to 0.5, 0.24, 0.1, 0.0, 0.0, 0.0
+    //   target_1 << 0.5, 0.05, 0.15;
+    //   lb << 0.1;
+    //   ub << 100;
+    // }
+    target_1 << 0.5, 0.05, 0.15;
+    lb << 0.1;
+    ub << 100;
     
     for(unsigned int i=0;i<X.size();i++){
         auto x_var = x.col(i);
         auto cost2 = prog.AddL2NormCost(MatrixXd::Identity(7,7), X[i].topRows(7), x_var);
         // Constraints that ensures the distance away from the obstacle
-        if(action_name.find("move-to-object-top")==0){
+        if(action_name.find("move-to-object-top")==0 || action_name.find("move-to-goal-table")==0){
           prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "iiwa_link_ee_kuka", 
                                           lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK"), x_var);
           prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint<double>>(plant, target_1, "iiwa", "finger_link_1", 
@@ -545,7 +550,6 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
           prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_x<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
                                           std::numeric_limits<double>::infinity() * VectorXd::Ones(1) * -1, drake::Vector1d(0.6), "FK_x"), x_var);
 
-          cout << "111111111111" << endl;
         }
 
     }
