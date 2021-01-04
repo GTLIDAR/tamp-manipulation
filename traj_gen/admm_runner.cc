@@ -508,8 +508,13 @@ stateVecTab_t ADMMRunner::CollisionAvoidance(const drake::multibody::MultibodyPl
                                         lb, std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_finger2"), x_var);
 
         // Constraints to make the arm above the table
-        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
-                                        drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "finger_link_1", drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z_finger1"), x_var);
+        prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "finger_link_2", drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z_finger2"), x_var);
+
+        // Constraints to make the arm above the table
+        // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
+        //                                 drake::Vector1d(0.1), std::numeric_limits<double>::infinity() * VectorXd::Ones(1), "FK_z"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_x<double>>(plant, "iiwa", "iiwa_link_ee_kuka", 
         //                                 std::numeric_limits<double>::infinity() * VectorXd::Ones(1) * -1, drake::Vector1d(0.5), "FK_x"), x_var);
         // prog.AddConstraint(make_shared<drake::traj_gen::FKConstraint_z<double>>(plant, "wsg", "right_ball_contact3", 

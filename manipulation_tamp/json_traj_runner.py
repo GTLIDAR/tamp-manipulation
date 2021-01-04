@@ -13,7 +13,9 @@ drake_path = file_path+"/.."
 result_path = drake_path+"/manipulation_tamp/results/"
 
 # JSON_FILENAME = result_path + "fixed_admm_traj20201023T000819.json"
-JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/admm_traj20210103T082039.json"
+# JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/admm_traj20210103T140138.json"
+JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/22_updated_full.json"
+
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
 
