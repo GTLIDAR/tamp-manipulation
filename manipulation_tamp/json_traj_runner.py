@@ -16,7 +16,7 @@ result_path = drake_path+"/manipulation_tamp/results/"
 # JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/admm_traj20210104T084414.json"
 # JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/22_updated_full.json"
 # JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/20_collision.json"
-JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/conv_belt_ca_updated.json"
+JSON_FILENAME = "/home/zhigen/code/drake/manipulation_tamp/results/conv_belt_2_27_updated.json"
 
 REMOVE_LAST_STEP = False
 USE_TORQUE = False
